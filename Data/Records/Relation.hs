@@ -16,8 +16,13 @@ import Data.Records.Field
 import Data.Records.Rec
 import Data.Records.Lens
 
+-- A subtyping relation
 class ss <: ts where
   cast :: Rec ss -> Rec ts
+
+-- If two records types are subtypes of each other, that means that they
+-- differ only in order of fields.
+type ss :~: ts = (ss <: ts, ts <: ss)
 
 instance xs <: '[] where
   cast _ = RNil
