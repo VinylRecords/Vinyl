@@ -1,8 +1,8 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE GADTs #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE GADTs #-}
 
 module Data.Records.Lens
   ( Lens(..)
@@ -13,14 +13,21 @@ module Data.Records.Lens
   , rPut
   ) where
 
+import Prelude hiding ((.), id)
 import Data.Records.Rec
 import Data.Records.Field
 import Data.Records.Proofs
+
+import Control.Category
 
 data Lens a b =
   Lens { get :: (a -> b)
        , put :: (b -> a -> a)
        }
+
+instance Category Lens where
+  id = Lens id (const id)
+  l . m = Lens (get l . get m) (\x y -> put m (put l x (get m y)) y)
 
 modify :: Lens a b -> (b -> b) -> a -> a
 modify l f x = put l (f (get l x)) x
