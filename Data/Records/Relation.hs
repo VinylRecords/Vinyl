@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE GADTs #-}
 
 module Data.Records.Relation
@@ -21,11 +22,12 @@ class ss <: ts where
 instance xs <: '[] where
   cast _ = RNil
 
-instance (y ~ (sy ::: t), Implicit (Elem y xs), xs <: ys) => xs <: (y ': ys) where
+instance (y ~ (sy ::: t), IElem y xs, xs <: ys) => xs <: (y ': ys) where
   cast r = (field, rGet field r) :& cast r
     where field = lookupField implicitly r
 
 lookupField :: Elem x xs -> Rec xs -> x
 lookupField Here ((k,_) :& _) = k
 lookupField (There p) (_ :& xs) = lookupField p xs
+
 

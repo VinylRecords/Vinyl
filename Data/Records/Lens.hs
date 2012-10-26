@@ -25,7 +25,7 @@ data Lens a b =
 modify :: Lens a b -> (b -> b) -> a -> a
 modify l f x = put l (f (get l x)) x
 
-type RLens sy t = Implicit (Elem (sy ::: t) fs) => Lens (Rec fs) t
+type RLens sy t = IElem (sy ::: t) fs => Lens (Rec fs) t
 
 rLens :: (sy ::: t) -> RLens sy t
 rLens f = rLens' f implicitly

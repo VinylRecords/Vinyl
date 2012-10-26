@@ -5,6 +5,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE OverlappingInstances #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE GADTs #-}
 
 module Data.Records.Proofs where
@@ -20,3 +21,5 @@ instance Implicit (Elem x (x ': xs)) where
   implicitly = Here
 instance Implicit (Elem x xs) => Implicit (Elem x (y ': xs)) where
   implicitly = There implicitly
+
+type IElem x xs = Implicit (Elem x xs)
