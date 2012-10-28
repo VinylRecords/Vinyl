@@ -1,6 +1,6 @@
 This README is Literate Haskell; to play, run the following:
 
-    ghci -x lhs README
+    ghci README.lhs
 
 GHC 7.6 offers type level kinds for strings and natural numbers; the
 former allows a general solution to the records-problem, featuring
@@ -99,7 +99,7 @@ Therefore, the following works:
 The subtyping relationship between record types is expressed with the
 `(<:)` constraint; so, `cast` is of the following type:
 
-< cast :: ss :< ts => Rc ss -> Rec ts
+< cast :: ss <: ts => Rc ss -> Rec ts
 
 Also provided is a (:~:) constraint which indicates record congruence
 (that is, two record types differ only in the order of their fields).
