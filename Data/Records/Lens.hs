@@ -43,14 +43,14 @@ rPut = put . rLens
 -- Records have lenses
 rLens' :: f ~ (sy ::: t) => f -> Elem f fs -> Lens (Rec fs) t
 rLens' _ Here =
-  Lens { get = \((_,x) :& xs) -> x
-       , put = \x ((k,_) :& xs) -> (k,x) :& xs
+  Lens { get = \(xs :- _ :=: x) -> x
+       , put = \x (xs :- k :=: _) -> xs :- k :=: x
        }
 rLens' f (There p) = rLensPrepend $ rLens' f p
 
 rLensPrepend :: Lens (Rec fs) t -> Lens (Rec (f ': fs)) t
 rLensPrepend (Lens g p) =
-  Lens { get = \(_ :& xs) -> g xs
-       , put = \x (a :& xs) -> a :& (p x xs)
+  Lens { get = \(xs :- _) -> g xs
+       , put = \x (xs :- a) -> (p x xs) :- a
        }
 

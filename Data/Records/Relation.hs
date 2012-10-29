@@ -25,14 +25,14 @@ class ss <: ts where
 type ss :~: ts = (ss <: ts, ts <: ss)
 
 instance xs <: '[] where
-  cast _ = RNil
+  cast _ = Record
 
 instance (y ~ (sy ::: t), IElem y xs, xs <: ys) => xs <: (y ': ys) where
-  cast r = (field, rGet field r) :& cast r
+  cast r = cast r :- field :=: rGet field r
     where field = lookupField implicitly r
 
 lookupField :: Elem x xs -> Rec xs -> x
-lookupField Here ((k,_) :& _) = k
-lookupField (There p) (_ :& xs) = lookupField p xs
+lookupField Here (_ :- k :=: _) = k
+lookupField (There p) (xs :- _) = lookupField p xs
 
 
