@@ -17,4 +17,4 @@ cabal-version:       >=1.8
 library
   exposed-modules:     Data.Records, Data.Records.Field, Data.Records.Lens, Data.Records.Proofs, Data.Records.Rec, Data.Records.Relation
   -- other-modules:
-  build-depends:       base ==4.6.*
+  build-depends:       base ==4.6.*, lens >=3.0
