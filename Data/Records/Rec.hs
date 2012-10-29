@@ -1,5 +1,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -18,6 +19,21 @@ data Rec :: [*] -> * where
   Record :: Rec '[]
   (:-) :: (f ~ (sy ::: t)) => Rec fs -> f :=: t -> Rec (f ': fs)
 infixl 8 :-
+
+-- Type level append
+type family (as :: [*]) :++ (bs :: [*]) :: [*]
+type instance '[]       :++ bs = bs
+type instance (a ': as) :++ bs = a ': (as :++ bs)
+
+-- Creates singleton Record
+(=:) :: sy ::: t -> t -> Rec '[sy ::: t]
+a =: b = Record :- a :=: b
+
+-- Appends Records
+(<:>) :: Rec as -> Rec bs -> Rec (bs :++ as)
+as <:> Record = as
+as <:> (bs :- b) = (as <:> bs) :- b
+infixl 8 <:>
 
 instance Show (Rec '[]) where
   show Record = "{}"
