@@ -67,7 +67,7 @@ record that has a `BOOL` field labelled `sleeping`, and the modifies
 that specific field in the record accordingly.
 
 > tucker' = wakeUp tucker
-> jon' = wakeUp jon'
+> jon' = wakeUp jon
 
 We can also access the entire lens for a field using the `rLens`
 function; since lenses are composable, it's super easy to do deep update
