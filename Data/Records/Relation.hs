@@ -9,6 +9,8 @@
 
 module Data.Records.Relation
   ( (<:)(..)
+  , (:~:)
+  , rIso
   ) where
 
 import Data.Records.Proofs
@@ -34,5 +36,8 @@ instance (y ~ (sy ::: t), IElem y xs, xs <: ys) => xs <: (y ': ys) where
 lookupField :: Elem x xs -> Rec xs -> x
 lookupField Here ((k,_) :& _) = k
 lookupField (There p) (_ :& xs) = lookupField p xs
+
+rIso :: (fs1 :~: fs2) => SimpleIso (Rec fs1) (Rec fs2)
+rIso = iso cast cast
 
 
