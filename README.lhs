@@ -10,12 +10,10 @@ row-polymorphic lenses. All this is possible without Template Haskell.
 Let's work through a quick example. We'll need to enable some language
 extensions first:
 
-> {-# LANGUAGE DataKinds, TypeOperators, NoMonomorphismRestriction #-}
+> {-# LANGUAGE DataKinds, TypeOperators, NoMonomorphismRestriction, Rank2Types #-}
 > {-# LANGUAGE OverlappingInstances, FlexibleInstances, FlexibleContexts #-}
 
 > import Data.Records
-> import Control.Category
-> import Prelude hiding (id, (.))
 
 
 Let's define the fields we want to use:
@@ -59,7 +57,7 @@ particular field in the record for access and update, without losing
 additional information:
 
 > wakeUp :: IElem ("sleeping" ::: Bool) fields => Rec fields -> Rec fields
-> wakeUp = rPut sleeping False
+> wakeUp = sleeping `rPut` False
 
 Now, the type annotation on `wakeUp` was not necessary; I just wanted to
 show how intuitive the type is. Basically, it takes as an input any
@@ -73,12 +71,14 @@ We can also access the entire lens for a field using the `rLens`
 function; since lenses are composable, it's super easy to do deep update
 on a record:
 
-> masterSleeping :: IElem ("master" ::: LifeForm) fields => Lens (Rec fields) Bool
-> masterSleeping = rLens sleeping . rLens master
+> masterSleeping :: IElem ("master" ::: LifeForm) fields => SimpleLens (Rec fields) Bool
+> masterSleeping = rLens master . rLens sleeping
 
-> tucker'' = put masterSleeping True tucker'
+> tucker'' = masterSleeping .~ tucker' $ True
 
-(Again, the type annotation is unnecessary.)
+Again, the type annotation is unnecessary. In fact, the seperate definition is also unnecessary, and we could just define:
+
+> tucker''' = rLens master . rLens sleeping .~ tucker' $ True
 
 
 Subtyping Relation and Coercion
