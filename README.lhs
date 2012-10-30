@@ -24,14 +24,13 @@ Let's define the fields we want to use:
 
 Now, let's try to make an entity that represents a man:
 
-> jon = (name, "jon")
->    :& (age, 20)
->    :& (sleeping, False)
->    :& RNil
+> jon = name =: "jon"
+>    <+> age =: 20
+>    <+> sleeping =: False
 
 We could make an alias for the sort of entity that `jon` is:
 
-> type LifeForm = Rec '["name" ::: String, "age" ::: Int, "sleeping" ::: Bool]
+> type LifeForm = Rec ["name" ::: String, "age" ::: Int, "sleeping" ::: Bool]
 > jon :: LifeForm
 
 The types are inferred, though, so this is unnecessary unless you'd like
@@ -40,12 +39,10 @@ unlike men, they have masters. So, let's build my dog:
 
 > master = Field :: "master" ::: LifeForm
 
-> tucker = (name, "tucker")
->       :& (age, 7)
->       :& (sleeping, True)
->       :& (master, jon)
->       :& RNil
-
+> tucker = name =: "tucker"
+>       <+> age =: 7
+>       <+> sleeping =: True
+>       <+> master =: jon
 
 Using Lenses
 ------------

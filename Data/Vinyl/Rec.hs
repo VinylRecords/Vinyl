@@ -1,11 +1,16 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 
-module Data.Vinyl.Rec where
+module Data.Vinyl.Rec
+  ( Rec(..)
+  , (=:)
+  , (<+>)
+  ) where
 
 import Data.Vinyl.Field
 import GHC.TypeLits
@@ -15,6 +20,22 @@ data Rec :: [*] -> * where
   RNil :: Rec '[]
   (:&) :: (f ~ (sy ::: t)) => (f, t) -> Rec fs -> Rec (f ': fs)
 infixr :&
+
+-- Appends records
+(<+>) :: Rec as -> Rec bs -> Rec (as ++ bs)
+RNil      <+> xs = xs
+(x :& xs) <+> ys =  x :& (xs <+> ys)
+infixl 8 <+>
+
+-- Shorthand for a record with a single field
+(=:) :: sy ::: t -> t -> Rec '[sy ::: t]
+a =: b = (a, b) :& RNil
+
+-- Type level list append
+type family (as :: [*]) ++ (bs :: [*]) :: [*]
+type instance '[] ++ bs = bs
+type instance (a ': as) ++ bs  = a ': (as ++ bs)
+
 
 instance Show (Rec '[]) where
   show RNil = "{}"
