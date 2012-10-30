@@ -5,7 +5,7 @@
 module Data.Vinyl.Unicode where
 
 import Data.Vinyl.Relation
-import Data.Vinyl.Proofs
+import Data.Vinyl.Witnesses
 
 type x ∈ xs = IElem x xs
 type xs ⊆ ys = ISubset xs ys

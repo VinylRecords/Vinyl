@@ -15,7 +15,7 @@ module Data.Vinyl.Relation
   , rIso
   ) where
 
-import Data.Vinyl.Proofs
+import Data.Vinyl.Witnesses
 import Data.Vinyl.Field
 import Data.Vinyl.Rec
 import Data.Vinyl.Lens
