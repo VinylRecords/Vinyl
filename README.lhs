@@ -14,6 +14,7 @@ extensions first:
 > {-# LANGUAGE OverlappingInstances, FlexibleInstances, FlexibleContexts #-}
 
 > import Data.Vinyl
+> import Data.Vinyl.Unicode
 
 Let's define the fields we want to use:
 
@@ -55,7 +56,7 @@ different type). Luckily, we can use the built-in lenses to focus on a
 particular field in the record for access and update, without losing
 additional information:
 
-> wakeUp :: IElem ("sleeping" ::: Bool) fields => Rec fields -> Rec fields
+> wakeUp :: (("sleeping" ::: Bool) ∈ fields) => Rec fields -> Rec fields
 > wakeUp = sleeping `rPut` False
 
 Now, the type annotation on `wakeUp` was not necessary; I just wanted to
@@ -70,7 +71,7 @@ We can also access the entire lens for a field using the `rLens`
 function; since lenses are composable, it's super easy to do deep update
 on a record:
 
-> masterSleeping :: IElem ("master" ::: LifeForm) fields => SimpleLens (Rec fields) Bool
+> masterSleeping :: (("master" ::: LifeForm) ∈ fields) => SimpleLens (Rec fields) Bool
 > masterSleeping = rLens master . rLens sleeping
 
 > tucker'' = masterSleeping .~ True $ tucker'
