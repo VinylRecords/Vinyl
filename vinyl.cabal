@@ -15,6 +15,6 @@ build-type:          Simple
 cabal-version:       >=1.8
 
 library
-  exposed-modules:     Data.Vinyl, Data.Vinyl.Field, Data.Vinyl.Lens, Data.Vinyl.Proofs, Data.Vinyl.Rec, Data.Vinyl.Relation
+  exposed-modules:     Data.Vinyl, Data.Vinyl.Field, Data.Vinyl.Lens, Data.Vinyl.Proofs, Data.Vinyl.Rec, Data.Vinyl.Relation, Data.Vinyl.Unicode
   -- other-modules:
-  build-depends:       base ==4.6.*, lens >=3.0
+  build-depends:       base ==4.6.*, lens >=3.0, ghc-prim
