@@ -8,7 +8,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE GADTs #-}
 
-module Data.Records.Proofs where
+module Data.Vinyl.Proofs where
 
 class Implicit p where
   implicitly :: p

@@ -4,7 +4,7 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE GADTs #-}
 
-module Data.Records.Lens
+module Data.Vinyl.Lens
   ( module Control.Lens
   , RLens
   , rLens
@@ -13,9 +13,9 @@ module Data.Records.Lens
   , rMod
   ) where
 
-import Data.Records.Rec
-import Data.Records.Field
-import Data.Records.Proofs
+import Data.Vinyl.Rec
+import Data.Vinyl.Field
+import Data.Vinyl.Proofs
 
 import Control.Lens
 

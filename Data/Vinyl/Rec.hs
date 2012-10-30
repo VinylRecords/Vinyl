@@ -5,9 +5,9 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 
-module Data.Records.Rec where
+module Data.Vinyl.Rec where
 
-import Data.Records.Field
+import Data.Vinyl.Field
 import GHC.TypeLits
 
 -- A record is parameterized by a list of fields.

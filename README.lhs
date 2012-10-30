@@ -13,8 +13,7 @@ extensions first:
 > {-# LANGUAGE DataKinds, TypeOperators, NoMonomorphismRestriction, RankNTypes #-}
 > {-# LANGUAGE OverlappingInstances, FlexibleInstances, FlexibleContexts #-}
 
-> import Data.Records
-
+> import Data.Vinyl
 
 Let's define the fields we want to use:
 

@@ -7,16 +7,16 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE GADTs #-}
 
-module Data.Records.Relation
+module Data.Vinyl.Relation
   ( (<:)(..)
   , (:~:)
   , rIso
   ) where
 
-import Data.Records.Proofs
-import Data.Records.Field
-import Data.Records.Rec
-import Data.Records.Lens
+import Data.Vinyl.Proofs
+import Data.Vinyl.Field
+import Data.Vinyl.Rec
+import Data.Vinyl.Lens
 
 -- A subtyping relation
 class ss <: ts where

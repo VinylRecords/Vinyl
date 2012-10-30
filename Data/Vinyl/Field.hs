@@ -5,7 +5,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE GADTs #-}
 
-module Data.Records.Field where
+module Data.Vinyl.Field where
 
 import GHC.TypeLits
 
