@@ -29,24 +29,11 @@ class (IsSubtype r1 r2) => r1 <: r2 where
 -- On record is a subtype of another if the fields of the latter are a
 -- subset of the fields of the former.
 type family IsSubtype r1 r2 :: Constraint
-type instance IsSubtype (Rec ss) (Rec ts) = Implicit (Subset ts ss)
-
-data Subset :: [k] -> [k] -> * where
-  SubsetNil  :: Subset '[] xs
-  SubsetCons ::
-    Elem x ys ->
-    Subset xs ys ->
-    Subset (x ': xs) ys
-
-instance Implicit (Subset '[] xs) where
-  implicitly = SubsetNil
-instance (IElem x ys, Implicit (Subset xs ys)) => Implicit (Subset (x ': xs) ys) where
-  implicitly = SubsetCons implicitly implicitly
-
+type instance IsSubtype (Rec ss) (Rec ts) = ISubset ts ss
 
 -- If two records types are subtypes of each other, that means that they
 -- differ only in order of fields.
-type ss :~: ts = (ss <: ts, ts <: ss)
+type r1 :~: r2 = (r1 <: r2, r2 <: r1)
 
 instance Rec xs <: (Rec '[]) where
   cast _ = RNil
