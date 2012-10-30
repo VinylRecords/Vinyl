@@ -74,11 +74,12 @@ on a record:
 > masterSleeping :: IElem ("master" ::: LifeForm) fields => SimpleLens (Rec fields) Bool
 > masterSleeping = rLens master . rLens sleeping
 
-> tucker'' = masterSleeping .~ tucker' $ True
+> tucker'' = masterSleeping .~ True $ tucker'
 
-Again, the type annotation is unnecessary. In fact, the seperate definition is also unnecessary, and we could just define:
+Again, the type annotation is unnecessary. In fact, the seperate
+definition is also unnecessary, and we could just define:
 
-> tucker''' = rLens master . rLens sleeping .~ tucker' $ True
+> tucker''' = rLens master . rLens sleeping .~ True $ tucker'
 
 
 Subtyping Relation and Coercion
