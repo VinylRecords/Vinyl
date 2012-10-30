@@ -85,12 +85,11 @@ definition is also unnecessary, and we could just define:
 Subtyping Relation and Coercion
 -------------------------------
 
-A record `Rec xs` is a subtype of a record `Rec ys` if `ys` is a subset
-of `xs`; that is to say, if one record can do everything that another
-record can, the former is a subtype of the latter. As such, we should be
-able to provide an upcast operator which "forgets" whatever makes one
-record different from another (whether it be extra data, or different
-order).
+A record `Rec xs` is a subtype of a record `Rec ys` if `ys ⊆ xs`; that
+is to say, if one record can do everything that another record can, the
+former is a subtype of the latter. As such, we should be able to provide
+an upcast operator which "forgets" whatever makes one record different
+from another (whether it be extra data, or different order).
 
 Therefore, the following works:
 
@@ -100,7 +99,8 @@ Therefore, the following works:
 The subtyping relationship between record types is expressed with the
 `(<:)` constraint; so, `cast` is of the following type:
 
-< cast :: ss <: ts => Rc ss -> Rec ts
+< cast :: r1 <: r2 => r1 -> r2
 
-Also provided is a (:~:) constraint which indicates record congruence
+Also provided is a (≅) constraint which indicates record congruence
 (that is, two record types differ only in the order of their fields).
+
