@@ -25,8 +25,9 @@ rLens :: (sy ::: t) -> RLens sy t
 rLens f = rLens' f implicitly
 
 rGet = view . rLens
-rPut = flip . set . rLens
-rMod = flip . over . rLens
+
+rPut = set . rLens
+rMod = over . rLens
 
 -- Records have lenses
 rLens' :: (f ~ (sy ::: t)) => f -> Elem f fs -> SimpleLens (Rec fs) t
