@@ -12,6 +12,7 @@
 module Data.Vinyl.Relation
   ( (<:)(..)
   , (:~:)
+  , (~=)
   , rIso
   ) where
 
@@ -34,6 +35,10 @@ type instance IsSubtype (Rec ss) (Rec ts) = ISubset ts ss
 -- If two records types are subtypes of each other, that means that they
 -- differ only in order of fields.
 type r1 :~: r2 = (r1 <: r2, r2 <: r1)
+
+-- Term-level record congruence
+(~=) :: (Eq a, a :~: b) => a -> b -> Bool
+x ~= y = x == (cast y)
 
 instance Rec xs <: (Rec '[]) where
   cast _ = RNil
