@@ -1,2 +1,2 @@
 See
-[README.lhs](https://github.com/jonsterling/Data.Records/blob/master/README.lhs).
+[README.lhs](https://github.com/jonsterling/Vinyl/blob/master/README.lhs).
