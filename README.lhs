@@ -10,8 +10,8 @@ row-polymorphic lenses. All this is possible without Template Haskell.
 Let's work through a quick example. We'll need to enable some language
 extensions first:
 
-> {-# LANGUAGE DataKinds, TypeOperators, NoMonomorphismRestriction, RankNTypes #-}
-> {-# LANGUAGE OverlappingInstances, FlexibleInstances, FlexibleContexts #-}
+> {-# LANGUAGE DataKinds, TypeOperators #-}
+> {-# LANGUAGE FlexibleContexts, NoMonomorphismRestriction #-}
 
 > import Data.Vinyl
 > import Data.Vinyl.Unicode
