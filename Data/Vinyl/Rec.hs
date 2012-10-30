@@ -42,3 +42,9 @@ instance Show (Rec '[]) where
 instance (SingI sy, Show t, Show (Rec fs)) => Show (Rec ((sy ::: t) ': fs)) where
   show ((k,x) :& xs) = show k ++ " :=: " ++ show x ++ ", " ++ show xs
 
+
+instance Eq (Rec '[]) where
+  _ == _ = True
+instance (Eq t, Eq (Rec fs)) => Eq (Rec ((s ::: t) ': fs)) where
+  ((_,x) :& xs) == ((_,y) :& ys) = (x == y) && (xs == ys)
+
