@@ -10,9 +10,18 @@ license-file:        LICENSE
 author:              Jonathan Sterling
 maintainer:          jonsterling@me.com
 -- copyright:
-category:            Data
+category:            Records
+stability:           Experimental
 build-type:          Simple
 cabal-version:       >=1.8
+
+description: Extensible records for Haskell with lenses using modern GHC features.
+
+
+source-repository head
+  type:     git
+  location: https://github.com/jonsterling/Vinyl/
+
 
 library
   exposed-modules:     Data.Vinyl, Data.Vinyl.Field, Data.Vinyl.Lens, Data.Vinyl.Witnesses, Data.Vinyl.Rec, Data.Vinyl.Relation, Data.Vinyl.Unicode
