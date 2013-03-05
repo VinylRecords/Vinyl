@@ -1,8 +1,8 @@
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts          #-}
+{-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE RankNTypes                #-}
+{-# LANGUAGE TypeOperators             #-}
 
 module Data.Vinyl.Lens
   ( module Control.Lens
@@ -13,13 +13,14 @@ module Data.Vinyl.Lens
   , rMod
   ) where
 
-import Data.Vinyl.Rec
-import Data.Vinyl.Field
-import Data.Vinyl.Witnesses
+import           Data.Vinyl.Field
+import           Data.Vinyl.Rec
+import           Data.Vinyl.Witnesses
 
-import Control.Lens
+import           Control.Lens
 
 type RLens sy t = IElem (sy ::: t) fs => SimpleLens (Rec fs) t
+
 
 rLens :: (sy ::: t) -> RLens sy t
 rLens f = rLens' f implicitly
@@ -36,4 +37,3 @@ rLens' f (There p) = rLensPrepend $ rLens' f p
 
 rLensPrepend :: SimpleLens (Rec fs) t -> SimpleLens (Rec (f ': fs)) t
 rLensPrepend l = lens (\(_ :& xs) -> view l xs) (\(a :& xs) x -> a :& (set l x xs))
-

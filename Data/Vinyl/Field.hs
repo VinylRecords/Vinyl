@@ -1,13 +1,13 @@
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE GADTs               #-}
+{-# LANGUAGE KindSignatures      #-}
+{-# LANGUAGE PolyKinds           #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module Data.Vinyl.Field where
 
-import GHC.TypeLits
+import           GHC.TypeLits
 
 -- A field is a symbol key and a type for its value.
 data (:::) :: Symbol -> * -> * where

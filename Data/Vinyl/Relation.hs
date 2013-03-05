@@ -1,13 +1,13 @@
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE ConstraintKinds       #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE PolyKinds             #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module Data.Vinyl.Relation
   ( (<:)(..)
@@ -16,12 +16,12 @@ module Data.Vinyl.Relation
   , rIso
   ) where
 
-import Data.Vinyl.Witnesses
-import Data.Vinyl.Field
-import Data.Vinyl.Rec
-import Data.Vinyl.Lens
+import           Data.Vinyl.Field
+import           Data.Vinyl.Lens
+import           Data.Vinyl.Rec
+import           Data.Vinyl.Witnesses
 
-import GHC.Prim (Constraint)
+import           GHC.Prim             (Constraint)
 
 -- A subtyping relation
 class (IsSubtype r1 r2) => r1 <: r2 where
@@ -53,4 +53,3 @@ lookupField (There p) (_ :& xs) = lookupField p xs
 
 rIso :: (r1 :~: r2) => SimpleIso r1 r2
 rIso = iso cast cast
-
