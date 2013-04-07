@@ -1,6 +1,7 @@
 {-# LANGUAGE KindSignatures        #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds             #-}
+{-# LANGUAGE Safe                  #-}
 {-# LANGUAGE TypeOperators         #-}
 
 module Data.Vinyl.Classes where

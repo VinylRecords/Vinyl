@@ -1,3 +1,4 @@
+{-# LANGUAGE Safe         #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Data.Vinyl.Validation where
