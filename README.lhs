@@ -62,7 +62,7 @@ additional information:
 
 Now, the type annotation on `wakeUp` was not necessary; I just wanted to
 show how intuitive the type is. Basically, it takes as an input any
-record that has a `BOOL` field labelled `sleeping`, and the modifies
+record that has a `BOOL` field labelled `sleeping`, and then modifies
 that specific field in the record accordingly.
 
 > tucker' = wakeUp tucker
@@ -194,7 +194,7 @@ Fixing a polymorphic record into the Identity Functor
 -----------------------------------------------------
 
 If you produced a record using `(=:)` and `(<+>)` without providing a type
-annotation, then it's type is something like this:
+annotation, then its type is something like this:
 
 < record :: Applicative f => Record [ <bunch of stuff> ] f
 
