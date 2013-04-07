@@ -13,5 +13,5 @@ import           GHC.TypeLits
 data (:::) :: Symbol -> * -> * where
   Field :: sy ::: t
 
-instance (SingI sy, Show t) => Show (sy ::: t) where
+instance SingI sy => Show (sy ::: t) where
   show Field = fromSing (sing :: Sing sy)

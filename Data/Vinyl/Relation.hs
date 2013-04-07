@@ -5,6 +5,7 @@
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds             #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
@@ -20,6 +21,7 @@ import           Data.Vinyl.Field
 import           Data.Vinyl.Lens
 import           Data.Vinyl.Rec
 import           Data.Vinyl.Witnesses
+import           Control.Monad.Identity
 
 import           GHC.Prim             (Constraint)
 
@@ -30,7 +32,7 @@ class (IsSubtype r1 r2) => r1 <: r2 where
 -- On record is a subtype of another if the fields of the latter are a
 -- subset of the fields of the former.
 type family IsSubtype r1 r2 :: Constraint
-type instance IsSubtype (Rec ss) (Rec ts) = ISubset ts ss
+type instance IsSubtype (Rec ss f) (Rec ts f) = ISubset ts ss
 
 -- If two records types are subtypes of each other, that means that they
 -- differ only in order of fields.
@@ -40,16 +42,17 @@ type r1 :~: r2 = (r1 <: r2, r2 <: r1)
 (~=) :: (Eq a, a :~: b) => a -> b -> Bool
 x ~= y = x == (cast y)
 
-instance Rec xs <: (Rec '[]) where
+instance Rec xs f <: Rec '[] f where
   cast _ = RNil
 
-instance (y ~ (sy ::: t), IElem y xs, Rec xs <: Rec ys) => Rec xs <: Rec (y ': ys) where
-  cast r = (field, rGet field r) :& cast r
-    where field = lookupField implicitly r
+instance (y ~ (sy ::: t), IElem y xs, PlainRec xs <: PlainRec ys) => PlainRec xs <: PlainRec (y ': ys) where
+  cast r = Identity (rGet field r) :& cast r
+    where field = lookupField (implicitly :: Elem y xs) r
 
-lookupField :: Elem x xs -> Rec xs -> x
-lookupField Here ((k,_) :& _) = k
+lookupField :: Elem x xs -> Rec xs f -> x
+lookupField Here (_ :& _)       = Field
 lookupField (There p) (_ :& xs) = lookupField p xs
 
 rIso :: (r1 :~: r2) => SimpleIso r1 r2
 rIso = iso cast cast
+

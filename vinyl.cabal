@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                vinyl
-version:             0.1.0.0
+version:             0.1.1.0
 synopsis:            Extensible Records
 -- description:
 license:             MIT
@@ -24,6 +24,6 @@ source-repository head
 
 
 library
-  exposed-modules:     Data.Vinyl, Data.Vinyl.Field, Data.Vinyl.Lens, Data.Vinyl.Witnesses, Data.Vinyl.Rec, Data.Vinyl.Relation, Data.Vinyl.Unicode
+  exposed-modules:     Data.Vinyl, Data.Vinyl.Field, Data.Vinyl.Lens, Data.Vinyl.Witnesses, Data.Vinyl.Rec, Data.Vinyl.Relation, Data.Vinyl.Unicode, Data.Vinyl.Classes, Data.Vinyl.Validation
   -- other-modules:
-  build-depends:       base ==4.6.*, lens >=3.0, ghc-prim
+  build-depends:       base ==4.6.*, lens >=3.0, ghc-prim, mtl

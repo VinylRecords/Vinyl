@@ -19,9 +19,9 @@ import           Data.Vinyl.Rec
 import           Data.Vinyl.Witnesses
 
 import           Control.Lens
+import           Control.Monad.Identity
 
-type RLens sy t = IElem (sy ::: t) fs => SimpleLens (Rec fs) t
-
+type RLens sy t = IElem (sy ::: t) rs => SimpleLens (PlainRec rs) t
 
 rLens :: (sy ::: t) -> RLens sy t
 rLens f = rLens' f implicitly
@@ -32,9 +32,9 @@ rPut = set . rLens
 rMod = over . rLens
 
 -- Records have lenses
-rLens' :: (f ~ (sy ::: t)) => f -> Elem f fs -> SimpleLens (Rec fs) t
-rLens' _ Here = lens (\((_,x) :& xs) -> x) (\((k,_) :& xs) x -> (k,x) :& xs)
+rLens' :: (r ~ (sy ::: t)) => r -> Elem r rs -> SimpleLens (PlainRec rs) t
+rLens' _ Here = lens (\(x :& xs) -> runIdentity x) (\(_ :& xs) x -> Identity x :& xs)
 rLens' f (There p) = rLensPrepend $ rLens' f p
 
-rLensPrepend :: SimpleLens (Rec fs) t -> SimpleLens (Rec (f ': fs)) t
-rLensPrepend l = lens (\(_ :& xs) -> view l xs) (\(a :& xs) x -> a :& (set l x xs))
+rLensPrepend :: SimpleLens (PlainRec rs) t -> SimpleLens (PlainRec (l ': rs)) t
+rLensPrepend l = lens (\(x :& xs) -> view l xs) (\(a :& xs) x -> a :& (set l x xs))
