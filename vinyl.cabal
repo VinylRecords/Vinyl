@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                vinyl
-version:             0.1.1.0
+version:             0.1.1.2
 synopsis:            Extensible Records
 -- description:
 license:             MIT

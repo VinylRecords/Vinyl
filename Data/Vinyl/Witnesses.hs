@@ -13,18 +13,23 @@ module Data.Vinyl.Witnesses where
 class Implicit p where
   implicitly :: p
 
-type IElem x xs = Implicit (Elem x xs)
+-- | An inductive list membership proposition.
 data Elem :: k -> [k] -> * where
   Here  :: Elem x (x ': xs)
   There :: Elem x xs -> Elem x (y ': xs)
 
-type ISubset xs ys = Implicit (Subset xs ys)
+-- | A constraint for implicit resolution of list membership proofs.
+type IElem x xs = Implicit (Elem x xs)
+
+-- | An inductive list subset relation.
 data Subset :: [k] -> [k] -> * where
   SubsetNil  :: Subset '[] xs
-  SubsetCons ::
-    Elem x ys ->
-    Subset xs ys ->
-    Subset (x ': xs) ys
+  SubsetCons :: Elem x ys
+             -> Subset xs ys
+             -> Subset (x ': xs) ys
+
+-- | A constraint for implicit resolution of list subset proofs.
+type ISubset xs ys = Implicit (Subset xs ys)
 
 instance Implicit (Elem x (x ': xs)) where
   implicitly = Here

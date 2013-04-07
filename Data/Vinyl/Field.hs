@@ -9,7 +9,7 @@ module Data.Vinyl.Field where
 
 import           GHC.TypeLits
 
--- A field is a symbol key and a type for its value.
+-- | A field contains a key and a type.
 data (:::) :: Symbol -> * -> * where
   Field :: sy ::: t
 

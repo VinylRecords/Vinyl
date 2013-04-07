@@ -25,20 +25,20 @@ import           Control.Monad.Identity
 
 import           GHC.Prim             (Constraint)
 
--- A subtyping relation
+-- | A subtyping relation.
 class (IsSubtype r1 r2) => r1 <: r2 where
   cast :: r1 -> r2
 
--- On record is a subtype of another if the fields of the latter are a
+-- | One record is a subtype of another if the fields of the latter are a
 -- subset of the fields of the former.
 type family IsSubtype r1 r2 :: Constraint
 type instance IsSubtype (Rec ss f) (Rec ts f) = ISubset ts ss
 
--- If two records types are subtypes of each other, that means that they
+-- | If two records types are subtypes of each other, that means that they
 -- differ only in order of fields.
 type r1 :~: r2 = (r1 <: r2, r2 <: r1)
 
--- Term-level record congruence
+-- | Term-level record congruence.
 (~=) :: (Eq a, a :~: b) => a -> b -> Bool
 x ~= y = x == (cast y)
 
@@ -50,7 +50,7 @@ instance (y ~ (sy ::: t), IElem y xs, PlainRec xs <: PlainRec ys) => PlainRec xs
     where field = lookupField (implicitly :: Elem y xs) r
 
 lookupField :: Elem x xs -> Rec xs f -> x
-lookupField Here (_ :& _)       = Field
+lookupField Here      (_ :& _)  = Field
 lookupField (There p) (_ :& xs) = lookupField p xs
 
 rIso :: (r1 :~: r2) => SimpleIso r1 r2
