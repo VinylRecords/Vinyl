@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns              #-}
 {-# LANGUAGE ConstraintKinds           #-}
 {-# LANGUAGE DataKinds                 #-}
 {-# LANGUAGE FlexibleContexts          #-}
@@ -24,8 +25,9 @@ module Data.Vinyl.Rec
 import           Data.Vinyl.Classes
 import           Control.Applicative
 import           Control.Monad.Identity
-import           Data.Monoid
 import           Data.Vinyl.Field
+import           Foreign.Ptr (castPtr, plusPtr)
+import           Foreign.Storable (Storable(..))
 import           GHC.TypeLits
 
 -- | A record is parameterized by a list of fields and a functor
@@ -83,3 +85,23 @@ instance Run (Rec rs) where
 -- | We provide a 'Show' instance for 'Identity'.
 instance Show a => Show (Identity a) where
   show (Identity x) = show x
+
+instance Storable (Rec '[] Identity) where
+  sizeOf _ = 0
+  alignment _ = 0
+  peek _ = return RNil
+  poke _ RNil = return ()
+
+instance (Storable t, Storable (PlainRec rs))
+  => Storable (PlainRec ((sy:::t) ': rs)) where
+  sizeOf _ = sizeOf (undefined::t) + sizeOf (undefined::PlainRec rs)
+  {-# INLINABLE sizeOf #-}
+  alignment _ =  alignment (undefined::t)
+  {-# INLINABLE alignment #-}
+  peek ptr = do !x <- peek (castPtr ptr)
+                !xs <- peek (ptr `plusPtr` sizeOf (undefined::t))
+                return $ Identity x :& xs
+  {-# INLINABLE peek #-}
+  poke ptr (Identity !x :& xs) = poke (castPtr ptr) x >>
+                                 poke (ptr `plusPtr` sizeOf (undefined::t)) xs
+  {-# INLINEABLE poke #-}

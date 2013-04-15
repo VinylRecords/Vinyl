@@ -53,6 +53,6 @@ lookupField :: Elem x xs -> Rec xs f -> x
 lookupField Here      (_ :& _)  = Field
 lookupField (There p) (_ :& xs) = lookupField p xs
 
-rIso :: (r1 :~: r2) => SimpleIso r1 r2
+rIso :: (r1 :~: r2) => Iso' r1 r2
 rIso = iso cast cast
 
