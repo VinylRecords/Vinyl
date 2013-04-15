@@ -86,7 +86,7 @@ instance Run (Rec rs) where
 instance Show a => Show (Identity a) where
   show (Identity x) = show x
 
-instance Storable (Rec '[] Identity) where
+instance Storable (PlainRec '[]) where
   sizeOf _ = 0
   alignment _ = 0
   peek _ = return RNil
