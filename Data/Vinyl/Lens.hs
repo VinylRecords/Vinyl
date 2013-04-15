@@ -57,25 +57,28 @@ rLensAux _ = go
   where goHere :: Elem r rs' -> Lens' (Rec rs' f) (f t)
         goHere Here = lens (\(x :& _) -> x) (\(_ :& xs) x -> x :& xs)
         goHere _ = error "Unintended base case invocation"
-        {-# INLINE go #-}
+
         go :: Elem r rs' -> Lens' (Rec rs' f) (f t)
         go Here = goHere Here
         go (There Here) = rLensPrepend $ goHere Here
         go (There (There Here)) = rLensPrepend $ rLensPrepend $ goHere Here
-        go (There (There (There Here))) = 
+        go (There (There (There Here))) =
           rLensPrepend $ rLensPrepend $ rLensPrepend $ goHere Here
-        go (There (There (There (There Here)))) = 
-          rLensPrepend $ rLensPrepend $ rLensPrepend $ rLensPrepend
-          $ goHere Here
-        go (There (There (There (There p)))) = 
+        go (There (There (There (There Here)))) =
+          rLensPrepend $ rLensPrepend $ rLensPrepend $ rLensPrepend $ goHere Here
+        go (There (There (There (There p)))) =
           rLensPrepend $ rLensPrepend $ rLensPrepend $ rLensPrepend $ go' p
-        {-# INLINABLE go' #-}
+        {-# INLINE go #-}
+
         go' :: Elem r rs' -> Lens' (Rec rs' f) (f t)
         go' Here = goHere Here
         go' (There p) = rLensPrepend $ go p
--- rLens' _ Here = lens (\(x :& xs) -> runIdentity x) (\(_ :& xs) x -> Identity x :& xs)
--- rLens' f (There p) = rLensPrepend $ rLens' f p
+        {-# INLINABLE go' #-}
 
 rLensPrepend :: Lens' (Rec rs f) (f t) -> Lens' (Rec (l ': rs) f) (f t)
 rLensPrepend l = lens (\(_ :& xs) -> view l xs) (\(a :& xs) x -> a :& (set l x xs))
 {-# INLINE rLensPrepend #-}
+
+-- rLens' _ Here = lens (\(x :& xs) -> runIdentity x) (\(_ :& xs) x -> Identity x :& xs)
+-- rLens' f (There p) = rLensPrepend $ rLens' f p
+
