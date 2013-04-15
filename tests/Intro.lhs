@@ -26,6 +26,7 @@ extensions first:
 > import Control.Applicative
 > import Control.Monad.Identity
 > import Data.Char
+> import Test.DocTest
 
 Let’s define the fields we want to use:
 
@@ -215,21 +216,14 @@ record:
 goodPersonResult === name :=: Success "Jon", age :=: Success 20, {}
 badPersonResult  === name :=: Failure ["name must be alphabetic"], age :=: Success 20, {}
 
-> ofRec' :: (r ~ (sy:::t)) => r -> Elem r rs -> Rec rs f -> f t
-> ofRec' _  _ RNil = error "Missing record field. Inconceivable!"
-> ofRec' _ Here (x :& _) = x
-> ofRec' f (There e) (_ :& xs) = ofRec' f e xs
-> ofRec :: (r ~ (sy:::t), Implicit (Elem r rs)) => r -> Rec rs f -> f t
-> ofRec f = ofRec' f implicitly
-
 > -- |
-> -- >>> isSuccess $ name `ofRec` goodPersonResult
+> -- >>> isSuccess $ goodPersonResult ^. rLens' name
 > -- True
-> -- >>> isSuccess $ age `ofRec` goodPersonResult
+> -- >>> isSuccess $ goodPersonResult ^. rLens' age
 > -- True
-> -- >>> isSuccess $ name `ofRec` badPersonResult
+> -- >>> isSuccess $ badPersonResult ^. rLens' name
 > -- False
-> -- >>> isSuccess $ age `ofRec` badPersonResult
+> -- >>> isSuccess $ badPersonResult ^. rLens' age
 > -- True
 
 So now we have a partial record, and we can still do stuff with its
@@ -269,5 +263,5 @@ provided:
 
 (We must define a main value for doctest to run.)
 
-> main :: Monad m => m ()
-> main = return ()
+> main :: IO ()
+> main = doctest ["tests/Intro.lhs"]

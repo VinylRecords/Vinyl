@@ -13,6 +13,8 @@ module Data.Vinyl.Lens
   , rGet
   , rPut
   , rMod
+  , RLens'
+  , rLens'
   ) where
 
 import           Data.Vinyl.Field
@@ -23,10 +25,15 @@ import           Control.Lens
 import           Control.Monad.Identity
 
 type RLens sy t = IElem (sy ::: t) rs => Lens' (PlainRec rs) t
+type RLens' f sy t = IElem (sy ::: t) rs => Lens' (Rec rs f) (f t)
 
 rLens :: (sy ::: t) -> RLens sy t
-rLens f = rLens' f implicitly
+rLens f = rLens' f . lens runIdentity (const Identity)
 {-# INLINE rLens #-}
+
+rLens' :: (sy ::: t) -> RLens' f sy t
+rLens' f = rLensAux f implicitly
+{-# INLINE rLens' #-}
 
 rGet = view . rLens
 {-# INLINE rGet #-}
@@ -42,15 +49,15 @@ rMod = over . rLens
 -- runtime.
 
 -- Records have lenses
-{-# INLINE rLens' #-}
-rLens' :: forall r sy t rs. (r ~ (sy ::: t)) => r -> Elem r rs -> Lens' (PlainRec rs) t
-rLens' _ = go
-  where goHere :: Elem r rs' -> Lens' (PlainRec rs') t
-        goHere Here = lens (\(x :& _) -> runIdentity x)
-                           (\(_ :& xs) x -> Identity x :& xs)
+{-# INLINE rLensAux #-}
+rLensAux :: forall f r sy t rs. (r ~ (sy ::: t))
+         => r -> Elem r rs -> Lens' (Rec rs f) (f t)
+rLensAux _ = go
+  where goHere :: Elem r rs' -> Lens' (Rec rs' f) (f t)
+        goHere Here = lens (\(x :& _) -> x) (\(_ :& xs) x -> x :& xs)
         goHere _ = error "Unintended base case invocation"
         {-# INLINE go #-}
-        go :: Elem r rs' -> Lens' (PlainRec rs') t
+        go :: Elem r rs' -> Lens' (Rec rs' f) (f t)
         go Here = goHere Here
         go (There Here) = rLensPrepend $ goHere Here
         go (There (There Here)) = rLensPrepend $ rLensPrepend $ goHere Here
@@ -62,12 +69,12 @@ rLens' _ = go
         go (There (There (There (There p)))) = 
           rLensPrepend $ rLensPrepend $ rLensPrepend $ rLensPrepend $ go' p
         {-# INLINABLE go' #-}
-        go' :: Elem r rs' -> Lens' (PlainRec rs') t
+        go' :: Elem r rs' -> Lens' (Rec rs' f) (f t)
         go' Here = goHere Here
         go' (There p) = rLensPrepend $ go p
 -- rLens' _ Here = lens (\(x :& xs) -> runIdentity x) (\(_ :& xs) x -> Identity x :& xs)
 -- rLens' f (There p) = rLensPrepend $ rLens' f p
 
-rLensPrepend :: Lens' (PlainRec rs) t -> Lens' (PlainRec (l ': rs)) t
+rLensPrepend :: Lens' (Rec rs f) (f t) -> Lens' (Rec (l ': rs) f) (f t)
 rLensPrepend l = lens (\(_ :& xs) -> view l xs) (\(a :& xs) x -> a :& (set l x xs))
 {-# INLINE rLensPrepend #-}
