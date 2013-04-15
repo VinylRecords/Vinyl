@@ -27,10 +27,12 @@ import           Control.Monad.Identity
 type RLens sy t = IElem (sy ::: t) rs => Lens' (PlainRec rs) t
 type RLens' f sy t = IElem (sy ::: t) rs => Lens' (Rec rs f) (f t)
 
+-- | Generates a lens for a record in the 'Identity' functor.
 rLens :: (sy ::: t) -> RLens sy t
 rLens f = rLens' f . lens runIdentity (const Identity)
 {-# INLINE rLens #-}
 
+-- | Generates a lens of a record in an arbitrary functor.
 rLens' :: (sy ::: t) -> RLens' f sy t
 rLens' f = rLensAux f implicitly
 {-# INLINE rLens' #-}
@@ -48,7 +50,6 @@ rMod = over . rLens
 -- values to help GHC eliminate the 'Implicit' dictionaries at
 -- runtime.
 
--- Records have lenses
 {-# INLINE rLensAux #-}
 rLensAux :: forall f r sy t rs. (r ~ (sy ::: t))
          => r -> Elem r rs -> Lens' (Rec rs f) (f t)
