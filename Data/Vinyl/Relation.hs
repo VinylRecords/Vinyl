@@ -45,8 +45,8 @@ x ~= y = x == (cast y)
 instance Rec xs f <: Rec '[] f where
   cast _ = RNil
 
-instance (y ~ (sy ::: t), IElem y xs, PlainRec xs <: PlainRec ys) => PlainRec xs <: PlainRec (y ': ys) where
-  cast r = Identity (rGet field r) :& cast r
+instance (y ~ (sy ::: t), IElem y xs, Rec xs f <: Rec ys f) => Rec xs f <: Rec (y ': ys) f where
+  cast r = (r^.(rLens' field)) :& cast r
     where field = lookupField (implicitly :: Elem y xs) r
 
 lookupField :: Elem x xs -> Rec xs f -> x
