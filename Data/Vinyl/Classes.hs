@@ -18,6 +18,10 @@ class Apply (arr :: k -> k -> k) (f :: k -> *) where
 class Run t where
   run :: Applicative f => t f -> f (t Identity)
 
+-- | If a record is homogenous, you can fold over it.
+class FoldRec r a where
+  foldRec :: (a -> b -> b) -> b -> r -> b
+
 -- | '(~>)' is a morphism between functors.
 newtype (f ~> g) x = NT { runNT :: f x -> g x }
 

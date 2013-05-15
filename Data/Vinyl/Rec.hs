@@ -82,6 +82,16 @@ instance Run (Rec rs) where
   run RNil      = pure RNil
   run (x :& xs) = (:&) <$> (pure <$> x) <*> run xs
 
+instance FoldRec (Rec '[] f) a where
+  foldRec _ z RNil = z
+
+instance FoldRec (Rec fs g) (g t) => FoldRec (Rec ((s ::: t) ': fs) g) (g t) where
+  foldRec f z (x :& xs) = f x (foldRec f z xs)
+
+-- | Accumulates a homogenous record into a list
+recToList :: FoldRec (Rec fs g) (g t) => Rec fs g -> [g t]
+recToList = foldRec (\e a -> [e] ++ a) []
+
 -- | We provide a 'Show' instance for 'Identity'.
 instance Show a => Show (Identity a) where
   show (Identity x) = show x
