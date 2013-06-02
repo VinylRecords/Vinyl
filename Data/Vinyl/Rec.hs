@@ -19,6 +19,7 @@ module Data.Vinyl.Rec
   , PlainRec
   , (=:)
   , (<+>)
+  , type (++)
   , fixRecord
   ) where
 
@@ -29,6 +30,7 @@ import           Data.Vinyl.Field
 import           Foreign.Ptr (castPtr, plusPtr)
 import           Foreign.Storable (Storable(..))
 import           GHC.TypeLits
+import           Data.Monoid
 
 -- | A record is parameterized by a list of fields and a functor
 -- to be applied to each of those fields.
@@ -71,6 +73,15 @@ instance Eq (Rec '[] f) where
   _ == _ = True
 instance (Eq (g t), Eq (Rec fs g)) => Eq (Rec ((s ::: t) ': fs) g) where
   (x :& xs) == (y :& ys) = (x == y) && (xs == ys)
+
+
+instance Monoid (Rec '[] f) where
+  mempty = RNil
+  RNil `mappend` RNil = RNil
+instance (Monoid t, Monoid (Rec fs g), Applicative g) => Monoid (Rec ((s ::: t) ': fs) g) where
+  mempty = pure mempty :& mempty
+  (x :& xs) `mappend` (y :& ys) = liftA2 mappend x y :& (xs `mappend` ys)
+
 
 -- | Records can be applied to each other.
 instance Apply (~>) (Rec rs) where
