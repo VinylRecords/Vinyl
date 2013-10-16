@@ -23,7 +23,7 @@ library
                        Data.Vinyl.Witnesses, Data.Vinyl.Rec,
                        Data.Vinyl.Relation, Data.Vinyl.Unicode,
                        Data.Vinyl.Classes, Data.Vinyl.Validation
-  build-depends:       base ==4.6.*, lens >=3.8, ghc-prim, mtl
+  build-depends:       base >=4.6, lens >=3.8, ghc-prim, mtl
   default-language:    Haskell2010
 
 benchmark bench-builder-all
