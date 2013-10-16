@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns              #-}
+{-# LANGUAGE CPP                       #-}
 {-# LANGUAGE ConstraintKinds           #-}
 {-# LANGUAGE DataKinds                 #-}
 {-# LANGUAGE FlexibleContexts          #-}
@@ -65,7 +66,13 @@ type instance (a ': as) ++ bs  = a ': (as ++ bs)
 
 instance Show (Rec '[] f) where
   show RNil = "{}"
-instance (SingI sy, Show (g t), Show (Rec fs g)) => Show (Rec ((sy ::: t) ': fs) g) where
+instance (
+#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
+    KnownSymbol sy,
+#else
+    SingI sy,
+#endif
+    Show (g t), Show (Rec fs g)) => Show (Rec ((sy ::: t) ': fs) g) where
   show (x :& xs) = show (Field :: sy ::: t) ++ " :=: " ++ show x ++ ", " ++ show xs
 
 
