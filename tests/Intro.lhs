@@ -78,7 +78,7 @@ specific field in the record accordingly.
 > -- |
 > -- >>> tucker' ^. rLens sleeping
 > -- False
-> -- 
+> --
 > -- >>> tucker ^. rLens sleeping
 > -- True
 > --
@@ -163,7 +163,7 @@ positive. For validation, we’ll use a type that’s included here called
 > validatePerson p = (\n a -> name =: n <+> age =: a) <$> vName <*> vAge where
 >   vName = validateName (rGet name p)
 >   vAge  = validateAge  (rGet age p)
-> 
+>
 >   validateName str | all isAlpha str = Success str
 >   validateName _ = Failure [ "name must be alphabetic" ]
 >   validateAge i | i >= 0 = Success i
@@ -229,18 +229,18 @@ badPersonResult  === name :=: Failure ["name must be alphabetic"], age :=: Succe
 So now we have a partial record, and we can still do stuff with its
 contents. Next, we can even recover the original behavior of the
 validator (that is, to give us a value of type `Result [String]
-(PlainRec Person)`) using run:
+(PlainRec Person)`) using `dist`:
 
-> runGoodPerson = run goodPersonResult
-> runBadPerson  = run badPersonResult
+> distGoodPerson = dist goodPersonResult
+> distBadPerson  = dist badPersonResult
 
-`runGoodPerson === Success name :=: "Jon", age :=: 20, {}`
-`runBadPerson  === Failure ["name must be alphabetic"]``
+`distGoodPerson === Success name :=: "Jon", age :=: 20, {}`
+`distBadPerson  === Failure ["name must be alphabetic"]``
 
 > -- |
-> -- >>> isSuccess runGoodPerson
+> -- >>> isSuccess distGoodPerson
 > -- True
-> -- >>> isSuccess runBadPerson
+> -- >>> isSuccess distBadPerson
 > -- False
 
 Fixing a polymorphic record into the Identity Functor

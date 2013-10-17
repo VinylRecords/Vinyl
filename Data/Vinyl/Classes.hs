@@ -13,9 +13,9 @@ import           Control.Monad.Identity
 class Apply (arr :: k -> k -> k) (f :: k -> *) where
   (<<*>>) :: f (arr a b) -> f a -> f b
 
--- | To accumulate effects distributed over a data type, you 'run' it.
-class Run t where
-  run :: Applicative f => t f -> f (t Identity)
+-- | To accumulate effects distributed over a data type, you 'dist' it.
+class Dist t where
+  dist :: Applicative f => t f -> f (t Identity)
 
 -- | If a record is homogenous, you can fold over it.
 class FoldRec r a where

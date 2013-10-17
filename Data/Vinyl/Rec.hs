@@ -95,10 +95,10 @@ instance Apply (~>) (Rec rs) where
   RNil <<*>> RNil = RNil
   (f :& fs) <<*>> (x :& xs) = runNT f x :& (fs <<*>> xs)
 
--- | Records may be 'run' to accumulate the effects of their fields.
-instance Run (Rec rs) where
-  run RNil      = pure RNil
-  run (x :& xs) = (:&) <$> (pure <$> x) <*> run xs
+-- | Records may be distributed to accumulate the effects of their fields.
+instance Dist (Rec rs) where
+  dist RNil      = pure RNil
+  dist (x :& xs) = (:&) <$> (pure <$> x) <*> dist xs
 
 instance FoldRec (Rec '[] f) a where
   foldRec _ z RNil = z
