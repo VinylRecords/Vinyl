@@ -6,7 +6,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverlappingInstances  #-}
 {-# LANGUAGE PolyKinds             #-}
-{-# LANGUAGE Safe                  #-}
 {-# LANGUAGE TypeOperators         #-}
 
 module Data.Vinyl.Witnesses where
