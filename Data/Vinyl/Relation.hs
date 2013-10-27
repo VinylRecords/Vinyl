@@ -21,7 +21,6 @@ import           Data.Vinyl.Field
 import           Data.Vinyl.Lens
 import           Data.Vinyl.Rec
 import           Data.Vinyl.Witnesses
-import           Control.Monad.Identity
 
 import           GHC.Prim             (Constraint)
 
