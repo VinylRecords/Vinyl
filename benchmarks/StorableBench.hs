@@ -8,6 +8,7 @@
 -- record of "Linear" finite dimensional vector types, and a vinyl
 -- record of linear fields.
 import Control.Applicative
+import Control.Lens
 import Control.Monad (when)
 import qualified Data.Foldable as F
 import qualified Data.Vector.Storable as V
@@ -39,10 +40,10 @@ vinylNSumL :: (Num a, Storable a) => V.Vector (MyVertex a) -> a
 vinylNSumL = V.sum . V.map (F.sum . view (rLens vNorm))
 
 doubleNvi :: V.Vector (MyVertex Float) -> V.Vector (MyVertex Float)
-doubleNvi = V.map (modField vNorm (_y *~ (2::Float)))
+doubleNvi = V.map (rMod vNorm (_y *~ (2::Float)))
 
 vinylNSum :: (Num a, Storable a) => V.Vector (MyVertex a) -> a
-vinylNSum = V.sum . V.map (F.sum . getField vNorm)
+vinylNSum = V.sum . V.map (F.sum . rGet vNorm)
 
 main :: IO ()
 main = do vals <- randVecStd $ n * 8 :: IO (V.Vector Float)

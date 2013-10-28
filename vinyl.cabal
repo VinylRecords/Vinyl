@@ -1,5 +1,5 @@
 name:                vinyl
-version:             0.1.5
+version:             0.2
 synopsis:            Extensible Records
 -- description:
 license:             MIT
@@ -22,16 +22,15 @@ library
   exposed-modules:     Data.Vinyl, Data.Vinyl.Field, Data.Vinyl.Lens,
                        Data.Vinyl.Witnesses, Data.Vinyl.Rec,
                        Data.Vinyl.Relation, Data.Vinyl.Unicode,
-                       Data.Vinyl.Classes, Data.Vinyl.Validation,
-                       Data.Vinyl.MiniLens
-  build-depends:       base >=4.6, lens >=3.8, ghc-prim, mtl
+                       Data.Vinyl.Classes, Data.Vinyl.Validation
+  build-depends:       base >=4.6, ghc-prim, transformers
   default-language:    Haskell2010
 
 benchmark bench-builder-all
   type:             exitcode-stdio-1.0
   hs-source-dirs:   benchmarks
   main-is:          StorableBench.hs
-  build-depends:    base, vector, criterion, vinyl, mwc-random, linear
+  build-depends:    base, vector, criterion, vinyl, mwc-random, lens, linear
   ghc-options:      -O2 -fllvm
   default-language: Haskell2010
 
@@ -39,5 +38,5 @@ test-suite doctests
   type:             exitcode-stdio-1.0
   hs-source-dirs:   tests
   main-is:          Intro.lhs
-  build-depends:    base, mtl, vinyl, doctest >= 0.8
+  build-depends:    base, lens, transformers, vinyl, doctest >= 0.8
   default-language: Haskell2010

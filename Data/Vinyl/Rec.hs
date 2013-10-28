@@ -26,7 +26,7 @@ module Data.Vinyl.Rec
 
 import           Data.Vinyl.Classes
 import           Control.Applicative
-import           Control.Monad.Identity
+import           Data.Functor.Identity
 import           Data.Vinyl.Field
 import           Foreign.Ptr (castPtr, plusPtr)
 import           Foreign.Storable (Storable(..))

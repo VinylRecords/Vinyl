@@ -14,7 +14,7 @@ module Data.Vinyl.Relation
   ( (<:)(..)
   , (:~:)
   , (~=)
-  , rIso
+  -- , rIso
   ) where
 
 import           Data.Vinyl.Field
@@ -45,13 +45,13 @@ instance Rec xs f <: Rec '[] f where
   cast _ = RNil
 
 instance (y ~ (sy ::: t), IElem y xs, Rec xs f <: Rec ys f) => Rec xs f <: Rec (y ': ys) f where
-  cast r = (r^.(rLens' field)) :& cast r
+  cast r = rGet' field r :& cast r
     where field = lookupField (implicitly :: Elem y xs) r
 
 lookupField :: Elem x xs -> Rec xs f -> x
 lookupField Here      (_ :& _)  = Field
 lookupField (There p) (_ :& xs) = lookupField p xs
 
-rIso :: (r1 :~: r2) => Iso' r1 r2
-rIso = iso cast cast
+-- rIso :: (r1 :~: r2) => Iso' r1 r2
+-- rIso = iso cast cast
 

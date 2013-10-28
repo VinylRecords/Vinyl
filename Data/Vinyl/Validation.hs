@@ -3,7 +3,7 @@
 module Data.Vinyl.Validation where
 
 import           Control.Applicative
-import           Control.Monad.Identity
+import           Data.Functor.Identity
 import           Data.Monoid
 import           Data.Vinyl.Classes
 
