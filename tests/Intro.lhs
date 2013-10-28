@@ -24,7 +24,8 @@ extensions first:
 > import Data.Vinyl.Unicode
 > import Data.Vinyl.Validation
 > import Control.Applicative
-> import Control.Monad.Identity
+> import Control.Lens
+> import Data.Functor.Identity
 > import Data.Char
 > import Test.DocTest
 
