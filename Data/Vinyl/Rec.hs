@@ -20,6 +20,7 @@ module Data.Vinyl.Rec
   , PlainRec
   , (=:)
   , (<+>)
+  , (<-:)
   , type (++)
   , fixRecord
   ) where
@@ -51,12 +52,21 @@ type PlainRec rs = Rec rs Identity
 (<+>) :: Rec as f -> Rec bs f -> Rec (as ++ bs) f
 RNil      <+> xs = xs
 (x :& xs) <+> ys =  x :& (xs <+> ys)
-infixl 8  <+>
+infixr 5  <+>
 
 -- | Shorthand for a record with a single field. Lifts the field's
 -- value into the chosen functor automatically.
 (=:) :: Applicative f => sy ::: t -> t -> Rec '[sy ::: t] f
-a =: b = pure b :& RNil
+_ =: b = pure b :& RNil
+
+-- | Shorthand for a record with a single field of an 'Applicative'
+-- type. This is useful for @Applicative@ or @Monad@ic intialization
+-- of records as in the idiom:
+--
+-- > dist $ myField <-: someIO <+> yourField <-: otherIO
+(<-:) :: Applicative f => sy ::: t -> f t -> Rec '[sy ::: t] f
+_ <-: b = b :& RNil
+infixr 6 <-:
 
 -- | Append for type-level lists.
 type family (as :: [*]) ++ (bs :: [*]) :: [*]
