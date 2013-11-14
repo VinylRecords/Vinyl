@@ -16,7 +16,7 @@ description: Extensible records for Haskell with lenses using modern GHC feature
 
 source-repository head
   type:     git
-  location: https://github.com/jonsterling/Vinyl/
+  location: https://github.com/VinylRecords/Vinyl/
 
 library
   exposed-modules:     Data.Vinyl, Data.Vinyl.Field, Data.Vinyl.Lens,
