@@ -94,6 +94,11 @@ instance (Monoid t, Monoid (Rec fs g), Applicative g) => Monoid (Rec ((s ::: t) 
 instance Apply (~>) (Rec rs) where
   RNil <<*>> RNil = RNil
   (f :& fs) <<*>> (x :& xs) = runNT f x :& (fs <<*>> xs)
+  
+-- | Records with 'Alternative' functors can be combined.
+instance Alternate (Rec rs) where
+  RNil <<|>> RNil = RNil
+  (x :& xs) <<|>> (y :& ys) = (x <|> y) :& (xs <<|>> ys)
 
 -- | Records may be distributed to accumulate the effects of their fields.
 instance Dist (Rec rs) where
