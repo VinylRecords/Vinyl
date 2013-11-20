@@ -2,6 +2,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE RankNTypes            #-}
 
 module Data.Vinyl.Classes where
 
@@ -28,3 +29,8 @@ newtype (f ~> g) x = NT { runNT :: f x -> g x }
 class Alternate (f :: (* -> *) -> *) where
   eemptyy :: Alternative g => f g
   (<<|>>) :: Alternative g => f g -> f g -> f g
+
+-- | This class is a generalized version of 'Functor'. This is useful for types
+-- which range over functors rather than sets.
+class AFunctor f where
+  hoist :: (forall x. g x -> h x) -> f g -> f h
