@@ -96,10 +96,14 @@ instance Apply (~>) (Rec rs) where
   (f :& fs) <<*>> (x :& xs) = runNT f x :& (fs <<*>> xs)
   
 -- | Records with 'Alternative' functors can be combined.
-instance Alternate (Rec rs) where
-  RNil <<|>> RNil = RNil
-  (x :& xs) <<|>> (y :& ys) = (x <|> y) :& (xs <<|>> ys)
+instance Alternate (Rec '[]) where
+  eemptyy = RNil
+  _ <<|>> _ = RNil
 
+instance (Alternate (Rec fs)) => Alternate (Rec ((s ::: t) ': fs)) where
+  eemptyy = empty :& eemptyy
+  (x :& xs) <<|>> (y :& ys) = (x <|> y) :& (xs <<|>> ys)
+  
 -- | Records may be distributed to accumulate the effects of their fields.
 instance Dist (Rec rs) where
   dist RNil      = pure RNil

@@ -26,4 +26,5 @@ newtype (f ~> g) x = NT { runNT :: f x -> g x }
 
 -- | This class is a generalized version of 'Alternative', analogous to 'Apply'.
 class Alternate (f :: (* -> *) -> *) where
+  eemptyy :: Alternative g => f g
   (<<|>>) :: Alternative g => f g -> f g -> f g
