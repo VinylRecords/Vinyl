@@ -90,9 +90,9 @@ instance (Monoid t, Monoid (Rec fs g), Applicative g) => Monoid (Rec ((s ::: t) 
   (x :& xs) `mappend` (y :& ys) = liftA2 mappend x y :& (xs `mappend` ys)
 
 -- | Records can be hoisted from one functor to another
-instance AFunctor (Rec rs) where
-  hoist _   RNil      = RNil
-  hoist nat (x :& xs) = nat x :& hoist nat xs
+instance Funct (Rec rs) where
+  _  <<$>> RNil      = RNil
+  nat <<$>> (x :& xs) = nat x :& (nat <<$>> xs)
 
 -- | Records can be applied to each other.
 instance Apply (~>) (Rec rs) where

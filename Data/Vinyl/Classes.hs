@@ -32,5 +32,5 @@ class Alternate (f :: (* -> *) -> *) where
 
 -- | This class is a generalized version of 'Functor'. This is useful for types
 -- which range over functors rather than sets.
-class AFunctor f where
-  hoist :: (forall x. g x -> h x) -> f g -> f h
+class Funct f where
+  (<<$>>) :: (forall x. g x -> h x) -> f g -> f h
