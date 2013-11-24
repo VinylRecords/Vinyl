@@ -15,8 +15,12 @@ class Apply (arr :: k -> k -> k) (f :: k -> *) where
   (<<*>>) :: f (arr a b) -> f a -> f b
 
 -- | To accumulate effects distributed over a data type, you 'dist' it.
+-- This class is a generalized version of 'Traversable'.
 class Dist t where
-  dist :: Applicative f => t f -> f (t Identity)
+  dist :: Applicative g => (forall x. f x -> g (h x)) -> t f -> g (t h)
+
+run :: (Applicative f, Dist t) => t f -> f (t Identity)
+run = dist (Identity <$>)
 
 -- | If a record is homogenous, you can fold over it.
 class FoldRec r a where

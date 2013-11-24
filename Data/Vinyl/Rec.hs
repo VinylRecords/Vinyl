@@ -110,8 +110,8 @@ instance (Alternate (Rec fs)) => Alternate (Rec ((s ::: t) ': fs)) where
   
 -- | Records may be distributed to accumulate the effects of their fields.
 instance Dist (Rec rs) where
-  dist RNil      = pure RNil
-  dist (x :& xs) = (:&) <$> (pure <$> x) <*> dist xs
+  dist _ RNil      = pure RNil
+  dist m (x :& xs) = (:&) <$> (m x) <*> dist m xs
 
 instance FoldRec (Rec '[] f) a where
   foldRec _ z RNil = z
