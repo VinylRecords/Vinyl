@@ -90,28 +90,30 @@ instance (Monoid t, Monoid (Rec fs g), Applicative g) => Monoid (Rec ((s ::: t) 
   (x :& xs) `mappend` (y :& ys) = liftA2 mappend x y :& (xs `mappend` ys)
 
 -- | Records can be hoisted from one functor to another
-instance Funct (Rec rs) where
+instance ApFunctor (Rec rs) where
   _  <<$>> RNil      = RNil
   nat <<$>> (x :& xs) = nat x :& (nat <<$>> xs)
 
 -- | Records can be applied to each other.
-instance Apply (~>) (Rec rs) where
+instance ApApply (~>) (Rec rs) where
   RNil <<*>> RNil = RNil
   (f :& fs) <<*>> (x :& xs) = runNT f x :& (fs <<*>> xs)
   
 -- | Records with 'Alternative' functors can be combined.
-instance Alternate (Rec '[]) where
-  eemptyy = RNil
+instance ApEmpty (Rec '[]) where
+  apEmpty = RNil
+instance ApAlt (Rec '[]) where  
   _ <<|>> _ = RNil
 
-instance (Alternate (Rec fs)) => Alternate (Rec ((s ::: t) ': fs)) where
-  eemptyy = empty :& eemptyy
+instance (ApEmpty (Rec fs)) => ApEmpty (Rec ((s ::: t) ': fs)) where
+  apEmpty = empty :& apEmpty
+instance (ApAlt (Rec fs)) => ApAlt (Rec ((s ::: t) ': fs)) where
   (x :& xs) <<|>> (y :& ys) = (x <|> y) :& (xs <<|>> ys)
   
 -- | Records may be distributed to accumulate the effects of their fields.
-instance Dist (Rec rs) where
-  dist _ RNil      = pure RNil
-  dist m (x :& xs) = (:&) <$> (m x) <*> dist m xs
+instance ApTraversable (Rec rs) where
+  apTraverse _ RNil      = pure RNil
+  apTraverse m (x :& xs) = (:&) <$> (m x) <*> apTraverse m xs
 
 instance FoldRec (Rec '[] f) a where
   foldRec _ z RNil = z
