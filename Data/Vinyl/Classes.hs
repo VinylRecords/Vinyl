@@ -17,7 +17,7 @@ class Apply (arr :: k -> k -> k) (f :: k -> *) where
 -- | To accumulate effects distributed over a data type, you 'dist' it.
 -- This class is a generalized version of 'Traversable'.
 class Dist t where
-  dist :: Applicative g => (forall x. f x -> g (h x)) -> t f -> g (t h)
+  dist :: Applicative f => (forall x. a x -> f (b x)) -> t a -> f (t b)
 
 run :: (Applicative f, Dist t) => t f -> f (t Identity)
 run = dist (Identity <$>)
