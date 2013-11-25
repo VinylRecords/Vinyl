@@ -100,14 +100,14 @@ instance ApApply (~>) (Rec rs) where
   (f :& fs) <<*>> (x :& xs) = runNT f x :& (fs <<*>> xs)
   
 -- | Records with 'Alternative' functors can be combined.
-instance ApEmpty (Rec '[]) where
+instance ApEmpty (Rec '[]) g where
   apEmpty = RNil
-instance ApAlt (Rec '[]) where  
+instance ApAlt (Rec '[]) g where  
   _ <<|>> _ = RNil
 
-instance (ApEmpty (Rec fs)) => ApEmpty (Rec ((s ::: t) ': fs)) where
+instance (ApEmpty (Rec fs) g, Alternative g) => ApEmpty (Rec ((s ::: t) ': fs)) g where
   apEmpty = empty :& apEmpty
-instance (ApAlt (Rec fs)) => ApAlt (Rec ((s ::: t) ': fs)) where
+instance (ApAlt (Rec fs) g, Alternative g) => ApAlt (Rec ((s ::: t) ': fs)) g where
   (x :& xs) <<|>> (y :& ys) = (x <|> y) :& (xs <<|>> ys)
   
 -- | Records may be distributed to accumulate the effects of their fields.

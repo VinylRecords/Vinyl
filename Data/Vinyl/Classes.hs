@@ -26,15 +26,15 @@ class (ApFunctor f) => ApTraversable (f :: (k -> *) -> *) where
                    -- (Apply e) => 
                    -- (forall (x :: k). g x -> e (h x)) -> f g -> e (f h)
 
-class (ApFunctor f) => ApAlt (f :: (k -> *) -> *) where
-    (<<|>>) :: forall (g :: k -> *). f g -> f g -> f g
+class (ApFunctor f) => ApAlt (f :: (k -> *) -> *) (g :: k -> *) where
+    (<<|>>) :: f g -> f g -> f g
 
-class (ApFunctor f) => ApEmpty (f :: (k -> *) -> *) where
-    apEmpty :: forall (g :: k -> *). f g
+class (ApFunctor f) => ApEmpty (f :: (k -> *) -> *) (g :: k -> *) where
+    apEmpty :: f g
 
 -- class (ApAlt f, ApEmpty f) => ApAlternative (f :: (k -> *) -> *)
 -- instance (ApAlt f, ApEmpty f) => ApAlternative (f :: (k -> *) -> *)
-type ApAlternative f = (ApAlt f, ApEmpty f)
+type ApAlternative f g = (ApAlt f g, ApEmpty f g)
 
 class (ApFunctor f) => ApApply (arr :: ((k -> *) -> (k -> *) -> (k -> *)))
                                (f :: (k -> *) -> *) where
