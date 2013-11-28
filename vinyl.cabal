@@ -22,7 +22,8 @@ library
   exposed-modules:     Data.Vinyl, Data.Vinyl.Field, Data.Vinyl.Lens,
                        Data.Vinyl.Witnesses, Data.Vinyl.Rec,
                        Data.Vinyl.Relation, Data.Vinyl.Unicode,
-                       Data.Vinyl.Classes, Data.Vinyl.Validation
+                       Data.Vinyl.Classes, Data.Vinyl.Validation,
+                       Data.Vinyl.LazyRec, Data.Vinyl.LazyLens
   build-depends:       base >=4.6 && <= 5, ghc-prim, transformers
   default-language:    Haskell2010
 
