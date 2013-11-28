@@ -23,7 +23,7 @@ deriving instance (Show (LazyRec rs f), Show (f t)) => Show (LazyRec ((sy ::: t)
 instance Eq (LazyRec '[] f) where
   _ == _ = True
 instance (Eq (g t), Eq (LazyRec fs g)) => Eq (LazyRec ((s ::: t) ': fs) g) where
-  (x :&~ xs) == (y :&~ ys) = (x == y) && (xs == ys)
+  ~(x :&~ xs) == ~(y :&~ ys) = (x == y) && (xs == ys)
   
 class ToRec rs f where
   toRec :: LazyRec rs f -> Rec rs f
@@ -40,13 +40,14 @@ instance FromRec rs f => FromRec ((sy ::: t) ': rs) f where
   fromRec (x :& xs) = x :&~ (fromRec xs)
 
 instance Dist (LazyRec '[]) where
-  dist RNilL      = pure RNilL
+  dist _ = pure RNilL
 instance Dist (LazyRec rs) => Dist (LazyRec ((sy ::: t) ': rs)) where
   dist ~(x :&~ xs) = (:&~) <$> (pure <$> x) <*> dist xs
 
 --
 -- Generalized instances for Issue25 branch
 --
+
 -- instance Funct (LazyRec '[]) where
 --   _  <<$>> _      = RNilL
 -- instance Funct (LazyRec rs) => Funct (LazyRec ((sy ::: t) ': rs)) where
@@ -59,15 +60,10 @@ instance Dist (LazyRec rs) => Dist (LazyRec ((sy ::: t) ': rs)) where
   
 instance FoldRec (LazyRec '[] f) a where
   foldRec _ z _ = z -- should we pattern match on the RNilL?
-
 instance FoldRec (LazyRec fs g) (g t) => FoldRec (LazyRec ((s ::: t) ': fs) g) (g t) where
-  foldRec f z ~((:&~) x xs) = f x (foldRec f z xs)
-
--- | Accumulates a homogenous record into a list
-recToList :: FoldRec (LazyRec fs g) (g t) => LazyRec fs g -> [g t]
-recToList = foldRec (\e a -> [e] ++ a) []
+  foldRec f z ~(x :&~ xs) = f x (foldRec f z xs)
 
 instance Apply (~>) (LazyRec '[]) where
   _ <<*>> _ = RNilL -- again, pattern match?
 instance Apply (~>) (LazyRec rs) => Apply (~>) (LazyRec ((sy ::: t) ': rs)) where
-  ~((:&~) f fs) <<*>> ~((:&~) x xs) = (:&~) (runNT f x) (fs <<*>> xs)
+  ~(f :&~ fs) <<*>> ~(x :&~ xs) = runNT f x :&~ (fs <<*>> xs)
