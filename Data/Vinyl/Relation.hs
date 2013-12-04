@@ -50,7 +50,7 @@ instance (y ~ (sy ::: t), IElem y xs, Rec xs f <: Rec ys f) => Rec xs f <: Rec (
 
 lookupField :: Elem x xs -> Rec xs f -> x
 lookupField Here      (_ :& _)  = Field
-lookupField (There p) (_ :& xs) = lookupField p xs
+lookupField (There _ p) (_ :& xs) = lookupField p xs
 
 -- rIso :: (r1 :~: r2) => Iso' r1 r2
 -- rIso = iso cast cast

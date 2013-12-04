@@ -13,10 +13,12 @@ module Data.Vinyl.Witnesses where
 class Implicit p where
   implicitly :: p
 
+-- `There` has an extra unit parameter to enable a RULE in Data.Vinyl.Lens.
+
 -- | An inductive list membership proposition.
 data Elem :: k -> [k] -> * where
   Here  :: Elem x (x ': xs)
-  There :: Elem x xs -> Elem x (y ': xs)
+  There :: () -> Elem x xs -> Elem x (y ': xs)
 
 -- | A constraint for implicit resolution of list membership proofs.
 type IElem x xs = Implicit (Elem x xs)
@@ -34,7 +36,7 @@ type ISubset xs ys = Implicit (Subset xs ys)
 instance Implicit (Elem x (x ': xs)) where
   implicitly = Here
 instance Implicit (Elem x xs) => Implicit (Elem x (y ': xs)) where
-  implicitly = There implicitly
+  implicitly = There () implicitly
 
 instance Implicit (Subset '[] xs) where
   implicitly = SubsetNil
