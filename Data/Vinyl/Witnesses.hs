@@ -7,8 +7,10 @@
 {-# LANGUAGE OverlappingInstances  #-}
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Data.Vinyl.Witnesses where
+import Data.Vinyl.Field 
 
 class Implicit p where
   implicitly :: p
@@ -24,9 +26,11 @@ data Elem :: k -> [k] -> * where
 type IElem x xs = Implicit (Elem x xs)
 
 -- | An inductive list subset relation.
-data Subset :: [k] -> [k] -> * where
+data Subset :: [*] -> [*] -> * where
   SubsetNil  :: Subset '[] xs
-  SubsetCons :: Elem x ys
+  SubsetCons :: x ~ (sy ::: t)
+             => ()
+             -> Elem x ys
              -> Subset xs ys
              -> Subset (x ': xs) ys
 
@@ -40,6 +44,6 @@ instance Implicit (Elem x xs) => Implicit (Elem x (y ': xs)) where
 
 instance Implicit (Subset '[] xs) where
   implicitly = SubsetNil
-instance (IElem x ys, ISubset xs ys) => Implicit (Subset (x ': xs) ys) where
-  implicitly = SubsetCons implicitly implicitly
+instance (IElem x ys, ISubset xs ys, x ~ (sy ::: t)) => Implicit (Subset (x ': xs) ys) where
+  implicitly = SubsetCons () implicitly implicitly
 

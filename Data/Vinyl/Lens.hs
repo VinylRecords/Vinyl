@@ -14,6 +14,7 @@ module Data.Vinyl.Lens
     , rMod
     , rLens'
     , rLens
+    , cast'
     ) where
 import Control.Applicative
 import Data.Functor.Identity
@@ -25,6 +26,10 @@ import Data.Vinyl.Witnesses
 rGet' :: IElem (sy ::: t) rs => (sy ::: t) -> Rec rs f -> f t
 rGet' r = getConst . rLens' r Const
 {-# INLINE rGet' #-}
+
+rGet'FromElem :: Elem (sy ::: t) rs -> Rec rs f -> f t
+rGet'FromElem e = getConst . rLens'FromElem e Const
+{-# INLINE rGet'FromElem #-}
 
 -- | Project a field from a 'PlainRec'.
 rGet :: IElem (sy ::: t) rs => (sy ::: t) -> PlainRec rs -> t
@@ -61,6 +66,11 @@ rLens' :: forall r rs sy t f g. (r ~ (sy:::t), IElem r rs, Functor g)
 rLens' _ = (rLens'_unroll :: () -> Elem r rr -> (f t -> g (f t)) -> Rec rr f -> g (Rec rr f)) () implicitly
 {-# INLINE rLens' #-}
 
+rLens'FromElem :: forall r rs sy t f g. (r ~ (sy:::t), Functor g)
+       => Elem r rs -> (f t -> g (f t)) -> Rec rs f -> g (Rec rs f)
+rLens'FromElem = (rLens'_unroll :: () -> Elem r rr -> (f t -> g (f t)) -> Rec rr f -> g (Rec rr f)) ()
+{-# INLINE rLens'FromElem #-}
+
 rLens'_unroll :: (r ~ (sy ::: t), Functor g) => () -> Elem r rr -> (f t -> g (f t)) -> Rec rr f -> g (Rec rr f)
 rLens'_unroll _ = rLens'_cont rLens'_unroll
 {-# NOINLINE rLens'_unroll #-} -- Inlining would cause the RULE not to fire
@@ -86,3 +96,19 @@ rLens :: forall r rs sy t g. (r ~ (sy:::t), IElem r rs, Functor g)
 rLens r = rLens' r . lenser runIdentity (const Identity)
   where lenser sa sbt afb s = sbt s <$> afb (sa s)
 {-# INLINE rLens #-}
+
+cast' :: Subset ys' xs -> Rec xs f -> Rec ys' f
+cast' = (cast'_unroll :: () -> Subset ys' xs -> Rec xs f -> Rec ys' f) ()
+{-# INLINE cast' #-}
+
+cast'_unroll :: () -> Subset ys' xs -> Rec xs f -> Rec ys' f
+cast'_unroll _ = cast'_cont cast'_unroll
+{-# NOINLINE cast'_unroll #-}
+
+cast'_cont :: (forall ys'. () -> Subset ys' xs -> Rec xs f -> Rec ys' f)
+        -> Subset ys xs -> Rec xs f -> Rec ys f
+cast'_cont cont SubsetNil = \_ -> RNil
+cast'_cont cont (SubsetCons u elem ss) = \r -> rGet'FromElem elem r :& cont u ss r
+{-# INLINE cast'_cont #-}
+
+{-# RULES "cast'_unroll" cast'_unroll () = cast'_cont cast'_unroll #-}
