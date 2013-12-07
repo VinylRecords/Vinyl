@@ -34,16 +34,16 @@ type MyFields a = [ "pos" ::: V3 a, "tex" ::: V2 a, "normal" ::: V3 a ]
 type MyVertex a = PlainRec (MyFields a)
 
 doubleNviL :: V.Vector (MyVertex Float) -> V.Vector (MyVertex Float)
-doubleNviL = V.map (rLens vNorm . _y *~ (2::Float))
+doubleNviL = V.map (field' vNorm . _y *~ (2::Float))
 
 vinylNSumL :: (Num a, Storable a) => V.Vector (MyVertex a) -> a
-vinylNSumL = V.sum . V.map (F.sum . view (rLens vNorm))
+vinylNSumL = V.sum . V.map (F.sum . view (field' vNorm))
 
 doubleNvi :: V.Vector (MyVertex Float) -> V.Vector (MyVertex Float)
-doubleNvi = V.map (rMod vNorm (_y *~ (2::Float)))
+doubleNvi = V.map (modField vNorm (_y *~ (2::Float)))
 
 vinylNSum :: (Num a, Storable a) => V.Vector (MyVertex a) -> a
-vinylNSum = V.sum . V.map (F.sum . rGet vNorm)
+vinylNSum = V.sum . V.map (F.sum . getField' vNorm)
 
 main :: IO ()
 main = do vals <- randVecStd $ n * 8 :: IO (V.Vector Float)
