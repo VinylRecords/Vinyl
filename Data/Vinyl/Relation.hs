@@ -17,7 +17,8 @@ module Data.Vinyl.Relation
   -- , rIso
   ) where
 
-import           Data.Vinyl.Lens (cast')
+import           Data.Vinyl.Lens (subset)
+import           Control.Applicative
 import           Data.Vinyl.Rec
 import           Data.Vinyl.Witnesses
 
@@ -40,8 +41,8 @@ type r1 :~: r2 = (r1 <: r2, r2 <: r1)
 (~=) :: (Eq a, a :~: b) => a -> b -> Bool
 x ~= y = x == (cast y)
 
-instance IsSubtype (Rec xs f) (Rec ys f) => Rec xs f <: Rec ys f where
-  cast = cast' (implicitly :: Subset ys xs)
+instance (Functor f, IsSubtype (Rec xs f) (Rec ys f)) => Rec xs f <: Rec ys f where
+  cast = getConst . subset Const
   {-# INLINE cast #-}
 
 -- rIso :: (r1 :~: r2) => Iso' r1 r2

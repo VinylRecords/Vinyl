@@ -14,7 +14,7 @@ module Data.Vinyl.Lens
     , rMod
     , rLens'
     , rLens
-    , cast'
+    , subset
     ) where
 import Control.Applicative
 import Data.Functor.Identity
@@ -95,20 +95,61 @@ rLens :: forall r rs sy t g. (r ~ (sy:::t), IElem r rs, Functor g)
       => r -> (t -> g t) -> PlainRec rs -> g (PlainRec rs)
 rLens r = rLens' r . lenser runIdentity (const Identity)
   where lenser sa sbt afb s = sbt s <$> afb (sa s)
-{-# INLINE rLens #-}
 
-cast' :: Subset ys' xs -> Rec xs f -> Rec ys' f
-cast' = (cast'_unroll :: () -> Subset ys' xs -> Rec xs f -> Rec ys' f) ()
-{-# INLINE cast' #-}
 
-cast'_unroll :: () -> Subset ys' xs -> Rec xs f -> Rec ys' f
-cast'_unroll _ = cast'_cont cast'_unroll
-{-# NOINLINE cast'_unroll #-}
+-- | subset :: (Functor f, Functor g, ISubset xs ys) => Lens' (Rec xs f) (Rec ys f)
+subset :: forall xs ys f g. (Functor f, Functor g, ISubset xs ys)
+       => (Rec xs f -> g (Rec xs f)) -> Rec ys f -> g (Rec ys f)
+subset = go implicitly
+  where
+    go s inj ys = (\xs -> setSubset s xs ys) <$> inj (upcast s ys)
+    {-# INLINE go #-}
+{-# INLINE subset #-}
 
-cast'_cont :: (forall ys'. () -> Subset ys' xs -> Rec xs f -> Rec ys' f)
-        -> Subset ys xs -> Rec xs f -> Rec ys f
-cast'_cont cont SubsetNil = \_ -> RNil
-cast'_cont cont (SubsetCons u elem ss) = \r -> rGet'FromElem elem r :& cont u ss r
-{-# INLINE cast'_cont #-}
+-- setSubset :: Functor f => Subset xs ys -> Rec xs f -> Rec ys f -> Rec ys f
+-- setSubset SubsetNil              RNil = id
+-- setSubset (SubsetCons u elem ss) (x :& xs)   = putFieldE elem x . setSubset ss xs
 
-{-# RULES "cast'_unroll" cast'_unroll () = cast'_cont cast'_unroll #-}
+setSubset :: Functor f => Subset xs ys -> Rec xs f -> Rec ys f -> Rec ys f
+setSubset = setSubset_unroll ()
+{-# INLINE setSubset #-}
+
+setSubset_unroll :: Functor f => () -> Subset xs ys -> Rec xs f -> Rec ys f -> Rec ys f
+setSubset_unroll _ = setSubset_cont setSubset_unroll
+{-# NOINLINE setSubset_unroll #-}
+
+setSubset_cont :: Functor f => (forall xs'. () -> Subset xs' ys -> Rec xs' f -> Rec ys f -> Rec ys f)
+    -> Subset xs ys -> Rec xs f -> Rec ys f -> Rec ys f
+setSubset_cont _    SubsetNil                RNil      = id
+setSubset_cont _    SubsetNil                _         = error "GHC bug #3927"
+setSubset_cont cont (SubsetCons u x_elem ss) (x :& xs) = putFieldE x_elem x . cont u ss xs
+setSubset_cont _    (SubsetCons _ _ _)       _         = error "GHC bug #3927"
+{-# INLINE setSubset_cont #-}
+
+putFieldE :: Elem (sy ::: t) rs -> f t -> Rec rs f -> Rec rs f
+putFieldE e x = runIdentity . rLens'FromElem e (Identity . const x)
+{-# INLINE putFieldE #-}
+
+
+upcast :: Subset xs ys -> Rec ys f -> Rec xs f
+upcast = upcast_unroll ()
+{-# INLINE upcast #-}
+
+upcast_unroll :: () -> Subset xs ys -> Rec ys f -> Rec xs f
+upcast_unroll _ = upcast_cont upcast_unroll
+{-# NOINLINE upcast_unroll #-}
+
+upcast_cont :: (forall xs'. () -> Subset xs' ys -> Rec ys f -> Rec xs' f)
+                              -> Subset xs ys  -> Rec ys f -> Rec xs f
+upcast_cont _    SubsetNil = \_ -> RNil
+upcast_cont cont (SubsetCons u r_elem ss) = \r -> getFieldE r_elem r :& cont u ss r
+{-# INLINE upcast_cont #-}
+
+getFieldE :: Elem (sy ::: t) rs -> Rec rs f -> f t
+getFieldE e = getConst . rLens'FromElem e Const
+{-# INLINE getFieldE #-}
+
+{-# RULES 
+"upcast_unroll" upcast_unroll () = upcast_cont upcast_unroll
+"setSubset_unroll"   setSubset_unroll () = setSubset_cont setSubset_unroll
+    #-}
