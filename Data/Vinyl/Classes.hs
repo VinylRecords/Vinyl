@@ -5,6 +5,7 @@
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE FlexibleContexts      #-}
 
 module Data.Vinyl.Classes where
 
@@ -12,45 +13,50 @@ import           Control.Applicative
 -- import           Control.Functor.Apply
 import           Data.Functor.Identity
 
+-- | This class is a generalized version of 'Functor'.
+-- 
 class ApFunctor (f :: (k -> *) -> *) where
     (<<$>>) :: forall (g :: k -> *) (h :: k -> *). 
               (forall (x :: k). g x -> h x) -> f g -> f h
 
+-- | This class is a generalized version of 'Traversable'.
 class (ApFunctor f) => ApTraversable (f :: (k -> *) -> *) where
     apTraverse :: forall (g :: k -> *) (h :: k -> *) (e :: * -> *).
                   (Applicative e) =>
                   (forall (x :: k). g x -> e (h x)) -> f g -> e (f h)
 
+-- This class would impose a dependency on `semigroupoids`
 -- class (ApTraversable f) => ApTraversable1 (f :: (k -> *) -> *) where
-    -- apTraverse1 :: forall (g :: k -> *) (h :: k -> *) (e :: * -> *). 
-                   -- (Apply e) => 
-                   -- (forall (x :: k). g x -> e (h x)) -> f g -> e (f h)
+--    apTraverse1 :: forall (g :: k -> *) (h :: k -> *) (e :: * -> *). 
+--                   (Apply e) => 
+--                   (forall (x :: k). g x -> e (h x)) -> f g -> e (f h)
 
-class (ApFunctor f) => ApAlt (f :: (k -> *) -> *) (g :: k -> *) where
-    (<<|>>) :: f g -> f g -> f g
+-- | To accumulate effects distributed over a data type, you can 'run' it.
+-- For records, you can think of the type signature as
+--
+-- >>> run :: (Applicative f) => Rec rs f -> f (PlainRec rs)
 
-class (ApFunctor f) => ApEmpty (f :: (k -> *) -> *) (g :: k -> *) where
-    apEmpty :: f g
+run :: (Applicative f, ApTraversable t) => t f -> f (t Identity)
+run = apTraverse (Identity <$>)
 
--- class (ApAlt f, ApEmpty f) => ApAlternative (f :: (k -> *) -> *)
--- instance (ApAlt f, ApEmpty f) => ApAlternative (f :: (k -> *) -> *)
-type ApAlternative f g = (ApAlt f g, ApEmpty f g)
+-- | This class is a generalized version of `Pointed`.
+--
+-- Like `Pointed`, this class has no laws. But if `f` is also an 
+-- instance of `ApApply`, then `apPure` and `<<*>>` should together follow the Applicative 
+-- laws (for some sensible definition of `id`).
+class (ApFunctor f) => ApPointed (f :: (k -> *) -> *) where
+    apPure :: forall (g :: k -> *). (forall x. g x) -> f g
 
+-- | This class is a generalized, but non-pointed version of 'Applicative'. This
+-- is useful for types which range over functors rather than sets.
+--
+-- If `f` is also an instance of `ApApply`, then `apPure` and `<<*>>` should together 
+-- follow the Applicative laws (for some sensible definition of `id`).
 class (ApFunctor f) => ApApply (arr :: ((k -> *) -> (k -> *) -> (k -> *)))
                                (f :: (k -> *) -> *) where
     (<<*>>) :: forall (g :: k -> *) (h :: k -> *). f (arr g h) -> f g -> f h
--- | This class is a generalized, but non-pointed version of 'Applicative'. This
--- is useful for types which range over functors rather than sets.
--- class Apply (arr :: k -> k -> k) (f :: k -> *) where
-  -- (<<*>>) :: f (arr a b) -> f a -> f b
 
--- -- | To accumulate effects distributed over a data type, you 'dist' it.
--- -- This class is a generalized version of 'Traversable'.
--- class Dist t where
-  -- dist :: Applicative f => (forall x. a x -> f (b x)) -> t a -> f (t b)
-
--- run :: (Applicative f, Dist t) => t f -> f (t Identity)
--- run = dist (Identity <$>)
+type ApApplicative arr f = (ApPointed f, ApApply arr f)
 
 -- | If a record is homogenous, you can fold over it.
 class FoldRec r a where
@@ -59,12 +65,10 @@ class FoldRec r a where
 -- | '(~>)' is a morphism between functors.
 newtype (f ~> g) x = NT { runNT :: f x -> g x }
 
--- -- | This class is a generalized version of 'Alternative', analogous to 'Apply'.
--- class Alternate (f :: (* -> *) -> *) where
-  -- eemptyy :: Alternative g => f g
-  -- (<<|>>) :: Alternative g => f g -> f g -> f g
+-- | `ApApplicative`s containing `Alternative` functors can be created and combined
+-- using `apEmpty` and `<<|>>`.
+apEmpty :: (Alternative g, ApPointed f) => f g
+apEmpty = apPure empty
 
--- -- | This class is a generalized version of 'Functor'. This is useful for types
--- -- which range over functors rather than sets.
--- class Funct f where
-  -- (<<$>>) :: (forall x. g x -> h x) -> f g -> f h
+(<<|>>) :: (Alternative g, ApApply (~>) f) => f g -> f g -> f g
+a <<|>> b = (\x -> NT $ (x <|>)) <<$>> a <<*>> b      

@@ -14,6 +14,9 @@
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE TypeOperators             #-}
+{-# LANGUAGE UndecidableInstances      #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE StandaloneDeriving #-}
 
 module Data.Vinyl.Rec
   ( Rec(..)
@@ -95,20 +98,18 @@ instance ApFunctor (Rec rs) where
   nat <<$>> (x :& xs) = nat x :& (nat <<$>> xs)
 
 -- | Records can be applied to each other.
-instance ApApply (~>) (Rec rs) where
+  
+instance ApPointed (Rec '[]) where
+  apPure _ = RNil
+
+instance ApPointed (Rec fs) => ApPointed (Rec ((s ::: t) ': fs)) where
+  apPure x = x :& apPure x
+
+instance ApApply (~>) (Rec '[]) where
   RNil <<*>> RNil = RNil
+instance ApApply (~>) (Rec fs) => ApApply (~>) (Rec ((s ::: t) ': fs)) where
   (f :& fs) <<*>> (x :& xs) = runNT f x :& (fs <<*>> xs)
   
--- | Records with 'Alternative' functors can be combined.
-instance ApEmpty (Rec '[]) g where
-  apEmpty = RNil
-instance ApAlt (Rec '[]) g where  
-  _ <<|>> _ = RNil
-
-instance (ApEmpty (Rec fs) g, Alternative g) => ApEmpty (Rec ((s ::: t) ': fs)) g where
-  apEmpty = empty :& apEmpty
-instance (ApAlt (Rec fs) g, Alternative g) => ApAlt (Rec ((s ::: t) ': fs)) g where
-  (x :& xs) <<|>> (y :& ys) = (x <|> y) :& (xs <<|>> ys)
   
 -- | Records may be distributed to accumulate the effects of their fields.
 instance ApTraversable (Rec rs) where
