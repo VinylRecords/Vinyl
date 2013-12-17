@@ -78,43 +78,53 @@ instance (
     Show (g t), Show (Rec fs g)) => Show (Rec ((sy ::: t) ': fs) g) where
   show (x :& xs) = show (Field :: sy ::: t) ++ " :=: " ++ show x ++ ", " ++ show xs
 
-
 instance Eq (Rec '[] f) where
   _ == _ = True
+
 instance (Eq (g t), Eq (Rec fs g)) => Eq (Rec ((s ::: t) ': fs) g) where
   (x :& xs) == (y :& ys) = (x == y) && (xs == ys)
-
 
 instance Monoid (Rec '[] f) where
   mempty = RNil
   RNil `mappend` RNil = RNil
+
 instance (Monoid t, Monoid (Rec fs g), Applicative g) => Monoid (Rec ((s ::: t) ': fs) g) where
   mempty = pure mempty :& mempty
   (x :& xs) `mappend` (y :& ys) = liftA2 mappend x y :& (xs `mappend` ys)
 
 -- | Records can be hoisted from one functor to another
-instance ApFunctor (Rec rs) where
+instance ApFunctor (Rec '[]) where
   _  <<$>> RNil      = RNil
+  {-# INLINE (<<$>>) #-}
+instance ApFunctor (Rec fs) => ApFunctor (Rec ((s ::: t) ': fs)) where
   nat <<$>> (x :& xs) = nat x :& (nat <<$>> xs)
-
--- | Records can be applied to each other.
-  
+  {-# INLINE (<<$>>) #-}
+ 
 instance ApPointed (Rec '[]) where
   apPure _ = RNil
+  {-# INLINE apPure #-}
 
 instance ApPointed (Rec fs) => ApPointed (Rec ((s ::: t) ': fs)) where
   apPure x = x :& apPure x
+  {-# INLINE apPure #-}
 
+-- | Records can be applied to each other.
 instance ApApply (~>) (Rec '[]) where
   RNil <<*>> RNil = RNil
+  {-# INLINE (<<*>>) #-}
+
 instance ApApply (~>) (Rec fs) => ApApply (~>) (Rec ((s ::: t) ': fs)) where
   (f :& fs) <<*>> (x :& xs) = runNT f x :& (fs <<*>> xs)
-  
-  
--- | Records may be distributed to accumulate the effects of their fields.
-instance ApTraversable (Rec rs) where
+  {-# INLINE (<<*>>) #-}
+
+-- | Records can be distributed to accumulate the effects of their fields.
+instance ApTraversable (Rec '[]) where
   apTraverse _ RNil      = pure RNil
+  {-# INLINE apTraverse #-}
+
+instance ApTraversable (Rec fs) => ApTraversable (Rec ((s ::: t) ': fs)) where
   apTraverse m (x :& xs) = (:&) <$> (m x) <*> apTraverse m xs
+  {-# INLINE apTraverse #-}
 
 instance FoldRec (Rec '[] f) a where
   foldRec _ z RNil = z
