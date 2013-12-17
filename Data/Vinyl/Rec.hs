@@ -15,8 +15,6 @@
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE TypeOperators             #-}
 {-# LANGUAGE UndecidableInstances      #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE StandaloneDeriving #-}
 
 module Data.Vinyl.Rec
   ( Rec(..)
@@ -106,6 +104,7 @@ instance (Monoid t, Monoid (Rec fs g), Applicative g) => Monoid (Rec ((s ::: t) 
 instance ApFunctor (Rec '[]) where
   _  <<$>> RNil      = RNil
   {-# INLINE (<<$>>) #-}
+
 instance ApFunctor (Rec fs) => ApFunctor (Rec ((s ::: t) ': fs)) where
   nat <<$>> (x :& xs) = nat x :& (nat <<$>> xs)
   {-# INLINE (<<$>>) #-}

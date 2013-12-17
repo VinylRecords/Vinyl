@@ -10,7 +10,6 @@
 module Data.Vinyl.Classes where
 
 import           Control.Applicative
--- import           Control.Functor.Apply
 import           Data.Functor.Identity
 
 -- | This class is a generalized version of 'Functor'.
