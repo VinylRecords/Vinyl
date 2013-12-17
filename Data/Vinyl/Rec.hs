@@ -8,13 +8,11 @@
 {-# LANGUAGE InstanceSigs              #-}
 {-# LANGUAGE KindSignatures            #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
-{-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE PolyKinds                 #-}
 {-# LANGUAGE RankNTypes                #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE TypeOperators             #-}
-{-# LANGUAGE UndecidableInstances      #-}
 
 module Data.Vinyl.Rec
   ( Rec(..)
