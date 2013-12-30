@@ -8,8 +8,8 @@
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-module SimpleLens (simpleLens) where
+{-# LANGUAGE ScopedTypeVariables   #-}
+module SimpleLens (simpleLens, rLens') where
 
 import Data.Vinyl.Field
 import Data.Vinyl.Rec
@@ -22,6 +22,28 @@ simpleLens _ f = go implicitly
         go (There p) (x :& xs) = fmap (x :&) (go p xs)
         {-# INLINABLE go #-}
 {-# INLINE simpleLens #-}
+
+rLens' :: forall r rs sy t f g. (r ~ (sy:::t), IElem r rs, Functor g)
+       => r -> (f t -> g (f t)) -> Rec rs f -> g (Rec rs f)
+rLens' _ f = go implicitly
+  where go :: Elem r rr -> Rec rr f -> g (Rec rr f)
+        go Here (x :& xs) = fmap (:& xs) (f x)
+        go (There Here) (a :& x :& xs) = fmap ((a :&) . (:& xs)) (f x)
+        go (There (There Here)) (a :& b :& x :& xs) =
+          fmap (\x' -> a :& b :& x' :& xs) (f x)
+        go (There (There (There Here))) (a :& b :& c :& x :& xs) =
+          fmap (\x' -> a :& b :& c :& x' :& xs) (f x)
+        go (There (There (There (There Here)))) (a :& b :& c :& d :& x :& xs) =
+          fmap (\x' -> a :& b :& c :& d :& x' :& xs) (f x)
+        go (There (There (There (There p)))) (a :& b :& c :& d :& xs) =
+          fmap (\xs' -> a :& b :& c :& d :& xs') (go' p xs)
+        {-# INLINE go #-}
+
+        go' :: Elem r rr -> Rec rr f -> g (Rec rr f)
+        go' Here (x :& xs) = fmap (:& xs) (f x)
+        go' (There p) (x :& xs) = fmap (x :&) (go p xs)
+        {-# INLINABLE go' #-}
+{-# INLINE rLens' #-}
 
 class Implicit p where
   implicitly :: p
