@@ -33,6 +33,14 @@ benchmark bench-builder-all
   build-depends:    base >= 4.6 && <= 5, vector, criterion, vinyl, mwc-random, lens, linear
   ghc-options:      -O2 -fllvm
   default-language: Haskell2010
+  
+benchmark lens-comparison
+  type:             exitcode-stdio-1.0
+  hs-source-dirs:   lens-comparison
+  main-is:          LensComparison.hs
+  build-depends:    base >= 4.6 && <= 5, criterion, vinyl, mwc-random, transformers
+  ghc-options:      -O2 -ddump-to-file -ddump-simpl -dsuppress-all
+  default-language: Haskell2010
 
 test-suite doctests
   type:             exitcode-stdio-1.0
