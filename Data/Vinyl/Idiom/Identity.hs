@@ -1,13 +1,17 @@
 {-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveFoldable #-}
+{-# LANGUAGE DeriveTraversable #-}
 
 module Data.Vinyl.Idiom.Identity where
 
 import Control.Applicative
+import Data.Foldable
+import Data.Traversable
 
 newtype Identity a
   = Identity
   { runIdentity :: a
-  } deriving Functor
+  } deriving (Functor, Foldable, Traversable)
 
 instance Applicative Identity where
   pure = Identity

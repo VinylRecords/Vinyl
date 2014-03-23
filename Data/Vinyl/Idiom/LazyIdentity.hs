@@ -1,13 +1,17 @@
 {-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveFoldable #-}
+{-# LANGUAGE DeriveTraversable #-}
 
 module Data.Vinyl.Idiom.LazyIdentity where
 
 import Control.Applicative
+import Data.Foldable
+import Data.Traversable
 
 data LazyIdentity a
   = LazyIdentity
   { runLazyIdentity :: a
-  } deriving Functor
+  } deriving (Functor, Foldable, Traversable)
 
 instance Applicative LazyIdentity where
   pure = LazyIdentity
