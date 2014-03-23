@@ -22,10 +22,10 @@ extensions first:
 > {-# LANGUAGE GADTs #-}
 > import Data.Vinyl
 > import Data.Vinyl.Unicode
-> import Data.Vinyl.Validation
+> import Data.Vinyl.Idiom.Identity
+> import Data.Vinyl.Idiom.Validation
 > import Control.Applicative
-> import Control.Lens
-> import Data.Functor.Identity
+> import Control.Lens hiding (Identity)
 > import Data.Char
 > import Test.DocTest
 
