@@ -38,7 +38,7 @@ import Data.Monoid
 -- to be applied to each of those fields.
 data Rec :: [*] -> (* -> *) -> * where
   RNil :: Rec '[] f
-  (:&) :: f t -> Rec rs f -> Rec ((sy ::: t) ': rs) f
+  (:&) :: !(f t) -> !(Rec rs f) -> Rec ((sy ::: t) ': rs) f
 infixr :&
 
 -- | Fixes a polymorphic record into the 'Identity' functor.
