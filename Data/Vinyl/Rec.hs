@@ -18,6 +18,7 @@
 module Data.Vinyl.Rec
   ( Rec(..)
   , PlainRec
+  , LazyPlainRec
   , (=:)
   , (<+>)
   , (<-:)
@@ -28,6 +29,7 @@ module Data.Vinyl.Rec
 import Data.Vinyl.Classes
 import Control.Applicative
 import Data.Vinyl.Idiom.Identity
+import Data.Vinyl.Idiom.LazyIdentity
 import Data.Vinyl.Field
 import Foreign.Ptr (castPtr, plusPtr)
 import Foreign.Storable (Storable(..))
@@ -45,8 +47,12 @@ infixr :&
 fixRecord :: (forall f. Applicative f => Rec rs f) -> PlainRec rs
 fixRecord xs = xs
 
+fixRecordLazy :: (forall f. Applicative f => Rec rs f) -> LazyPlainRec rs
+fixRecordLazy xs = xs
+
 -- | Fields of plain records are in the 'Identity' functor.
 type PlainRec rs = Rec rs Identity
+type LazyPlainRec rs = Rec rs LazyIdentity
 
 -- | Append for records.
 (<+>) :: Rec as f -> Rec bs f -> Rec (as ++ bs) f
