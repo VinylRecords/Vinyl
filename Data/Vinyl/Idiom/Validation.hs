@@ -1,11 +1,11 @@
 {-# LANGUAGE TypeOperators #-}
 
-module Data.Vinyl.Validation where
+module Data.Vinyl.Idiom.Validation where
 
-import           Control.Applicative
-import           Data.Functor.Identity
-import           Data.Monoid
-import           Data.Vinyl.Classes
+import Control.Applicative
+import Data.Monoid
+import Data.Vinyl.Classes
+import Data.Vinyl.Idiom.Identity
 
 -- | A type which is similar to 'Either', except that it has a
 -- slightly different Applicative instance.

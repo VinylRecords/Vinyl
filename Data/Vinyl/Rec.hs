@@ -25,14 +25,14 @@ module Data.Vinyl.Rec
   , fixRecord
   ) where
 
-import           Data.Vinyl.Classes
-import           Control.Applicative
-import           Data.Functor.Identity
-import           Data.Vinyl.Field
-import           Foreign.Ptr (castPtr, plusPtr)
-import           Foreign.Storable (Storable(..))
-import           GHC.TypeLits
-import           Data.Monoid
+import Data.Vinyl.Classes
+import Control.Applicative
+import Data.Vinyl.Idiom.Identity
+import Data.Vinyl.Field
+import Foreign.Ptr (castPtr, plusPtr)
+import Foreign.Storable (Storable(..))
+import GHC.TypeLits
+import Data.Monoid
 
 -- | A record is parameterized by a list of fields and a functor
 -- to be applied to each of those fields.
@@ -119,10 +119,6 @@ instance FoldRec (Rec fs g) (g t) => FoldRec (Rec ((s ::: t) ': fs) g) (g t) whe
 -- | Accumulates a homogenous record into a list
 recToList :: FoldRec (Rec fs g) (g t) => Rec fs g -> [g t]
 recToList = foldRec (\e a -> [e] ++ a) []
-
--- | We provide a 'Show' instance for 'Identity'.
-instance Show a => Show (Identity a) where
-  show (Identity x) = show x
 
 instance Storable (PlainRec '[]) where
   sizeOf _    = 0

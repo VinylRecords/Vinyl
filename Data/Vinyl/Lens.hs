@@ -7,7 +7,7 @@
 -- compatible with the @lens@ package.
 module Data.Vinyl.Lens where
 import Control.Applicative
-import Data.Functor.Identity
+import Data.Vinyl.Idiom.Identity
 import Data.Vinyl.Field
 import Data.Vinyl.Rec
 import Data.Vinyl.Witnesses
@@ -71,7 +71,7 @@ rLens' _ f = go implicitly
 -- | A lens into a 'PlainRec' that smoothly interoperates with lenses
 -- from the @lens@ package. Note that polymorphic update is not
 -- supported. In the parlance of the @lens@ package,
--- 
+--
 -- > rLens :: IElem (sy:::t) rs => (sy:::t) -> Lens' (PlainRec rs) t
 rLens :: forall r rs sy t g. (r ~ (sy:::t), IElem r rs, Functor g)
       => r -> (t -> g t) -> PlainRec rs -> g (PlainRec rs)

@@ -5,8 +5,8 @@
 
 module Data.Vinyl.Classes where
 
-import           Control.Applicative
-import           Data.Functor.Identity
+import Control.Applicative
+import Data.Vinyl.Idiom.Identity
 
 -- | This class is a generalized, but non-pointed version of 'Applicative'. This
 -- is useful for types which range over functors rather than sets.
