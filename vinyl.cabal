@@ -1,5 +1,5 @@
 name:                vinyl
-version:             0.3
+version:             0.4
 synopsis:            Extensible Records
 -- description:
 license:             MIT
@@ -19,19 +19,24 @@ source-repository head
   location: https://github.com/VinylRecords/Vinyl/
 
 library
-  exposed-modules:     Data.Vinyl, Data.Vinyl.Field, Data.Vinyl.Lens,
-                       Data.Vinyl.Witnesses, Data.Vinyl.Rec,
-                       Data.Vinyl.Relation, Data.Vinyl.Unicode,
-                       Data.Vinyl.Classes, Data.Vinyl.Idiom.Validation,
-                       Data.Vinyl.Idiom.Identity, Data.Vinyl.Idiom.LazyIdentity
-  build-depends:       base >=4.6 && <= 5, ghc-prim
+  exposed-modules:     Data.Vinyl
+                     , Data.Vinyl.Core
+                     , Data.Vinyl.Operators
+                     , Data.Vinyl.Instances
+                     , Data.Vinyl.Lens
+                     , Data.Vinyl.Witnesses
+                     , Data.Vinyl.Relation
+                     , Data.Vinyl.Idiom.Validation
+                     , Data.Vinyl.Idiom.Identity
+                     , Data.Vinyl.Idiom.LazyIdentity
+  build-depends:       base >=4.6 && <= 5, ghc-prim, singletons == 0.10.0
   default-language:    Haskell2010
 
 benchmark bench-builder-all
   type:             exitcode-stdio-1.0
   hs-source-dirs:   benchmarks
   main-is:          StorableBench.hs
-  build-depends:    base >= 4.6 && <= 5, vector, criterion, vinyl == 0.3, mwc-random, lens, linear
+  build-depends:    base >= 4.6 && <= 5, vector, criterion, vinyl == 0.4, mwc-random, lens, linear
   ghc-options:      -O2 -fllvm
   default-language: Haskell2010
 
@@ -39,5 +44,5 @@ test-suite doctests
   type:             exitcode-stdio-1.0
   hs-source-dirs:   tests
   main-is:          Intro.lhs
-  build-depends:    base >= 4.6 && <= 5, lens, vinyl == 0.3, doctest >= 0.8
+  build-depends:    base >= 4.6 && <= 5, lens, vinyl == 0.4, doctest >= 0.8, singletons == 0.10.0
   default-language: Haskell2010

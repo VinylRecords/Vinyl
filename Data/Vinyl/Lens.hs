@@ -1,40 +1,43 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeOperators         #-}
+
 -- | A small, /en passant/ lens implementation to provide accessors
 -- for record fields. Lenses produced with 'rLens' are fully
 -- compatible with the @lens@ package.
 module Data.Vinyl.Lens where
-import Control.Applicative
-import Data.Vinyl.Idiom.Identity
-import Data.Vinyl.Field
-import Data.Vinyl.Rec
+
+import Data.Vinyl.Core
 import Data.Vinyl.Witnesses
+import Data.Vinyl.Idiom.Identity
+
+import Data.Singletons
+import Control.Applicative
 
 -- | Project a field from a 'Rec'.
-rGet' :: IElem (sy ::: t) rs => (sy ::: t) -> Rec rs f -> f t
+rGet' :: IElem r rs => Sing r -> Rec rs f -> f (El r)
 rGet' r = getConst . rLens' r Const
 {-# INLINE rGet' #-}
 
 -- | Project a field from a 'PlainRec'.
-rGet :: IElem (sy ::: t) rs => (sy ::: t) -> PlainRec rs -> t
+rGet :: IElem r rs => Sing r -> PlainRec rs -> El r
 rGet = (runIdentity .) . rGet'
 {-# INLINE rGet #-}
 
 -- | Set a field in a 'Rec' over an arbitrary functor.
-rPut' :: IElem (sy ::: t) rs => (sy ::: t) -> f t -> Rec rs f -> Rec rs f
+rPut' :: IElem r rs => Sing r -> f (El r) -> Rec rs f -> Rec rs f
 rPut' r x = runIdentity . rLens' r (Identity . const x)
 {-# INLINE rPut' #-}
 
 -- | Set a field in a 'PlainRec'.
-rPut :: IElem (sy:::t) rs => (sy:::t) -> t -> PlainRec rs -> PlainRec rs
+rPut :: IElem r rs => Sing r -> El r -> PlainRec rs -> PlainRec rs
 rPut r x = rPut' r (Identity x)
 {-# INLINE rPut #-}
 
 -- | Modify a field.
-rMod :: (IElem (sy:::t) rs, Functor f)
-     => (sy:::t) -> (t -> t) -> Rec rs f -> Rec rs f
+rMod :: (IElem r rs, Functor f) => Sing r -> (El r -> El r) -> Rec rs f -> Rec rs f
 rMod r f = runIdentity . rLens' r (Identity . fmap f)
 {-# INLINE rMod #-}
 
@@ -45,9 +48,8 @@ rMod r f = runIdentity . rLens' r (Identity . fmap f)
 -- does not support polymorphic update. In the parlance of the @lens@
 -- package,
 --
--- > rLens' :: IElem (sy:::t) rs => (sy:::t) -> Lens' (Rec rs f) (f t)
-rLens' :: forall r rs sy t f g. (r ~ (sy:::t), IElem r rs, Functor g)
-       => r -> (f t -> g (f t)) -> Rec rs f -> g (Rec rs f)
+-- > rLens' :: IElem r rs => Sing r -> Lens' (Rec rs f) (f (El r))
+rLens' :: forall r rs f g. (IElem r rs, Functor g) => Sing r -> (f (El r) -> g (f (El r))) -> Rec rs f -> g (Rec rs f)
 rLens' _ f = go implicitly
   where go :: Elem r rr -> Rec rr f -> g (Rec rr f)
         go Here (x :& xs) = fmap (:& xs) (f x)
@@ -72,9 +74,8 @@ rLens' _ f = go implicitly
 -- from the @lens@ package. Note that polymorphic update is not
 -- supported. In the parlance of the @lens@ package,
 --
--- > rLens :: IElem (sy:::t) rs => (sy:::t) -> Lens' (PlainRec rs) t
-rLens :: forall r rs sy t g. (r ~ (sy:::t), IElem r rs, Functor g)
-      => r -> (t -> g t) -> PlainRec rs -> g (PlainRec rs)
+-- > rLens :: IElem r rs => Sing r -> Lens' (PlainRec rs) (El r)
+rLens :: forall r rs g. (IElem r rs, Functor g) => Sing r -> (El r -> g (El r)) -> PlainRec rs -> g (PlainRec rs)
 rLens r = rLens' r . lenser runIdentity (const Identity)
   where lenser sa sbt afb s = sbt s <$> afb (sa s)
 {-# INLINE rLens #-}

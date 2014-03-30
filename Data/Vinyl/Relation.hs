@@ -8,50 +8,41 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE UndecidableInstances  #-}
 
 module Data.Vinyl.Relation
   ( (<:)(..)
   , (:~:)
   , (~=)
-  -- , rIso
   ) where
 
-import           Data.Vinyl.Field
-import           Data.Vinyl.Lens
-import           Data.Vinyl.Rec
-import           Data.Vinyl.Witnesses
+import Data.Vinyl.Core
+import Data.Vinyl.Lens
+import Data.Vinyl.Witnesses
 
-import           GHC.Prim             (Constraint)
-
--- | A subtyping relation.
-class (IsSubtype r1 r2) => r1 <: r2 where
-  cast :: r1 -> r2
+import GHC.Prim             (Constraint)
+import Data.Singletons
 
 -- | One record is a subtype of another if the fields of the latter are a
 -- subset of the fields of the former.
-type family IsSubtype r1 r2 :: Constraint
-type instance IsSubtype (Rec ss f) (Rec ts f) = ISubset ts ss
+class (xs :: [k]) <: (ys :: [k]) where
+  cast :: Rec xs f -> Rec ys f
+
+instance xs <: '[] where
+  cast _ = RNil
+
+instance (SingI y, IElem y xs, xs <: ys) => xs <: (y ': ys) where
+  cast xs = rGet' (lookupField (implicitly :: Elem y xs) xs) xs :& cast xs
+    where
+      lookupField :: SingI r => Elem r rs -> Rec rs f -> Sing r
+      lookupField Here      (_ :& _)  = sing
+      lookupField (There p) (_ :& xs) = lookupField p xs
 
 -- | If two records types are subtypes of each other, that means that they
 -- differ only in order of fields.
 type r1 :~: r2 = (r1 <: r2, r2 <: r1)
 
 -- | Term-level record congruence.
-(~=) :: (Eq a, a :~: b) => a -> b -> Bool
+(~=) :: (Eq (Rec xs f), xs :~: ys) => Rec xs f -> Rec ys f -> Bool
 x ~= y = x == (cast y)
 
-instance Rec xs f <: Rec '[] f where
-  cast _ = RNil
-
-instance (y ~ (sy ::: t), IElem y xs, Rec xs f <: Rec ys f) => Rec xs f <: Rec (y ': ys) f where
-  cast r = rGet' field r :& cast r
-    where field = lookupField (implicitly :: Elem y xs) r
-
-lookupField :: Elem x xs -> Rec xs f -> x
-lookupField Here      (_ :& _)  = Field
-lookupField (There p) (_ :& xs) = lookupField p xs
-
--- rIso :: (r1 :~: r2) => Iso' r1 r2
--- rIso = iso cast cast
 

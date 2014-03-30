@@ -4,7 +4,7 @@ module Data.Vinyl.Idiom.Validation where
 
 import Control.Applicative
 import Data.Monoid
-import Data.Vinyl.Classes
+import Data.Vinyl.Core
 import Data.Vinyl.Idiom.Identity
 
 -- | A type which is similar to 'Either', except that it has a
