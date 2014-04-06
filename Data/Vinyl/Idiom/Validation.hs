@@ -2,10 +2,12 @@
 
 module Data.Vinyl.Idiom.Validation where
 
-import Control.Applicative
-import Data.Monoid
 import Data.Vinyl.Core
 import Data.Vinyl.Idiom.Identity
+import Data.Vinyl.Lift
+
+import Control.Applicative
+import Data.Monoid
 
 -- | A type which is similar to 'Either', except that it has a
 -- slightly different Applicative instance.
@@ -15,7 +17,7 @@ data Result e a
   deriving (Show, Eq)
 
 -- | Validators transform identities into results.
-type Validator e = Identity ~> Result e
+type Validator e = Lift (->) Identity (Result e)
 
 instance Functor (Result e) where
   fmap f (Success x) = Success $ f x

@@ -10,6 +10,8 @@
 module Data.Vinyl.Lens where
 
 import Data.Vinyl.Core
+import Data.Vinyl.Derived
+import Data.Vinyl.TyFun
 import Data.Vinyl.Witnesses
 import Data.Vinyl.Idiom.Identity
 
@@ -17,27 +19,27 @@ import Data.Singletons
 import Control.Applicative
 
 -- | Project a field from a 'Rec'.
-rGet' :: IElem r rs => Sing r -> Rec rs f -> f (El r)
+rGet' :: IElem r rs => Sing r -> Rec el f rs -> f (el $ r)
 rGet' r = getConst . rLens' r Const
 {-# INLINE rGet' #-}
 
 -- | Project a field from a 'PlainRec'.
-rGet :: IElem r rs => Sing r -> PlainRec rs -> El r
+rGet :: IElem r rs => Sing r -> PlainRec el rs -> el $ r
 rGet = (runIdentity .) . rGet'
 {-# INLINE rGet #-}
 
 -- | Set a field in a 'Rec' over an arbitrary functor.
-rPut' :: IElem r rs => Sing r -> f (El r) -> Rec rs f -> Rec rs f
+rPut' :: IElem r rs => Sing r -> f (el $ r) -> Rec el f rs -> Rec el f rs
 rPut' r x = runIdentity . rLens' r (Identity . const x)
 {-# INLINE rPut' #-}
 
 -- | Set a field in a 'PlainRec'.
-rPut :: IElem r rs => Sing r -> El r -> PlainRec rs -> PlainRec rs
+rPut :: IElem r rs => Sing r -> el $ r -> PlainRec el rs -> PlainRec el rs
 rPut r x = rPut' r (Identity x)
 {-# INLINE rPut #-}
 
 -- | Modify a field.
-rMod :: (IElem r rs, Functor f) => Sing r -> (El r -> El r) -> Rec rs f -> Rec rs f
+rMod :: (IElem r rs, Functor f) => Sing r -> (el $ r -> el $ r) -> Rec el f rs -> Rec el f rs
 rMod r f = runIdentity . rLens' r (Identity . fmap f)
 {-# INLINE rMod #-}
 
@@ -49,9 +51,9 @@ rMod r f = runIdentity . rLens' r (Identity . fmap f)
 -- package,
 --
 -- > rLens' :: IElem r rs => Sing r -> Lens' (Rec rs f) (f (El r))
-rLens' :: forall r rs f g. (IElem r rs, Functor g) => Sing r -> (f (El r) -> g (f (El r))) -> Rec rs f -> g (Rec rs f)
+rLens' :: forall r rs f g el. (IElem r rs, Functor g) => Sing r -> (f (el $ r) -> g (f (el $ r))) -> Rec el f rs -> g (Rec el f rs)
 rLens' _ f = go implicitly
-  where go :: Elem r rr -> Rec rr f -> g (Rec rr f)
+  where go :: Elem r rr -> Rec el f rr -> g (Rec el f rr)
         go Here (x :& xs) = fmap (:& xs) (f x)
         go (There Here) (a :& x :& xs) = fmap ((a :&) . (:& xs)) (f x)
         go (There (There Here)) (a :& b :& x :& xs) =
@@ -64,7 +66,7 @@ rLens' _ f = go implicitly
           fmap (\xs' -> a :& b :& c :& d :& xs') (go' p xs)
         {-# INLINE go #-}
 
-        go' :: Elem r rr -> Rec rr f -> g (Rec rr f)
+        go' :: Elem r rr -> Rec el f rr -> g (Rec el f rr)
         go' Here (x :& xs) = fmap (:& xs) (f x)
         go' (There p) (x :& xs) = fmap (x :&) (go p xs)
         {-# INLINABLE go' #-}
@@ -74,8 +76,8 @@ rLens' _ f = go implicitly
 -- from the @lens@ package. Note that polymorphic update is not
 -- supported. In the parlance of the @lens@ package,
 --
--- > rLens :: IElem r rs => Sing r -> Lens' (PlainRec rs) (El r)
-rLens :: forall r rs g. (IElem r rs, Functor g) => Sing r -> (El r -> g (El r)) -> PlainRec rs -> g (PlainRec rs)
+-- > rLens :: IElem r rs => Sing r -> Lens' (PlainRec el rs) (el $ r)
+rLens :: forall r rs g el. (IElem r rs, Functor g) => Sing r -> (el $ r -> g (el $ r)) -> PlainRec el rs -> g (PlainRec el rs)
 rLens r = rLens' r . lenser runIdentity (const Identity)
   where lenser sa sbt afb s = sbt s <$> afb (sa s)
 {-# INLINE rLens #-}

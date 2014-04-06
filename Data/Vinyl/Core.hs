@@ -7,46 +7,37 @@
 
 module Data.Vinyl.Core where
 
-import Data.Singletons
+import Data.Vinyl.TyFun
+
 import Control.Applicative
-import Data.Vinyl.Idiom.Identity
-import Data.Vinyl.Idiom.LazyIdentity
+import Data.Singletons
 
--- | A record is parameterized by a list of fields and a type constructor
--- to be applied to the interpretation @El r@ of each of those @r@.
-data Rec :: [k] -> (* -> *) -> * where
-  RNil :: Rec '[] f
-  (:&) :: !(f (El r)) -> !(Rec rs f) -> Rec (r ': rs) f
+-- | A record is parameterized by a universe @u@, list of rows @rs@, a large
+-- elimination @el@, and a type constructor @f@ to be applied to the
+-- interpretation @el r@ of each of those @r@.
+data Rec :: (TyFun u * -> *) -> (* -> *) -> [u] -> * where
+  RNil :: Rec el f '[]
+  (:&) :: !(f (el $ r)) -> !(Rec el f rs) -> Rec el f (r ': rs)
 infixr :&
-
--- | Vinyl uses a Tarski-style universe encoding for its fields. @El@ is the
--- interpretation of (data)kinds representing codes of types.
-type family El (r :: k) :: *
-
--- | Sections of @f ~> g@ are natural transformations from @f@ to @g@.
-newtype (f ~> g) x = NT { runNT :: f x -> g x }
 
 -- | Shorthand for a record with a single field. Lifts the field's
 -- value into the chosen functor automatically.
-(=:) :: Applicative f => Sing r -> El r -> Rec '[r] f
-_ =: b = pure b :& RNil
+(=:) :: Applicative f => Sing k -> el $ k -> Rec el f '[ k ]
+sing =: x = pure x :& RNil
 
--- | Shorthand for a record with a single field of an 'Applicative'
--- type. This is useful for @Applicative@ or @Monad@ic intialization
--- of records as in the idiom:
+-- | Shorthand for a record with a single field. This is useful for
+-- @Applicative@ or @Monad@ic intialization of records as in the idiom:
 --
 -- > dist $ myField <-: someIO <+> yourField <-: otherIO
-(<-:) :: Applicative f => Sing r -> f (El r) -> Rec '[r] f
-_ <-: b = b :& RNil
+(<-:) :: Sing r -> f (el $ r) -> Rec el f '[r]
+_ <-: x = x :& RNil
 infixr 6 <-:
 
-type PlainRec rs = Rec rs Identity
-type LazyPlainRec rs = Rec rs LazyIdentity
+-- | Records constructed using the above combinators will often be polymorphic
+-- in their interpreter @el@. To avoid providing a type annotation, one can
+-- provide their interpreters with a singleton tag and pass that in.
+withUniverse :: (forall x. el x) -> Rec el f rs -> Rec el f rs
+withUniverse _ x = x
+{-# INLINE withUniverse #-}
 
--- | Fixes a polymorphic record into the 'Identity' functor.
-toPlainRec :: (forall f. Applicative f => Rec rs f) -> PlainRec rs
-toPlainRec xs = xs
-
-toLazyPlainRec :: (forall f. Applicative f => Rec rs f) -> LazyPlainRec rs
-toLazyPlainRec xs = xs
 

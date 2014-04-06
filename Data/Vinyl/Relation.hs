@@ -25,7 +25,7 @@ import Data.Singletons
 -- | One record is a subtype of another if the fields of the latter are a
 -- subset of the fields of the former.
 class (xs :: [k]) <: (ys :: [k]) where
-  cast :: Rec xs f -> Rec ys f
+  cast :: Rec el f xs -> Rec el f ys
 
 instance xs <: '[] where
   cast _ = RNil
@@ -33,7 +33,7 @@ instance xs <: '[] where
 instance (SingI y, IElem y xs, xs <: ys) => xs <: (y ': ys) where
   cast xs = rGet' (lookupField (implicitly :: Elem y xs) xs) xs :& cast xs
     where
-      lookupField :: SingI r => Elem r rs -> Rec rs f -> Sing r
+      lookupField :: SingI r => Elem r rs -> Rec el f rs -> Sing r
       lookupField Here      (_ :& _)  = sing
       lookupField (There p) (_ :& xs) = lookupField p xs
 
@@ -42,7 +42,7 @@ instance (SingI y, IElem y xs, xs <: ys) => xs <: (y ': ys) where
 type r1 :~: r2 = (r1 <: r2, r2 <: r1)
 
 -- | Term-level record congruence.
-(~=) :: (Eq (Rec xs f), xs :~: ys) => Rec xs f -> Rec ys f -> Bool
+(~=) :: (Eq (Rec el f xs), xs :~: ys) => Rec el f xs -> Rec el f ys -> Bool
 x ~= y = x == (cast y)
 
 
