@@ -4,7 +4,7 @@ module Data.Vinyl.Idiom.Validation where
 
 import Data.Vinyl.Core
 import Data.Vinyl.Idiom.Identity
-import Data.Vinyl.Lift
+import Data.Vinyl.Functor
 
 import Control.Applicative
 import Data.Monoid

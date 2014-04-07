@@ -22,7 +22,7 @@ module Data.Vinyl.Operators
   ) where
 
 import Data.Vinyl.Core
-import Data.Vinyl.Lift
+import Data.Vinyl.Functor
 import Data.Vinyl.TyFun
 import Data.Vinyl.Idiom.Identity
 import Data.Vinyl.Idiom.LazyIdentity

@@ -22,7 +22,7 @@ extensions first:
 > {-# LANGUAGE GADTs, TemplateHaskell #-}
 > import Data.Vinyl
 > import Data.Vinyl.TyFun
-> import Data.Vinyl.Lift
+> import Data.Vinyl.Functor
 > import Data.Vinyl.Idiom.Identity
 > import Data.Vinyl.Idiom.Validation
 > import Control.Applicative
