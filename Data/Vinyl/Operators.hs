@@ -39,7 +39,7 @@ type family (as :: [k]) ++ (bs :: [k]) :: [k]
 type instance '[] ++ bs = bs
 type instance (a ': as) ++ bs  = a ': (as ++ bs)
 
-(<<$>>) :: (forall x. f x -> g x) -> Rec el f rs-> Rec el g rs
+(<<$>>) :: (forall x. f x -> g x) -> Rec el f rs -> Rec el g rs
 _   <<$>> RNil    = RNil
 eta <<$>> x :& xs = eta x :& (eta <<$>> xs)
 infixl 8 <<$>>

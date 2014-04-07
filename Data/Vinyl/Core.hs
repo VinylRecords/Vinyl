@@ -39,5 +39,3 @@ infixr 6 <-:
 withUniverse :: (forall x. el x) -> Rec el f rs -> Rec el f rs
 withUniverse _ x = x
 {-# INLINE withUniverse #-}
-
-
