@@ -266,7 +266,7 @@ Fixing a polymorphic record into the Identity Functor
 If you produced a record using `(=:)` and `(<+>)` without providing a
 type annotation, then its type is something like this:
 
-< record :: Applicative f => Record [ <bunch of stuff> ] f
+< record :: Applicative f => Rec el f [ <bunch of stuff> ]
 
 The problem is then we can’t do anything with the record that requires
 us to know what its functor is. For instance, `cast` will fail. So, we
@@ -274,7 +274,7 @@ might try to provide a type annotation, but that can be a bit brittle
 and frustrating to have to do. To alleviate this problem, `toPlainRec` is
 provided:
 
-< toPlainRec :: (forall f. Applicative f => Rec rs f) -> PlainRec rs
+< toPlainRec :: (forall f. Applicative f => Rec el f rs) -> PlainRec el rs
 
 ---
 
