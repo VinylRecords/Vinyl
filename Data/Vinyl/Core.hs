@@ -4,6 +4,7 @@
 {-# LANGUAGE RankNTypes    #-}
 {-# LANGUAGE TypeFamilies  #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Data.Vinyl.Core where
 
@@ -19,6 +20,9 @@ data Rec :: (TyFun u * -> *) -> (* -> *) -> [u] -> * where
   RNil :: Rec el f '[]
   (:&) :: !(f (el $ r)) -> !(Rec el f rs) -> Rec el f (r ': rs)
 infixr :&
+
+data CoRec :: (TyFun u * -> *) -> (* -> *) -> [u] -> * where
+  (:>) :: IElem r rs => Sing r -> !(f (el $ r)) -> CoRec el f rs
 
 -- | Shorthand for a record with a single field. Lifts the field's
 -- value into the chosen functor automatically.

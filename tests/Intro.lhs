@@ -53,6 +53,19 @@ Now, let’s try to make an entity that represents a man:
 >    <+> SSleeping =: False
 
 
+> sumTest :: CoRec ElF Identity
+> sumTest = SName :> pure "jon"
+
+> sumElimTest :: CoRec ElF Identity -> String
+> sumElimTest (SName :> _) = "name"
+> sumElimTest (SAge :> _) = "age"
+> sumElimTest (SSleeping :> _) = "sleeping"
+> sumElimTest (SMaster :> _) = "master"
+
+> -- |
+> -- >>> sumElimTest sumTest
+> -- "name"
+
 We could make an alias for the sort of entity that jon is:
 
 > type LifeForm = [Name, Age, Sleeping]
