@@ -31,7 +31,11 @@ library
                      , Data.Vinyl.Idiom.LazyIdentity
                      , Data.Vinyl.TyFun
                      , Data.Vinyl.Functor
-  build-depends:       base >=4.6 && <= 5, ghc-prim, singletons == 0.10.0
+                     , Data.Vinyl.Universe
+                     , Data.Vinyl.Universe.Id
+                     , Data.Vinyl.Universe.Const
+                     , Data.Vinyl.Universe.Field
+  build-depends:       base >=4.6 && <= 5, ghc-prim
   default-language:    Haskell2010
 
 benchmark bench-builder-all

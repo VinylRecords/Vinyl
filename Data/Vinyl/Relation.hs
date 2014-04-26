@@ -13,12 +13,14 @@ module Data.Vinyl.Relation
   ( (<:)(..)
   , (:~:)
   , (~=)
+  , RecAll
   ) where
 
 import Data.Vinyl.Core
 import Data.Vinyl.Lens
 import Data.Vinyl.Witnesses
 import Data.Vinyl.TyFun
+import GHC.Prim (Constraint)
 
 -- | One record is a subtype of another if the fields of the latter are a
 -- subset of the fields of the former.
@@ -43,4 +45,7 @@ type r1 :~: r2 = (r1 <: r2, r2 <: r1)
 (~=) :: (Eq (Rec el f xs), xs :~: ys) => Rec el f xs -> Rec el f ys -> Bool
 x ~= y = x == (cast y)
 
+type family RecAll (el :: TyFun k l -> *) (f :: * -> *) (rs :: [k]) (c :: * -> Constraint) :: Constraint
+type instance RecAll el f '[] c = ()
+type instance RecAll el f (r ': rs) c = (c (f (el $ r)), RecAll el f rs c)
 

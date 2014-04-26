@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns          #-}
+{-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE CPP                   #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
@@ -8,31 +9,29 @@
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE ConstraintKinds       #-}
 
 module Data.Vinyl.Instances where
 
 import Data.Vinyl.Core
 import Data.Vinyl.Derived
 import Data.Vinyl.TyFun
+import Data.Vinyl.Relation
+import Data.Vinyl.Witnesses
+import Data.Vinyl.Universe.Const as U
 
-import Data.Singletons
 import Data.Monoid
 import Control.Applicative
 import Foreign.Ptr (castPtr, plusPtr)
 import Foreign.Storable (Storable(..))
 import Data.Vinyl.Idiom.Identity
 
-instance Show (Rec el f '[]) where
-  show RNil = "{}"
-instance forall g (r::k) rs el. (
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
-    KnownSymbol sy,
-#else
-    SingI r,
-#endif
-    Show (g (el $ r)), SingKind ('KProxy :: KProxy k),
-    Show (DemoteRep ('KProxy :: KProxy k)), Show (Rec el g rs)) => Show (Rec el g (r ': rs)) where
-  show (x :& xs) = show (fromSing (sing :: Sing r)) ++ " :=: " ++ show x ++ ", " ++ show xs
+showWithNames :: RecAll el f rs Show => PlainRec (U.Const String) rs -> Rec el f rs -> String
+showWithNames RNil RNil = "{}"
+showWithNames (Identity n :& ns) (x :& xs) = "{" ++ n ++ " =: " ++ show x ++ "} <+> " ++ showWithNames ns xs
+
+rshow :: (Implicit (PlainRec (U.Const String) rs), RecAll el f rs Show) => Rec el f rs -> String
+rshow = showWithNames implicitly
 
 instance Eq (Rec el f '[]) where
   _ == _ = True

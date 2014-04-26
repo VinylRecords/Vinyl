@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds     #-}
+{-# LANGUAGE GADTs         #-}
 {-# LANGUAGE PolyKinds     #-}
 {-# LANGUAGE TypeFamilies  #-}
 {-# LANGUAGE TypeOperators #-}
@@ -11,5 +12,6 @@ import GHC.TypeLits
 data (sy :: k) ::: (t :: *)
 data instance Sing (sy ::: t) = Field (Sing sy)
 
-data ElField :: (TyFun * *) -> *
+data ElField :: (TyFun * *) -> * where
+  ElField :: ElField el
 type instance ElField $ (sy ::: t) = t
