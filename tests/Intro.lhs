@@ -38,13 +38,11 @@ Let’s define a universe of fields which we want to use:
 > $(singletons [d|
 >   data Fields = Name | Age | Sleeping | Master deriving Show
 >   |])
-> type family ElF_ (f :: Fields) :: *
-> type instance ElF_ Name = String
-> type instance ElF_ Age = Int
-> type instance ElF_ Sleeping = Bool
 > data ElF :: (TyFun Fields *) -> * where
 >   ElF :: ElF el
-> type instance ElF $ x = ElF_ x
+> type instance ElF $ Name = String
+> type instance ElF $ Age = Int
+> type instance ElF $ Sleeping = Bool
 
 Now, let’s try to make an entity that represents a man:
 
@@ -62,7 +60,7 @@ The types are inferred, though, so this is unnecessary unless you’d
 like to reuse the type later. Now, make a dog! Dogs are life-forms,
 but unlike men, they have masters. So, let’s build my dog:
 
-> type instance ElF_ Master = PlainRec ElF LifeForm
+> type instance ElF $ Master = PlainRec ElF LifeForm
 
 > tucker = withUniverse ElF $
 >   SName =: "tucker"
