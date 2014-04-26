@@ -11,7 +11,5 @@ import GHC.TypeLits
 data (sy :: k) ::: (t :: *)
 data instance Sing (sy ::: t) = Field (Sing sy)
 
-type family ElField_ (r :: *) :: *
-type instance ElField_ (sy ::: t) = t
 data ElField :: (TyFun * *) -> *
-type instance ElField $ r = ElField_ r
+type instance ElField $ (sy ::: t) = t

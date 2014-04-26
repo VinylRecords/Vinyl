@@ -18,8 +18,8 @@ module Data.Vinyl.Relation
 import Data.Vinyl.Core
 import Data.Vinyl.Lens
 import Data.Vinyl.Witnesses
+import Data.Vinyl.TyFun
 
-import GHC.Prim             (Constraint)
 import Data.Singletons
 
 -- | One record is a subtype of another if the fields of the latter are a
