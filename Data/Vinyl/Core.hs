@@ -8,9 +8,7 @@
 module Data.Vinyl.Core where
 
 import Data.Vinyl.TyFun
-
 import Control.Applicative
-import Data.Singletons
 
 -- | A record is parameterized by a universe @u@, list of rows @rs@, a large
 -- elimination @el@, and a type constructor @f@ to be applied to the
@@ -22,14 +20,14 @@ infixr :&
 
 -- | Shorthand for a record with a single field. Lifts the field's
 -- value into the chosen functor automatically.
-(=:) :: Applicative f => Sing k -> el $ k -> Rec el f '[ k ]
+(=:) :: Applicative f => sing k -> el $ k -> Rec el f '[ k ]
 sing =: x = pure x :& RNil
 
 -- | Shorthand for a record with a single field. This is useful for
 -- @Applicative@ or @Monad@ic intialization of records as in the idiom:
 --
 -- > dist $ myField <-: someIO <+> yourField <-: otherIO
-(<-:) :: Sing r -> f (el $ r) -> Rec el f '[r]
+(<-:) :: sing r -> f (el $ r) -> Rec el f '[r]
 _ <-: x = x :& RNil
 infixr 6 <-:
 
@@ -39,3 +37,4 @@ infixr 6 <-:
 withUniverse :: (forall x. el x) -> Rec el f rs -> Rec el f rs
 withUniverse _ x = x
 {-# INLINE withUniverse #-}
+
