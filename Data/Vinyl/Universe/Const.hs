@@ -10,4 +10,4 @@ import Data.Vinyl.TyFun
 data Const :: * -> (TyFun k *) -> * where
   Const :: Const t el
 
-type instance Const t $ x = t
+type instance App (Const t) x = t
