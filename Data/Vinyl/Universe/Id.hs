@@ -3,7 +3,7 @@
 {-# LANGUAGE PolyKinds    #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Data.Vinyl.Universe.Id (Id) where
+module Data.Vinyl.Universe.Id (Id(..)) where
 
 import Data.Vinyl.TyFun
 

@@ -3,7 +3,7 @@
 {-# LANGUAGE PolyKinds    #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Data.Vinyl.Universe.Const (Const) where
+module Data.Vinyl.Universe.Const (Const(..)) where
 
 import Data.Vinyl.TyFun
 

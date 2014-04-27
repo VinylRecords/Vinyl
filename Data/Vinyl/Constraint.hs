@@ -9,7 +9,7 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 
-module Data.Vinyl.Relation
+module Data.Vinyl.Constraint
   ( (<:)(..)
   , (:~:)
   , (~=)
@@ -17,7 +17,6 @@ module Data.Vinyl.Relation
   ) where
 
 import Data.Vinyl.Core
-import Data.Vinyl.Lens
 import Data.Vinyl.Witnesses
 import Data.Vinyl.TyFun
 import GHC.Prim (Constraint)
