@@ -7,7 +7,12 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module Data.Vinyl.TH where
+module Data.Vinyl.TH
+  ( makeUniverse
+  , makeUniverse'
+  , Semantics(..)
+  , semantics
+  ) where
 
 import Language.Haskell.TH
 import Data.Vinyl.TyFun
@@ -28,7 +33,6 @@ makeUniverse' u elName = do
   let cons = [NormalC elu []]
   return [DataD [] elu tvs cons []]
 
-data Test = A | B Test
 class TyRep r where
   asType :: r -> TypeQ
 instance TyRep Name where
@@ -39,9 +43,7 @@ instance TyRep (Q Type) where
 data Semantics = forall s t. (TyRep t, TyRep s) => t :~> s
 
 semantics :: Name -> [Semantics] -> Q [Dec]
-semantics elu sems = do
-  sequence (map inst sems)
-
+semantics elu sems = sequence (map inst sems)
   where
     inst :: Semantics -> Q Dec
     inst (u :~> t) = do
