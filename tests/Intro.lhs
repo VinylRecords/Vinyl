@@ -40,9 +40,10 @@ Let’s define a universe of fields which we want to use:
 >   data Fields = Name | Age | Sleeping | Master deriving Show
 >   |])
 > makeUniverse' ''Fields "ElF"
-> type instance ElF $ Name = String
-> type instance ElF $ Age = Int
-> type instance ElF $ Sleeping = Bool
+> semantics ''ElF [ 'Name     :~> ''String
+>                 , 'Age      :~> ''Int
+>                 , 'Sleeping :~> ''Bool
+>                 ]
 
 Now, let’s try to make an entity that represents a man:
 
@@ -60,7 +61,7 @@ The types are inferred, though, so this is unnecessary unless you’d
 like to reuse the type later. Now, make a dog! Dogs are life-forms,
 but unlike men, they have masters. So, let’s build my dog:
 
-> type instance ElF $ Master = PlainRec ElF LifeForm
+> semantics ''ElF [ 'Master :~> [t| PlainRec ElF LifeForm |] ]
 
 > tucker = withUniverse ElF $
 >   SName =: "tucker"

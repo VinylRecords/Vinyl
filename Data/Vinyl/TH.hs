@@ -3,6 +3,9 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Data.Vinyl.TH where
 
@@ -25,3 +28,24 @@ makeUniverse' u elName = do
   let cons = [NormalC elu []]
   return [DataD [] elu tvs cons []]
 
+data Test = A | B Test
+class TyRep r where
+  asType :: r -> TypeQ
+instance TyRep Name where
+  asType = conT
+instance TyRep (Q Type) where
+  asType = id
+
+data Semantics = forall s t. (TyRep t, TyRep s) => t :~> s
+
+semantics :: Name -> [Semantics] -> Q [Dec]
+semantics elu sems = do
+  sequence (map inst sems)
+
+  where
+    inst :: Semantics -> Q Dec
+    inst (u :~> t) = do
+      elu' <- conT elu
+      u' <- asType u
+      t' <- asType t
+      return $ TySynInstD ''App [elu',u'] t'
