@@ -32,7 +32,9 @@ import Data.Vinyl.Derived
 import qualified Data.Vinyl.Idiom.Identity as I
 import qualified Data.Vinyl.Idiom.LazyIdentity as I
 import qualified Data.Vinyl.Universe.Const as U
+
 import Control.Applicative
+import qualified Data.List as L (intercalate)
 
 -- | Append for records.
 (<+>) :: Rec el f as -> Rec el f bs -> Rec el f (as ++ bs)
@@ -86,8 +88,11 @@ rdistLazy :: Applicative f => Rec el f rs -> f (LazyPlainRec el rs)
 rdistLazy = rtraverse $ fmap I.LazyIdentity
 
 showWithNames :: RecAll el f rs Show => PlainRec (U.Const String) rs -> Rec el f rs -> String
-showWithNames RNil RNil = "{}"
-showWithNames (I.Identity n :& ns) (x :& xs) = "{" ++ n ++ " =: " ++ show x ++ "} <+> " ++ showWithNames ns xs
+showWithNames names rec = "{ " ++ L.intercalate ", " (go names rec []) ++ " }"
+  where
+    go :: RecAll el f rs Show => PlainRec (U.Const String) rs -> Rec el f rs -> [String] -> [String]
+    go RNil RNil ss = ss
+    go (I.Identity n :& ns) (x :& xs) ss = (n ++ " =: " ++ show x) : go ns xs ss
 
 rshow :: (Implicit (PlainRec (U.Const String) rs), RecAll el f rs Show) => Rec el f rs -> String
 rshow = showWithNames implicitly
