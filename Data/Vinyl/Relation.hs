@@ -30,7 +30,7 @@ class (xs :: [k]) <: (ys :: [k]) where
 instance xs <: '[] where
   cast _ = RNil
 
-instance (IElem y xs, xs <: ys) => xs <: (y ': ys) where
+instance (y ∈ xs, xs <: ys) => xs <: (y ': ys) where
   cast xs = ith (implicitly :: Elem y xs) xs :& cast xs
     where
       ith :: Elem r rs -> Rec el f rs -> f (el $ r)
