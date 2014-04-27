@@ -22,6 +22,7 @@ extensions first:
 > {-# LANGUAGE GADTs, TemplateHaskell #-}
 > import Data.Vinyl
 > import Data.Vinyl.TyFun
+> import Data.Vinyl.TH
 > import Data.Vinyl.Functor
 > import Data.Vinyl.Idiom.Identity
 > import Data.Vinyl.Idiom.Validation
@@ -38,8 +39,7 @@ Let’s define a universe of fields which we want to use:
 > $(singletons [d|
 >   data Fields = Name | Age | Sleeping | Master deriving Show
 >   |])
-> data ElF :: (TyFun Fields *) -> * where
->   ElF :: ElF el
+> makeUniverse' ''Fields "ElF"
 > type instance ElF $ Name = String
 > type instance ElF $ Age = Int
 > type instance ElF $ Sleeping = Bool
