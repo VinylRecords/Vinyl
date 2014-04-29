@@ -18,13 +18,16 @@ Let’s work through a quick example. We’ll need to enable some language
 extensions first:
 
 > {-# LANGUAGE DataKinds, PolyKinds, TypeOperators, TypeFamilies #-}
-> {-# LANGUAGE FlexibleContexts, NoMonomorphismRestriction #-}
-> {-# LANGUAGE GADTs, TemplateHaskell #-}
+> {-# LANGUAGE FlexibleContexts, FlexibleInstances, NoMonomorphismRestriction #-}
+> {-# LANGUAGE GADTs, TemplateHaskell, TypeSynonymInstances #-}
 > import Data.Vinyl
 > import Data.Vinyl.TyFun
+> import Data.Vinyl.TH
 > import Data.Vinyl.Functor
 > import Data.Vinyl.Idiom.Identity
 > import Data.Vinyl.Idiom.Validation
+> import Data.Vinyl.Witnesses
+> import qualified Data.Vinyl.Universe.Const as U
 > import Control.Applicative
 > import Control.Lens hiding (Identity)
 > import Data.Char
@@ -38,13 +41,11 @@ Let’s define a universe of fields which we want to use:
 > $(singletons [d|
 >   data Fields = Name | Age | Sleeping | Master deriving Show
 >   |])
-> type family ElF_ (f :: Fields) :: *
-> type instance ElF_ Name = String
-> type instance ElF_ Age = Int
-> type instance ElF_ Sleeping = Bool
-> data ElF :: (TyFun Fields *) -> * where
->   ElF :: ElF el
-> type instance ElF $ x = ElF_ x
+> makeUniverse' ''Fields "ElF"
+> semantics ''ElF [ 'Name     :~> ''String
+>                 , 'Age      :~> ''Int
+>                 , 'Sleeping :~> ''Bool
+>                 ]
 
 Now, let’s try to make an entity that represents a man:
 
@@ -71,11 +72,21 @@ We could make an alias for the sort of entity that jon is:
 > type LifeForm = [Name, Age, Sleeping]
 > jon :: PlainRec ElF LifeForm
 
+We can print out the record by assigning names to each field:
+
+> instance Implicit (PlainRec (U.Const String) [ Name, Age, Sleeping ]) where
+>   implicitly = SName     =: "name"
+>            <+> SAge      =: "age"
+>            <+> SSleeping =: "sleeping"
+
+> -- | >>> rshow jon
+> -- "{ name =: \"jon\", age =: 20, sleeping =: False }"
+
 The types are inferred, though, so this is unnecessary unless you’d
 like to reuse the type later. Now, make a dog! Dogs are life-forms,
 but unlike men, they have masters. So, let’s build my dog:
 
-> type instance ElF_ Master = PlainRec ElF LifeForm
+> semantics ''ElF [ 'Master :~> [t| PlainRec ElF LifeForm |] ]
 
 > tucker = withUniverse ElF $
 >   SName =: "tucker"
