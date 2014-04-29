@@ -27,6 +27,7 @@ extensions first:
 > import Data.Vinyl.Idiom.Identity
 > import Data.Vinyl.Idiom.Validation
 > import Data.Vinyl.Witnesses
+> import Data.Vinyl.Corecord
 > import qualified Data.Vinyl.Universe.Const as U
 > import Control.Applicative
 > import Control.Lens hiding (Identity)
@@ -54,10 +55,9 @@ Now, let’s try to make an entity that represents a man:
 >    <+> SSleeping =: False
 
 
-> sumTest :: CoRec ElF Identity
 > sumTest = SName :> pure "jon"
 
-> sumElimTest :: CoRec ElF Identity -> String
+> sumElimTest :: CoRec Sing ElF Identity [Name, Age, Sleeping, Master] -> String
 > sumElimTest (SName :> _) = "name"
 > sumElimTest (SAge :> _) = "age"
 > sumElimTest (SSleeping :> _) = "sleeping"
