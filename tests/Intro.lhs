@@ -27,6 +27,7 @@ extensions first:
 > import Data.Vinyl.Idiom.Identity
 > import Data.Vinyl.Idiom.Validation
 > import Data.Vinyl.Witnesses
+> import Data.Vinyl.Corecord
 > import qualified Data.Vinyl.Universe.Const as U
 > import Control.Applicative
 > import Control.Lens hiding (Identity)
@@ -53,6 +54,18 @@ Now, let’s try to make an entity that represents a man:
 >    <+> SAge =: 20
 >    <+> SSleeping =: False
 
+
+> sumTest = SName :> pure "jon"
+
+> sumElimTest :: CoRec Sing ElF Identity [Name, Age, Sleeping, Master] -> String
+> sumElimTest (SName :> _) = "name"
+> sumElimTest (SAge :> _) = "age"
+> sumElimTest (SSleeping :> _) = "sleeping"
+> sumElimTest (SMaster :> _) = "master"
+
+> -- |
+> -- >>> sumElimTest sumTest
+> -- "name"
 
 We could make an alias for the sort of entity that jon is:
 
