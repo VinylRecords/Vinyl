@@ -30,7 +30,7 @@ import Data.Vinyl.Witnesses
 import Data.Vinyl.Constraint
 import Data.Vinyl.Derived
 import qualified Data.Vinyl.Idiom.Identity as I
-import qualified Data.Vinyl.Idiom.LazyIdentity as I
+import qualified Data.Vinyl.Idiom.Thunk as I
 import qualified Data.Vinyl.Universe.Const as U
 
 import Control.Applicative
@@ -85,7 +85,7 @@ rdist :: Applicative f => Rec el f rs -> f (PlainRec el rs)
 rdist = rtraverse $ fmap I.Identity
 
 rdistLazy :: Applicative f => Rec el f rs -> f (LazyPlainRec el rs)
-rdistLazy = rtraverse $ fmap I.LazyIdentity
+rdistLazy = rtraverse $ fmap I.Thunk
 
 showWithNames :: RecAll el f rs Show => PlainRec (U.Const String) rs -> Rec el f rs -> String
 showWithNames names rec = "{ " ++ L.intercalate ", " (go names rec []) ++ " }"

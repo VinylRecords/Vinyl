@@ -27,7 +27,7 @@ library
                      , Data.Vinyl.Constraint
                      , Data.Vinyl.Idiom.Validation
                      , Data.Vinyl.Idiom.Identity
-                     , Data.Vinyl.Idiom.LazyIdentity
+                     , Data.Vinyl.Idiom.Thunk
                      , Data.Vinyl.TyFun
                      , Data.Vinyl.Functor
                      , Data.Vinyl.Universe
