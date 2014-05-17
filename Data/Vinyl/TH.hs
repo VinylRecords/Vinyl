@@ -50,4 +50,4 @@ semantics elu sems = sequence (map inst sems)
       elu' <- conT elu
       u' <- asType u
       t' <- asType t
-      return $ TySynInstD ''App [elu',u'] t'
+      return $ TySynInstD ''App (TySynEqn [elu',u'] t')
