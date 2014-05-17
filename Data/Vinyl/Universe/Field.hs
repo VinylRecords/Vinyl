@@ -11,9 +11,6 @@ import GHC.TypeLits
 
 data (sy :: k) ::: (t :: *)
 
-data SField :: * -> * where
-  SField :: KnownSymbol sy => SField (sy ::: t)
-
 data ElField :: (TyFun * *) -> * where
   ElField :: ElField el
 type instance App ElField (sy ::: t) = t
