@@ -3,11 +3,10 @@
 {-# LANGUAGE PolyKinds    #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Data.Vinyl.Universe.Id (Id(..)) where
+module Data.Vinyl.Universe.Id where
 
 import Data.Vinyl.TyFun
 
 data Id :: (TyFun k k) -> * where
   Id :: Id el
 type instance App Id x = x
-

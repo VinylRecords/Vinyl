@@ -57,11 +57,11 @@ Now, let’s try to make an entity that represents a man:
 We could make an alias for the sort of entity that jon is:
 
 > type LifeForm = [Name, Age, Sleeping]
-> jon :: PlainRec ElF LifeForm
+> jon :: Rec ElF LifeForm
 
 We can print out the record by assigning names to each field:
 
-> instance Implicit (PlainRec (U.Const String) [ Name, Age, Sleeping ]) where
+> instance Implicit (Rec (U.Const String) [ Name, Age, Sleeping ]) where
 >   implicitly = SName     =: "name"
 >            <+> SAge      =: "age"
 >            <+> SSleeping =: "sleeping"
@@ -73,7 +73,7 @@ The types are inferred, though, so this is unnecessary unless you’d
 like to reuse the type later. Now, make a dog! Dogs are life-forms,
 but unlike men, they have masters. So, let’s build my dog:
 
-> semantics ''ElF [ 'Master :~> [t| PlainRec ElF LifeForm |] ]
+> semantics ''ElF [ 'Master :~> [t| Rec ElF LifeForm |] ]
 
 > tucker = withUniverse ElF $
 >   SName =: "tucker"
@@ -95,7 +95,7 @@ of different type). Luckily, we can use the built-in lenses to focus
 on a particular field in the record for access and update, without
 losing additional information:
 
-> wakeUp :: (Sleeping ∈ fields) => PlainRec ElF fields -> PlainRec ElF fields
+> wakeUp :: (Sleeping ∈ fields) => Rec ElF fields -> Rec ElF fields
 > wakeUp = SSleeping `rPut` False
 
 Now, the type annotation on wakeUp was not necessary; I just wanted to
@@ -120,7 +120,7 @@ We can also access the entire lens for a field using the rLens
 function; since lenses are composable, it’s super easy to do deep
 update on a record:
 
-> masterSleeping :: (Master ∈ fields) => Lens' (PlainRec ElF fields) Bool
+> masterSleeping :: (Master ∈ fields) => Lens' (Rec ElF fields) Bool
 > masterSleeping = rLens SMaster . rLens SSleeping
 > tucker'' = masterSleeping .~ True $ tucker'
 
@@ -134,7 +134,7 @@ Again, the type annotation is unnecessary.
 Subtyping Relation and Coercion
 -------------------------------
 
-A record `PlainRec xs` is a subtype of a record `PlainRec ys` if `ys ⊆ xs`;
+A record `Rec el xs` is a subtype of a record `Rec el ys` if `ys ⊆ xs`;
 that is to say, if one record can do everything that another record
 can, the former is a subtype of the latter. As such, we should be able
 to provide an upcast operator which “forgets” whatever makes one
@@ -143,33 +143,19 @@ order).
 
 Therefore, the following works:
 
-> upcastedTucker :: PlainRec ElF LifeForm
-> upcastedTucker = cast (toPlainRec tucker)
-
-The reason for using `toPlainRec` will become clear a bit later.
+> upcastedTucker :: Rec ElF LifeForm
+> upcastedTucker = cast tucker
 
 The subtyping relationship between record types is expressed with the
 `(<:)` constraint; so, cast is of the following type:
 
-< cast :: r1 <: r2 => Rec r1 f -> Rec r2 f
+< cast :: r1 <: r2 => Rec el r1 -> Rec el r2
 
 Also provided is a `(≅)` constraint which indicates record congruence
 (that is, two record types differ only in the order of their fields).
 
-Records are polymorphic over functors
+Records may be lifted into over functors
 -------------------------------------
-
-So far, we’ve been working with the `PlainRec` type; but below that,
-there is something a bit more advanced called `Rec`, which looks like
-this:
-
-< data Rec :: (TyFun u * -> *) -> (* -> *) -> [u] -> * where
-<   RNil :: Rec el f '[]
-<   (:&) :: f (el $ r) -> Rec el f rs -> Rec el f (r ': rs)
-
-The second parameter is a functor, in which every element of the
-record will be placed. In `PlainRec`, the functor is just set to
-`Identity`. Let’s try and motivate this stuff with an example.
 
 Let’s imagine that we want to do validation on a record that
 represents a name and an age:
@@ -181,13 +167,13 @@ positive. For validation, we’ll use a type that’s included here called
 `Result e a`, which is similar to `Either`, except that its
 `Applicative` instance accumulates monoidal errors on the left.
 
-> goodPerson :: PlainRec ElF Person
+> goodPerson :: Rec ElF Person
 > goodPerson = SName =: "Jon"
 >          <+> SAge  =: 20
 > badPerson = SName =: "J#@#$on"
 >         <+> SAge  =: 20
 
-> validatePerson :: PlainRec ElF Person -> Result [String] (PlainRec ElF Person)
+> validatePerson :: Rec ElF Person -> Result [String] (Rec ElF Person)
 > validatePerson p = (\n a -> SName =: n <+> SAge =: a) <$> vName <*> vAge where
 >   vName = validateName (rGet SName p)
 >   vAge  = validateAge  (rGet SAge p)
@@ -226,11 +212,11 @@ Vinyl provides a type of validators, which is the class of functions from the
 Let’s parameterize a record by it: when we do, then an element of type
 `a` should be a function `Identity a -> Result e a`:
 
-> vperson :: Rec ElF (Validator [String]) Person
+> vperson :: Rec (Validator [String] :. ElF) Person
 > vperson = Lift validateName :& Lift validateAge :& RNil where
->    validateName (Identity str) | all isAlpha str = Success str
+>    validateName str | all isAlpha str = Success str
 >    validateName _ = Failure [ "name must be alphabetic" ]
->    validateAge (Identity i) | i >= 0 = Success i
+>    validateAge i | i >= 0 = Success i
 >    validateAge _ = Failure [ "age must be positive" ]
 
 
@@ -238,26 +224,26 @@ And we can use the special application operator `<<*>>` (which is
 analogous to `<*>`, but generalized a bit) to use this to validate a
 record:
 
-> goodPersonResult = vperson <<*>> goodPerson
-> badPersonResult  = vperson <<*>> badPerson
+> goodPersonResult = vperson <<*>> leftComposeIdentity' goodPerson
+> badPersonResult  = vperson <<*>> leftComposeIdentity' badPerson
 
 < goodPersonResult === SName :=: Success "Jon", SAge :=: Success 20, {}
 < badPersonResult  === SName :=: Failure ["name must be alphabetic"], SAge :=: Success 20, {}
 
 > -- |
-> -- >>> isSuccess $ goodPersonResult ^. rLens' SName
+> -- >>> isSuccess $ goodPersonResult ^. rLens SName
 > -- True
-> -- >>> isSuccess $ goodPersonResult ^. rLens' SAge
+> -- >>> isSuccess $ goodPersonResult ^. rLens SAge
 > -- True
-> -- >>> isSuccess $ badPersonResult ^. rLens' SName
+> -- >>> isSuccess $ badPersonResult ^. rLens SName
 > -- False
-> -- >>> isSuccess $ badPersonResult ^. rLens' SAge
+> -- >>> isSuccess $ badPersonResult ^. rLens SAge
 > -- True
 
 So now we have a partial record, and we can still do stuff with its
 contents. Next, we can even recover the original behavior of the
 validator (that is, to give us a value of type `Result [String]
-(PlainRec Person)`) using `rdist`:
+(Rec ElF Person)`) using `rdist`:
 
 > distGoodPerson = rdist goodPersonResult
 > distBadPerson  = rdist badPersonResult
@@ -270,22 +256,6 @@ validator (that is, to give us a value of type `Result [String]
 > -- True
 > -- >>> isSuccess distBadPerson
 > -- False
-
-Fixing a polymorphic record into the Identity Functor
------------------------------------------------------
-
-If you produced a record using `(=:)` and `(<+>)` without providing a
-type annotation, then its type is something like this:
-
-< record :: Applicative f => Rec el f [ <bunch of stuff> ]
-
-The problem is then we can’t do anything with the record that requires
-us to know what its functor is. For instance, `cast` will fail. So, we
-might try to provide a type annotation, but that can be a bit brittle
-and frustrating to have to do. To alleviate this problem, `toPlainRec` is
-provided:
-
-< toPlainRec :: (forall f. Applicative f => Rec el f rs) -> PlainRec el rs
 
 ---
 

@@ -2,8 +2,9 @@
 
 module Data.Vinyl.Idiom.Validation where
 
-import Data.Vinyl.Idiom.Identity
 import Data.Vinyl.Functor
+import Data.Vinyl.TyFun
+import qualified Data.Vinyl.Universe.Id as U
 
 import Control.Applicative
 import Data.Monoid
@@ -16,7 +17,7 @@ data Result e a
   deriving (Show, Eq)
 
 -- | Validators transform identities into results.
-type Validator e = Lift (->) Identity (Result e)
+type Validator e = Lift (->) U.Id (TC (Result e))
 
 instance Functor (Result e) where
   fmap f (Success x) = Success $ f x

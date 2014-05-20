@@ -24,7 +24,7 @@ import GHC.Prim (Constraint)
 -- | One record is a subtype of another if the fields of the latter are a
 -- subset of the fields of the former.
 class (xs :: [k]) <: (ys :: [k]) where
-  cast :: Rec el f xs -> Rec el f ys
+  cast :: Rec el xs -> Rec el ys
 
 instance xs <: '[] where
   cast _ = RNil
@@ -32,7 +32,7 @@ instance xs <: '[] where
 instance (y ∈ xs, xs <: ys) => xs <: (y ': ys) where
   cast xs = ith (implicitly :: Elem y xs) xs :& cast xs
     where
-      ith :: Elem r rs -> Rec el f rs -> f (el $ r)
+      ith :: Elem r rs -> Rec el rs -> el $ r
       ith Here (a :& _) = a
       ith (There p) (_ :& as) = ith p as
 
@@ -41,10 +41,10 @@ instance (y ∈ xs, xs <: ys) => xs <: (y ': ys) where
 type r1 :~: r2 = (r1 <: r2, r2 <: r1)
 
 -- | Term-level record congruence.
-(~=) :: (Eq (Rec el f xs), xs :~: ys) => Rec el f xs -> Rec el f ys -> Bool
+(~=) :: (Eq (Rec el xs), xs :~: ys) => Rec el xs -> Rec el ys -> Bool
 x ~= y = x == (cast y)
 
-type family RecAll (el :: TyFun k l -> *) (f :: * -> *) (rs :: [k]) (c :: * -> Constraint) :: Constraint
-type instance RecAll el f '[] c = ()
-type instance RecAll el f (r ': rs) c = (c (f (el $ r)), RecAll el f rs c)
+type family RecAll (el :: TyFun k l -> *) (rs :: [k]) (c :: * -> Constraint) :: Constraint
+type instance RecAll el '[] c = ()
+type instance RecAll el (r ': rs) c = (c (el $ r), RecAll el rs c)
 
