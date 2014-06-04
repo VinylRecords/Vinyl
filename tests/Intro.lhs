@@ -32,15 +32,12 @@ extensions first:
 > import Control.Lens hiding (Identity)
 > import Data.Char
 > import Test.DocTest
-> import Data.Singletons.TypeLits
 > import Data.Singletons.TH
-> import Data.Singletons.Tuple
 
 Let’s define a universe of fields which we want to use:
 
-> $(singletons [d|
->   data Fields = Name | Age | Sleeping | Master deriving Show
->   |])
+> data Fields = Name | Age | Sleeping | Master deriving Show
+> genSingletons [ ''Fields ]
 > makeUniverse' ''Fields "ElF"
 > semantics ''ElF [ 'Name     :~> ''String
 >                 , 'Age      :~> ''Int
