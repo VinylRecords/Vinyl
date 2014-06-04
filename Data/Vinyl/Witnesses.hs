@@ -20,24 +20,10 @@ data Elem :: k -> [k] -> * where
 
 -- | A constraint for implicit resolution of list membership proofs.
 type IElem x xs = Implicit (Elem x xs)
-
--- | An inductive list subset relation.
-data Subset :: [k] -> [k] -> * where
-  SubsetNil  :: Subset '[] xs
-  SubsetCons :: Elem x ys
-             -> Subset xs ys
-             -> Subset (x ': xs) ys
-
--- | A constraint for implicit resolution of list subset proofs.
-type ISubset xs ys = Implicit (Subset xs ys)
+type x ∈ xs = IElem x xs
 
 instance Implicit (Elem x (x ': xs)) where
   implicitly = Here
 instance Implicit (Elem x xs) => Implicit (Elem x (y ': xs)) where
   implicitly = There implicitly
-
-instance Implicit (Subset '[] xs) where
-  implicitly = SubsetNil
-instance (IElem x ys, ISubset xs ys) => Implicit (Subset (x ': xs) ys) where
-  implicitly = SubsetCons implicitly implicitly
 

@@ -17,44 +17,71 @@ First, install Vinyl from Hackage:
 Let’s work through a quick example. We’ll need to enable some language
 extensions first:
 
-> {-# LANGUAGE DataKinds, TypeOperators #-}
-> {-# LANGUAGE FlexibleContexts, NoMonomorphismRestriction #-}
-> {-# LANGUAGE GADTs #-}
+> {-# LANGUAGE DataKinds, PolyKinds, TypeOperators, TypeFamilies #-}
+> {-# LANGUAGE FlexibleContexts, FlexibleInstances, NoMonomorphismRestriction #-}
+> {-# LANGUAGE GADTs, TemplateHaskell, TypeSynonymInstances #-}
 > import Data.Vinyl
-> import Data.Vinyl.Unicode
+> import Data.Vinyl.TyFun
+> import Data.Vinyl.TH
+> import Data.Vinyl.Functor
 > import Data.Vinyl.Idiom.Identity
 > import Data.Vinyl.Idiom.Validation
+> import Data.Vinyl.Witnesses
+> import qualified Data.Vinyl.Universe.Const as U
 > import Control.Applicative
 > import Control.Lens hiding (Identity)
 > import Data.Char
 > import Test.DocTest
+> import Data.Singletons.TH
 
-Let’s define the fields we want to use:
+Let’s define a universe of fields which we want to use:
 
-> name     = Field :: "name"     ::: String
-> age      = Field :: "age"      ::: Int
-> sleeping = Field :: "sleeping" ::: Bool
+> data Fields = Name | Age | Sleeping | Master deriving Show
+> genSingletons [ ''Fields ]
+> makeUniverse' ''Fields "ElF"
+> semantics ''ElF [ 'Name     :~> ''String
+>                 , 'Age      :~> ''Int
+>                 , 'Sleeping :~> ''Bool
+>                 ]
 
 Now, let’s try to make an entity that represents a man:
 
-> jon = name =: "jon"
->    <+> age =: 20
->    <+> sleeping =: False
+> jon = SName =: "jon"
+>    <+> SAge =: 20
+>    <+> SSleeping =: False
+
 
 We could make an alias for the sort of entity that jon is:
 
-> type LifeForm = ["name" ::: String, "age" ::: Int, "sleeping" ::: Bool]
-> jon :: PlainRec LifeForm
+> type LifeForm = [Name, Age, Sleeping]
+> jon :: PlainRec ElF LifeForm
+
+We can print out the record by assigning names to each field:
+
+> instance Implicit (PlainRec (U.Const String) [ Name, Age, Sleeping ]) where
+>   implicitly = SName     =: "name"
+>            <+> SAge      =: "age"
+>            <+> SSleeping =: "sleeping"
+
+> -- | >>> rshow jon
+> -- "{ name =: \"jon\", age =: 20, sleeping =: False }"
 
 The types are inferred, though, so this is unnecessary unless you’d
 like to reuse the type later. Now, make a dog! Dogs are life-forms,
 but unlike men, they have masters. So, let’s build my dog:
 
-> master = Field :: "master" ::: PlainRec LifeForm
-> tucker = name =: "tucker"
->       <+> age =: 7
->       <+> sleeping =: True
->       <+> master =: jon
+> semantics ''ElF [ 'Master :~> [t| PlainRec ElF LifeForm |] ]
+
+> tucker = withUniverse ElF $
+>   SName =: "tucker"
+>   <+> SAge =: 7
+>   <+> SSleeping =: True
+>   <+> SMaster =: jon
+
+It was necessary to specify the interpreter for the universe in which `tucker`
+lives, since (lacking a type annotation), records constructed using `(<+>)` and
+`(=:)` are polymorphic with respect to `el`. We can help along the type
+inference by giving it explicitly using `withUniverse`.
 
 Using Lenses
 ------------
@@ -65,8 +92,8 @@ of different type). Luckily, we can use the built-in lenses to focus
 on a particular field in the record for access and update, without
 losing additional information:
 
-> wakeUp :: (("sleeping" ::: Bool) ∈ fields) => PlainRec fields -> PlainRec fields
-> wakeUp = sleeping `rPut` False
+> wakeUp :: (Sleeping ∈ fields) => PlainRec ElF fields -> PlainRec ElF fields
+> wakeUp = SSleeping `rPut` False
 
 Now, the type annotation on wakeUp was not necessary; I just wanted to
 show how intuitive the type is. Basically, it takes as an input any
@@ -77,33 +104,29 @@ specific field in the record accordingly.
 > jon' = wakeUp jon
 
 > -- |
-> -- >>> tucker' ^. rLens sleeping
+> -- >>> tucker' ^. rLens SSleeping
 > -- False
 > --
-> -- >>> tucker ^. rLens sleeping
+> -- >>> tucker ^. rLens SSleeping
 > -- True
 > --
-> -- >>> jon' ^. rLens sleeping
+> -- >>> jon' ^. rLens SSleeping
 > -- False
 
 We can also access the entire lens for a field using the rLens
 function; since lenses are composable, it’s super easy to do deep
 update on a record:
 
-> masterSleeping :: (("master" ::: PlainRec LifeForm) ∈ fields) => Lens' (PlainRec fields) Bool
-> masterSleeping = rLens master . rLens sleeping
+> masterSleeping :: (Master ∈ fields) => Lens' (PlainRec ElF fields) Bool
+> masterSleeping = rLens SMaster . rLens SSleeping
 > tucker'' = masterSleeping .~ True $ tucker'
 
-> -- | >>> tucker'' ^. rLens master . rLens sleeping
+
+> -- | >>> tucker'' ^. masterSleeping
 > -- True
 
-Again, the type annotation is unnecessary. In fact, the seperate
-definition is also unnecessary, and we could just define:
+Again, the type annotation is unnecessary.
 
-> tucker''' = rLens master . rLens sleeping .~ True $ tucker'
-
-> -- | >>> tucker''' ^. rLens master . rLens sleeping
-> -- True
 
 Subtyping Relation and Coercion
 -------------------------------
@@ -117,15 +140,15 @@ order).
 
 Therefore, the following works:
 
-> upcastedTucker :: PlainRec LifeForm
-> upcastedTucker = cast (fixRecord tucker)
+> upcastedTucker :: PlainRec ElF LifeForm
+> upcastedTucker = cast (toPlainRec tucker)
 
-The reason for using `fixRecord` will become clear a bit later.
+The reason for using `toPlainRec` will become clear a bit later.
 
 The subtyping relationship between record types is expressed with the
 `(<:)` constraint; so, cast is of the following type:
 
-< cast :: r1 <: r2 => r1 -> r2
+< cast :: r1 <: r2 => Rec r1 f -> Rec r2 f
 
 Also provided is a `(≅)` constraint which indicates record congruence
 (that is, two record types differ only in the order of their fields).
@@ -133,13 +156,13 @@ Also provided is a `(≅)` constraint which indicates record congruence
 Records are polymorphic over functors
 -------------------------------------
 
-So far, we’ve been working with the PlainRec type; but below that,
-there is something a bit more advanced called Rec, which looks like
+So far, we’ve been working with the `PlainRec` type; but below that,
+there is something a bit more advanced called `Rec`, which looks like
 this:
 
-< data Rec :: [*] -> (* -> *) -> * where
-<   RNil :: Rec '[] f
-<   (:&) :: (r ~ (sy ::: t)) => f t -> Rec rs f -> Rec (r ': rs) f
+< data Rec :: (TyFun u * -> *) -> (* -> *) -> [u] -> * where
+<   RNil :: Rec el f '[]
+<   (:&) :: f (el $ r) -> Rec el f rs -> Rec el f (r ': rs)
 
 The second parameter is a functor, in which every element of the
 record will be placed. In `PlainRec`, the functor is just set to
@@ -148,22 +171,23 @@ record will be placed. In `PlainRec`, the functor is just set to
 Let’s imagine that we want to do validation on a record that
 represents a name and an age:
 
-> type Person = ["name" ::: String, "age" ::: Int]
+> type Person = [Name, Age]
 
 We’ve decided that names must be alphabetic, and ages must be
 positive. For validation, we’ll use a type that’s included here called
 `Result e a`, which is similar to `Either`, except that its
 `Applicative` instance accumulates monoidal errors on the left.
 
-> goodPerson :: PlainRec Person
-> goodPerson = name =: "Jon"
->          <+> age =: 20
-> badPerson = name =: "J#@#$on"
->          <+> age =: 20
-> validatePerson :: PlainRec Person -> Result [String] (PlainRec Person)
-> validatePerson p = (\n a -> name =: n <+> age =: a) <$> vName <*> vAge where
->   vName = validateName (rGet name p)
->   vAge  = validateAge  (rGet age p)
+> goodPerson :: PlainRec ElF Person
+> goodPerson = SName =: "Jon"
+>          <+> SAge  =: 20
+> badPerson = SName =: "J#@#$on"
+>         <+> SAge  =: 20
+
+> validatePerson :: PlainRec ElF Person -> Result [String] (PlainRec ElF Person)
+> validatePerson p = (\n a -> SName =: n <+> SAge =: a) <$> vName <*> vAge where
+>   vName = validateName (rGet SName p)
+>   vAge  = validateAge  (rGet SAge p)
 >
 >   validateName str | all isAlpha str = Success str
 >   validateName _ = Failure [ "name must be alphabetic" ]
@@ -191,21 +215,21 @@ record where the elements themselves were validation functions, and
 then that record could be applied to a plain one, to get a record of
 validated fields? That’s what we’re going to do.
 
-Vinyl provides a type of validators, which is basically a natural
-transformation from the `Identity` functor to the `Result` functor, which
-we just used above.
+Vinyl provides a type of validators, which is the class of functions from the
+`Identity` functor to the `Result` functor at some type.
 
-< type Validator e = Identity ~> Result e
+< type Validator e = Lift (->) Identity ~> Result e
 
 Let’s parameterize a record by it: when we do, then an element of type
 `a` should be a function `Identity a -> Result e a`:
 
-> vperson :: Rec Person (Validator [String])
-> vperson = NT validateName :& NT validateAge :& RNil where
+> vperson :: Rec ElF (Validator [String]) Person
+> vperson = Lift validateName :& Lift validateAge :& RNil where
 >    validateName (Identity str) | all isAlpha str = Success str
 >    validateName _ = Failure [ "name must be alphabetic" ]
 >    validateAge (Identity i) | i >= 0 = Success i
 >    validateAge _ = Failure [ "age must be positive" ]
+
 
 And we can use the special application operator `<<*>>` (which is
 analogous to `<*>`, but generalized a bit) to use this to validate a
@@ -214,29 +238,29 @@ record:
 > goodPersonResult = vperson <<*>> goodPerson
 > badPersonResult  = vperson <<*>> badPerson
 
-goodPersonResult === name :=: Success "Jon", age :=: Success 20, {}
-badPersonResult  === name :=: Failure ["name must be alphabetic"], age :=: Success 20, {}
+< goodPersonResult === SName :=: Success "Jon", SAge :=: Success 20, {}
+< badPersonResult  === SName :=: Failure ["name must be alphabetic"], SAge :=: Success 20, {}
 
 > -- |
-> -- >>> isSuccess $ goodPersonResult ^. rLens' name
+> -- >>> isSuccess $ goodPersonResult ^. rLens' SName
 > -- True
-> -- >>> isSuccess $ goodPersonResult ^. rLens' age
+> -- >>> isSuccess $ goodPersonResult ^. rLens' SAge
 > -- True
-> -- >>> isSuccess $ badPersonResult ^. rLens' name
+> -- >>> isSuccess $ badPersonResult ^. rLens' SName
 > -- False
-> -- >>> isSuccess $ badPersonResult ^. rLens' age
+> -- >>> isSuccess $ badPersonResult ^. rLens' SAge
 > -- True
 
 So now we have a partial record, and we can still do stuff with its
 contents. Next, we can even recover the original behavior of the
 validator (that is, to give us a value of type `Result [String]
-(PlainRec Person)`) using `dist`:
+(PlainRec Person)`) using `rdist`:
 
-> distGoodPerson = dist goodPersonResult
-> distBadPerson  = dist badPersonResult
+> distGoodPerson = rdist goodPersonResult
+> distBadPerson  = rdist badPersonResult
 
-`distGoodPerson === Success name :=: "Jon", age :=: 20, {}`
-`distBadPerson  === Failure ["name must be alphabetic"]``
+< distGoodPerson === Success name :=: "Jon", age :=: 20, {}
+< distBadPerson  === Failure ["name must be alphabetic"]
 
 > -- |
 > -- >>> isSuccess distGoodPerson
@@ -250,15 +274,15 @@ Fixing a polymorphic record into the Identity Functor
 If you produced a record using `(=:)` and `(<+>)` without providing a
 type annotation, then its type is something like this:
 
-< record :: Applicative f => Record [ <bunch of stuff> ] f
+< record :: Applicative f => Rec el f [ <bunch of stuff> ]
 
 The problem is then we can’t do anything with the record that requires
 us to know what its functor is. For instance, `cast` will fail. So, we
 might try to provide a type annotation, but that can be a bit brittle
-and frustrating to have to do. To alleviate this problem, `fixRecord` is
+and frustrating to have to do. To alleviate this problem, `toPlainRec` is
 provided:
 
-< fixRecord :: (forall f. Applicative f => Rec rs f) -> PlainRec rs
+< toPlainRec :: (forall f. Applicative f => Rec el f rs) -> PlainRec el rs
 
 ---
 
@@ -266,3 +290,4 @@ provided:
 
 > main :: IO ()
 > main = doctest ["tests/Intro.lhs"]
+
