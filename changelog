@@ -1,0 +1,11 @@
+Vinyl 0.4
+=========
+
+Vinyl 0.4 is a big departure from previous versions, in that it introduces a
+universe encoding as a means to generalize the space of keys from strings to
+any arbitrary space. This means that you can have closed universes for your
+records.
+
+For details on how to use the new Vinyl, please see `tests/Intro.lhs` or view
+Jon's talk at BayHac 2014, [Programming in
+Vinyl](http://www.jonmsterling.com/posts/2014-05-19-programming-in-vinyl-bayhac.html).
