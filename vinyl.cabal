@@ -1,5 +1,5 @@
 name:                vinyl
-version:             0.4
+version:             0.4.1
 synopsis:            Extensible Records
 -- description:
 license:             MIT
@@ -23,6 +23,7 @@ library
                      , Data.Vinyl.Core
                      , Data.Vinyl.Operators
                      , Data.Vinyl.Lens
+                     , Data.Vinyl.Derived
                      , Data.Vinyl.Witnesses
                      , Data.Vinyl.Constraint
                      , Data.Vinyl.Idiom.Validation
