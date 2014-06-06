@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -50,4 +51,9 @@ semantics elu sems = sequence (map inst sems)
       elu' <- conT elu
       u' <- asType u
       t' <- asType t
-      return $ TySynInstD ''App (TySynEqn [elu',u'] t')
+      return $ TySynInstD ''App
+#if __GLASGOW_HASKELL__ > 707
+          (TySynEqn [elu',u'] t')
+#else
+                    [elu',u'] t'
+#endif
