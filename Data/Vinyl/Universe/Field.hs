@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds     #-}
 {-# LANGUAGE GADTs         #-}
@@ -17,7 +18,7 @@ data SField :: * -> * where
   SField :: KnownSymbol sy => SField (sy ::: t)
 #else
 data SField :: * -> * where
-  SField :: SingE (sy :: Symbol) str => SField (sy ::: t)
+  SField :: SingE (Kind :: Symbol) str => SField (sy ::: t)
 #endif
 
 data ElField :: (TyFun * *) -> * where
