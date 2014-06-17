@@ -14,6 +14,7 @@ import qualified Data.Foldable as F
 import qualified Data.Vector.Storable as V
 import qualified Data.Vector.Storable.Mutable as VM
 import Data.Vinyl
+import Data.Vinyl.Universe.Field
 import Foreign.Ptr (castPtr)
 import Foreign.Storable (Storable(..))
 import Linear (V2, V3, _y)
@@ -27,11 +28,11 @@ randVec n g = VM.replicateM n (uniform g) >>=
 randVecStd :: (Storable a, Variate a) => Int -> IO (V.Vector a)
 randVecStd = withSystemRandom . randVec
 
-vNorm :: "normal" ::: V3 a
-vNorm = Field
+vNorm :: SField ("normal" ::: V3 a)
+vNorm = SField
 
 type MyFields a = [ "pos" ::: V3 a, "tex" ::: V2 a, "normal" ::: V3 a ]
-type MyVertex a = PlainRec (MyFields a)
+type MyVertex a = PlainRec ElField (MyFields a)
 
 doubleNviL :: V.Vector (MyVertex Float) -> V.Vector (MyVertex Float)
 doubleNviL = V.map (rLens vNorm . _y *~ (2::Float))
