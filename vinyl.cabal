@@ -1,5 +1,5 @@
 name:                vinyl
-version:             0.4.1
+version:             0.4.2
 synopsis:            Extensible Records
 -- description:
 license:             MIT
@@ -44,7 +44,7 @@ benchmark bench-builder-all
   type:             exitcode-stdio-1.0
   hs-source-dirs:   benchmarks
   main-is:          StorableBench.hs
-  build-depends:    base >= 4.6 && <= 5, vector, criterion, vinyl == 0.4.1, mwc-random, lens, linear
+  build-depends:    base >= 4.6 && <= 5, vector, criterion, vinyl == 0.4.2, mwc-random, lens, linear
   ghc-options:      -O2 -fllvm
   default-language: Haskell2010
 
@@ -52,5 +52,5 @@ test-suite doctests
   type:             exitcode-stdio-1.0
   hs-source-dirs:   tests
   main-is:          Intro.lhs
-  build-depends:    base >= 4.6 && <= 5, lens, vinyl == 0.4.1, doctest >= 0.8, singletons >= 0.10
+  build-depends:    base >= 4.6 && <= 5, lens, vinyl == 0.4.2, doctest >= 0.8, singletons >= 0.10
   default-language: Haskell2010
