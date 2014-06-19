@@ -21,7 +21,7 @@ import Foreign.Storable (Storable(..))
 -- | A record is parameterized by a universe @u@, list of rows @rs@, a large
 -- elimination @el@, and a type constructor @f@ to be applied to the
 -- interpretation @el r@ of each of those @r@.
-data Rec :: (TyFun u * -> *) -> (* -> *) -> [u] -> * where
+data Rec (el :: TyFun u * -> *) (f :: * -> *) (rrs :: [u]) where
   RNil :: Rec el f '[]
   (:&) :: !(f (el $ r)) -> !(Rec el f rs) -> Rec el f (r ': rs)
 infixr :&

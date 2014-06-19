@@ -36,7 +36,7 @@ library
                      , Data.Vinyl.Universe.Const
                      , Data.Vinyl.Universe.Field
                      , Data.Vinyl.TH
-  build-depends:       base >=4.6 && <= 5, ghc-prim, template-haskell == 2.9.0.0
+  build-depends:       base >=4.6 && <= 5, ghc-prim, template-haskell >= 2.7.0.0
   default-language:    Haskell2010
   ghc-options: -fwarn-dodgy-exports -fwarn-dodgy-imports -fwarn-unused-matches -fwarn-unused-imports -fwarn-unused-binds -fwarn-incomplete-record-updates -fwarn-missing-signatures -fwarn-name-shadowing -fwarn-orphans -fwarn-overlapping-patterns -fwarn-tabs -fwarn-type-defaults
 
@@ -52,5 +52,5 @@ test-suite doctests
   type:             exitcode-stdio-1.0
   hs-source-dirs:   tests
   main-is:          Intro.lhs
-  build-depends:    base >= 4.6 && <= 5, lens, vinyl == 0.4.1, doctest >= 0.8, singletons == 1.0
+  build-depends:    base >= 4.6 && <= 5, lens, vinyl == 0.4.1, doctest >= 0.8, singletons >= 0.10
   default-language: Haskell2010

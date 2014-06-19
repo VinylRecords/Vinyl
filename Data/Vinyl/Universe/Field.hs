@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds     #-}
 {-# LANGUAGE GADTs         #-}
 {-# LANGUAGE PolyKinds     #-}
@@ -11,8 +13,13 @@ import GHC.TypeLits
 
 data (sy :: k) ::: (t :: *)
 
+#if __GLASGOW_HASKELL__ > 707
 data SField :: * -> * where
   SField :: KnownSymbol sy => SField (sy ::: t)
+#else
+data SField :: * -> * where
+  SField :: SingE (Kind :: Symbol) str => SField (sy ::: t)
+#endif
 
 data ElField :: (TyFun * *) -> * where
   ElField :: ElField el
