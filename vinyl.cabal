@@ -31,6 +31,7 @@ library
                      , Data.Vinyl.Idiom.Thunk
                      , Data.Vinyl.TyFun
                      , Data.Vinyl.Functor
+                     , Data.Vinyl.Notation
                      , Data.Vinyl.Universe
                      , Data.Vinyl.Universe.Id
                      , Data.Vinyl.Universe.Const
