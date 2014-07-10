@@ -5,4 +5,4 @@ First, install Vinyl from [Hackage](http://hackage.haskell.org/package/vinyl):
     cabal update
     cabal install vinyl
 
-To learn more, [try this tutorial](http://www.jonmsterling.com/posts/2013-04-06-vinyl-modern-records-for-haskell.html).
+To learn more, [try this tutorial](https://github.com/VinylRecords/Vinyl/blob/master/tests/Intro.lhs).
