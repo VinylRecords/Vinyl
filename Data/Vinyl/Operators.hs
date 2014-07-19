@@ -13,11 +13,12 @@ module Data.Vinyl.Operators
   ( (<<$>>)
   , (<<*>>)
   , (<+>)
-  , rpure
+  , type (++)
+  , RecApplicative(rpure)
   , rtraverse
   , rdist
   , rdistLazy
-  , foldRec
+  , FoldRec(foldRec)
   , recToList
   , showWithNames
   , rshow
