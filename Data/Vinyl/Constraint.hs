@@ -1,4 +1,4 @@
-{-# LANGUAGE UndecidableInstances       #-}
+{-# LANGUAGE UndecidableInstances  #-}
 {-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
@@ -31,7 +31,7 @@ instance xs <: '[] where
   cast _ = RNil
 
 instance (y ∈ xs, xs <: ys) => xs <: (y ': ys) where
-  cast xs = rGet' (undefined :: sing y) xs :& cast xs
+  cast xs = rget' (undefined :: sing y) xs :& cast xs
 
 -- | If two records types are subtypes of each other, that means that they
 -- differ only in order of fields.

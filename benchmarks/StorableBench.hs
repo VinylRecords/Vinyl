@@ -34,32 +34,38 @@ vNorm = SField
 type MyFields a = [ "pos" ::: V3 a, "tex" ::: V2 a, "normal" ::: V3 a ]
 type MyVertex a = PlainRec ElField (MyFields a)
 
+doubleNviLU :: V.Vector (MyVertex Float) -> V.Vector (MyVertex Float)
+doubleNviLU = V.map (rLens vNorm . _y *~ (2::Float))
+vinylNSumLU :: (Num a, Storable a) => V.Vector (MyVertex a) -> a
+vinylNSumLU = V.sum . V.map (F.sum . view (rLens vNorm))
+
 doubleNviL :: V.Vector (MyVertex Float) -> V.Vector (MyVertex Float)
 doubleNviL = V.map (rlens vNorm . _y *~ (2::Float))
-
 vinylNSumL :: (Num a, Storable a) => V.Vector (MyVertex a) -> a
 vinylNSumL = V.sum . V.map (F.sum . view (rlens vNorm))
 
 doubleNvi :: V.Vector (MyVertex Float) -> V.Vector (MyVertex Float)
-doubleNvi = V.map (rMod vNorm (_y *~ (2::Float)))
+doubleNvi = V.map (rmod vNorm (_y *~ (2::Float)))
+
+doubleNviU :: V.Vector (MyVertex Float) -> V.Vector (MyVertex Float)
+doubleNviU = V.map (rMod vNorm (_y *~ (2::Float)))
 
 vinylNSum :: (Num a, Storable a) => V.Vector (MyVertex a) -> a
-vinylNSum = V.sum . V.map (F.sum . rGet vNorm)
+vinylNSum = V.sum . V.map (F.sum . rget vNorm)
+
+vinylNSumU :: (Num a, Storable a) => V.Vector (MyVertex a) -> a
+vinylNSumU = V.sum . V.map (F.sum . rGet vNorm)
 
 main :: IO ()
 main = do vals <- randVecStd $ n * 8 :: IO (V.Vector Float)
           let vinylVerts = V.unsafeCast vals :: V.Vector (MyVertex Float)
               flatVerts = V.unsafeCast vals
               reasVerts = V.unsafeCast vals
-              vinylAns = vinylNSum $ doubleNvi vinylVerts
-              vinylLans = vinylNSumL $ doubleNviL vinylVerts
-              flatAns = flatNSum $ doubleNfl flatVerts
-              reasAns = reasNSum $ doubleNre reasVerts
-          when (any (/= vinylAns) [vinylLans, flatAns, reasAns])
-               (error "Not all versions compute the same answer")
           defaultMain [ bench "flat" $ whnf (flatNSum . doubleNfl) flatVerts
-                      , bench "vinyl" $ whnf (vinylNSum . doubleNvi) vinylVerts
-                      , bench "vinyl-lens" $ whnf (vinylNSumL . doubleNviL) vinylVerts
+                      , bench "vinyl-classy" $ whnf (vinylNSum . doubleNvi) vinylVerts
+                      , bench "vinyl-unrolled" $ whnf (vinylNSumU . doubleNviU) vinylVerts
+                      , bench "vinyl-lens-classy" $ whnf (vinylNSumL . doubleNviL) vinylVerts
+                      , bench "vinyl-lens-unrolled" $ whnf (vinylNSumLU . doubleNviLU) vinylVerts
                       , bench "reasonable" $
                         whnf (reasNSum . doubleNre) reasVerts ]
   where n = 1000
