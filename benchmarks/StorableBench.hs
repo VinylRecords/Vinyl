@@ -1,4 +1,4 @@
-{-# LANGUAGE DataKinds, ScopedTypeVariables, TypeOperators #-}
+{-# LANGUAGE DataKinds, ScopedTypeVariables, TypeOperators, PolyKinds #-}
 -- A benchmark where we initialize a 'V.Vector' of random vertices,
 -- each carrying 3D position, 2D texture coordinates, and a 3D normal
 -- vector. A calculation is carried out where we multiply the y
@@ -35,10 +35,10 @@ type MyFields a = [ "pos" ::: V3 a, "tex" ::: V2 a, "normal" ::: V3 a ]
 type MyVertex a = PlainRec ElField (MyFields a)
 
 doubleNviL :: V.Vector (MyVertex Float) -> V.Vector (MyVertex Float)
-doubleNviL = V.map (rLens vNorm . _y *~ (2::Float))
+doubleNviL = V.map (rlens vNorm . _y *~ (2::Float))
 
 vinylNSumL :: (Num a, Storable a) => V.Vector (MyVertex a) -> a
-vinylNSumL = V.sum . V.map (F.sum . view (rLens vNorm))
+vinylNSumL = V.sum . V.map (F.sum . view (rlens vNorm))
 
 doubleNvi :: V.Vector (MyVertex Float) -> V.Vector (MyVertex Float)
 doubleNvi = V.map (rMod vNorm (_y *~ (2::Float)))

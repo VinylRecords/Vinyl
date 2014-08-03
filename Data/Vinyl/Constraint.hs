@@ -1,3 +1,4 @@
+{-# LANGUAGE UndecidableInstances       #-}
 {-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
@@ -17,7 +18,7 @@ module Data.Vinyl.Constraint
   ) where
 
 import Data.Vinyl.Core
-import Data.Vinyl.Witnesses
+import Data.Vinyl.Lens
 import Data.Vinyl.TyFun
 import GHC.Prim (Constraint)
 
@@ -30,11 +31,7 @@ instance xs <: '[] where
   cast _ = RNil
 
 instance (y ∈ xs, xs <: ys) => xs <: (y ': ys) where
-  cast xs = ith (implicitly :: Elem y xs) xs :& cast xs
-    where
-      ith :: Elem r rs -> Rec el f rs -> f (el $ r)
-      ith Here (a :& _) = a
-      ith (There p) (_ :& as) = ith p as
+  cast xs = rGet' (undefined :: sing y) xs :& cast xs
 
 -- | If two records types are subtypes of each other, that means that they
 -- differ only in order of fields.

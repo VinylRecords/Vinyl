@@ -1,13 +1,16 @@
-{-# LANGUAGE BangPatterns        #-}
-{-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE FlexibleInstances   #-}
-{-# LANGUAGE GADTs               #-}
-{-# LANGUAGE PolyKinds           #-}
-{-# LANGUAGE RankNTypes          #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeFamilies        #-}
-{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE FunctionalDependencies          #-}
+{-# LANGUAGE BangPatterns          #-}
+{-# LANGUAGE ConstraintKinds       #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PolyKinds             #-}
+{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeOperators         #-}
 
 module Data.Vinyl.Core where
 
@@ -25,6 +28,25 @@ data Rec (el :: TyFun u * -> *) (f :: * -> *) (rrs :: [u]) where
   RNil :: Rec el f '[]
   (:&) :: !(f (el $ r)) -> !(Rec el f rs) -> Rec el f (r ': rs)
 infixr :&
+
+type x ∈ xs = RElem x xs (RIndex x xs)
+
+data Nat = Z | S Nat
+type family RIndex (r :: k) (rs :: [k]) :: Nat where
+  RIndex r (r ': rs) = Z
+  RIndex r (s ': rs) = S (RIndex r rs)
+
+class i ~ RIndex r rs => RElem (r :: k) (rs :: [k]) (i :: Nat) where
+  rlens' :: Functor g => sing r -> (f (el $ r) -> g (f (el $ r))) -> Rec el f rs -> g (Rec el f rs)
+
+  rlens :: Functor g => sing r -> (el $ r -> g (el $ r)) -> Rec el Identity rs -> g (Rec el Identity rs)
+  rlens r = rlens' r . (\sa sbt afb s -> sbt s <$> afb (sa s)) runIdentity (const Identity)
+
+instance RElem r (r ': rs) Z where
+  rlens' _ f (x :& xs) = fmap (:& xs) (f x)
+
+instance (RIndex r (s ': rs) ~ S i, RElem r rs i) => RElem r (s ': rs) (S i) where
+  rlens' p f (x :& xs) = fmap (x :&) (rlens' p f xs)
 
 -- | Shorthand for a record with a single field. Lifts the field's
 -- value into the chosen functor automatically.
