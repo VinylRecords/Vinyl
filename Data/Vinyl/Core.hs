@@ -41,12 +41,15 @@ class i ~ RIndex r rs => RElem (r :: k) (rs :: [k]) (i :: Nat) where
 
   rlens :: Functor g => sing r -> (el $ r -> g (el $ r)) -> Rec el Identity rs -> g (Rec el Identity rs)
   rlens r = rlens' r . (\sa sbt afb s -> sbt s <$> afb (sa s)) runIdentity (const Identity)
+  {-# INLINE rlens #-}
 
 instance RElem r (r ': rs) Z where
   rlens' _ f (x :& xs) = fmap (:& xs) (f x)
+  {-# INLINE rlens' #-}
 
 instance (RIndex r (s ': rs) ~ S i, RElem r rs i) => RElem r (s ': rs) (S i) where
   rlens' p f (x :& xs) = fmap (x :&) (rlens' p f xs)
+  {-# INLINE rlens' #-}
 
 -- | Shorthand for a record with a single field. Lifts the field's
 -- value into the chosen functor automatically.
