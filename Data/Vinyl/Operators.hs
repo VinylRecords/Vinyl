@@ -44,9 +44,9 @@ RNil      <+> xs = xs
 infixr 5  <+>
 
 -- | Append for type-level lists.
-type family (as :: [k]) ++ (bs :: [k]) :: [k]
-type instance '[] ++ bs = bs
-type instance (a ': as) ++ bs  = a ': (as ++ bs)
+type family (as :: [k]) ++ (bs :: [k]) :: [k] where
+  '[] ++ bs = bs
+  (a ': as) ++ bs  = a ': (as ++ bs)
 
 (<<$>>) :: (forall x. f x -> g x) -> Rec el f rs -> Rec el g rs
 _   <<$>> RNil    = RNil

@@ -44,7 +44,7 @@ type r1 :~: r2 = (r1 <: r2, r2 <: r1)
 (~=) :: (Eq (Rec el f xs), xs :~: ys) => Rec el f xs -> Rec el f ys -> Bool
 x ~= y = x == (cast y)
 
-type family RecAll (el :: TyFun k l -> *) (f :: * -> *) (rs :: [k]) (c :: * -> Constraint) :: Constraint
-type instance RecAll el f '[] c = ()
-type instance RecAll el f (r ': rs) c = (c (f (el $ r)), RecAll el f rs c)
+type family RecAll (el :: TyFun k l -> *) (f :: * -> *) (rs :: [k]) (c :: * -> Constraint) :: Constraint where
+  RecAll el f '[] c = ()
+  RecAll el f (r ': rs) c = (c (f (el $ r)), RecAll el f rs c)
 
