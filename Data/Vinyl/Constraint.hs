@@ -8,6 +8,7 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module Data.Vinyl.Constraint
   ( (<:)(..)
@@ -23,13 +24,13 @@ import GHC.Prim (Constraint)
 
 -- | One record is a subtype of another if the fields of the latter are a
 -- subset of the fields of the former.
-class (xs :: [k]) <: (ys :: [k]) where
-  cast :: Rec el f xs -> Rec el f ys
+class (SetWF xs, SetWF ys) => (xs :: [k]) <: (ys :: [k]) where
+  cast :: (SetWF xs, SetWF ys) =>  Rec el f xs -> Rec el f ys
 
-instance xs <: '[] where
+instance SetWF xs => xs <: '[] where
   cast _ = RNil
 
-instance (y ∈ xs, xs <: ys) => xs <: (y ': ys) where
+instance (SetWF (y ': ys), SetWF xs, y ∈ xs, xs <: ys) => xs <: (y ': ys) where
   cast xs = ith (implicitly :: Elem y xs) xs :& cast xs
     where
       ith :: Elem r rs -> Rec el f rs -> f (el $ r)
