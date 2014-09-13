@@ -33,7 +33,7 @@ type family AndB (b :: Bool) (b' :: Bool) :: Bool where
   AndB False True = False
   AndB False False = False
 
-type family SetWFB (xs :: [k]) :: l where
+type family SetWFB (xs :: [k]) :: Bool where
   SetWFB '[] = True
   SetWFB (x ': xs) = AndB (NotElemB x xs) (SetWFB xs)
 
