@@ -17,7 +17,7 @@ First, install Vinyl from Hackage:
 Let’s work through a quick example. We’ll need to enable some language
 extensions first:
 
-> {-# LANGUAGE DataKinds, PolyKinds, TypeOperators, TypeFamilies #-}
+> {-# LANGUAGE ConstraintKinds, DataKinds, PolyKinds, TypeOperators, TypeFamilies #-}
 > {-# LANGUAGE FlexibleContexts, FlexibleInstances, NoMonomorphismRestriction #-}
 > {-# LANGUAGE GADTs, TemplateHaskell, TypeSynonymInstances #-}
 > import Data.Vinyl
@@ -49,7 +49,6 @@ Now, let’s try to make an entity that represents a man:
 > jon = SName =: "jon"
 >    <+> SAge =: 20
 >    <+> SSleeping =: False
-
 
 We could make an alias for the sort of entity that jon is:
 
