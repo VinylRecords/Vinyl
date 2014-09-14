@@ -7,10 +7,10 @@ module Data.Vinyl
   , module Data.Vinyl.Constraint
   ) where
 
+import Data.Typeable.Promoted.List ()
 import Data.Vinyl.Core
 import Data.Vinyl.Derived
 import Data.Vinyl.Operators
 import Data.Vinyl.Lens
 import Data.Vinyl.Constraint
 import Data.Vinyl.Witnesses
-

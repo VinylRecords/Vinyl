@@ -1,7 +1,8 @@
-{-# LANGUAGE DataKinds    #-}
-{-# LANGUAGE GADTs        #-}
-{-# LANGUAGE PolyKinds    #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE AutoDeriveTypeable #-}
+{-# LANGUAGE DataKinds          #-}
+{-# LANGUAGE GADTs              #-}
+{-# LANGUAGE PolyKinds          #-}
+{-# LANGUAGE TypeFamilies       #-}
 
 module Data.Vinyl.Universe.Const (Const(..)) where
 
