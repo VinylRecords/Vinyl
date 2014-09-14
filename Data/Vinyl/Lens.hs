@@ -38,11 +38,10 @@ class i ~ RIndex r rs => RElem (r :: k) (rs :: [k]) (i :: Nat) where
   rget k = getConst . rlens k Const
 
   rput
-    :: sing r
-    -> f r
+    :: f r
     -> Rec f rs
     -> Rec f rs
-  rput k y = getIdentity . rlens k (\_ -> Identity y)
+  rput y = getIdentity . rlens Proxy (\_ -> Identity y)
 
 lens
   :: Functor f
@@ -89,7 +88,7 @@ instance (RElem r ss i , RSubset rs ss is) => RSubset (r ': rs) ss (i ': is) whe
   rsubset = lens (\ss -> rget Proxy ss :& rcast ss) set
     where
       set :: Rec f ss -> Rec f (r ': rs) -> Rec f ss
-      set ss (r :& rs) = rput Proxy r $ rreplace rs ss
+      set ss (r :& rs) = rput r $ rreplace rs ss
 
 type REquivalent rs ss is js = (RSubset rs ss is, RSubset ss rs js)
 

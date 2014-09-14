@@ -21,7 +21,7 @@ data Thunk a
   { getThunk :: a
   } deriving (Functor, Foldable, Traversable)
 
-newtype Lift op f g x
+newtype Lift (op :: l -> l' -> *) (f :: k -> l) (g :: k -> l') (x :: k)
   = Lift
   { getLift :: op (f x) (g x)
   }
