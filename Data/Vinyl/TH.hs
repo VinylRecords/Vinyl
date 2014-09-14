@@ -1,3 +1,4 @@
+{-# LANGUAGE AutoDeriveTypeable #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeOperators #-}

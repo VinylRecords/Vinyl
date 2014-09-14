@@ -1,4 +1,5 @@
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE AutoDeriveTypeable #-}
+{-# LANGUAGE FlexibleInstances  #-}
 
 module Data.Vinyl.Functor where
 
@@ -32,4 +33,3 @@ instance (Presheaf f, Functor g) => Functor (Lift (->) f g) where
 
 instance (Functor f, Presheaf g) => Presheaf (Lift (->) f g) where
   contramap f (Lift ηx) = Lift $ contramap f . ηx . fmap f
-

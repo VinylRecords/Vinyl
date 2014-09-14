@@ -1,7 +1,9 @@
+{-# LANGUAGE AutoDeriveTypeable #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Data.Vinyl.Idiom.Validation where
 
+import Data.Typeable
 import Data.Vinyl.Idiom.Identity
 import Data.Vinyl.Functor
 
@@ -13,7 +15,7 @@ import Data.Monoid
 data Result e a
   = Failure e
   | Success a
-  deriving (Show, Eq)
+  deriving (Show, Eq, Typeable)
 
 -- | Validators transform identities into results.
 type Validator e = Lift (->) Identity (Result e)

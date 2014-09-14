@@ -1,3 +1,4 @@
+{-# LANGUAGE AutoDeriveTypeable  #-}
 {-# LANGUAGE BangPatterns        #-}
 {-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE FlexibleContexts    #-}
@@ -77,4 +78,3 @@ instance (Storable (el $ r), Storable (Rec el Identity rs)) => Storable (Rec el 
   poke ptr (Identity !x :& xs) = poke (castPtr ptr) x >>
                                  poke (ptr `plusPtr` sizeOf (undefined :: el $ r)) xs
   {-# INLINEABLE poke #-}
-

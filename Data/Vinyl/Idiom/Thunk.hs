@@ -1,3 +1,4 @@
+{-# LANGUAGE AutoDeriveTypeable #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveTraversable #-}
@@ -7,11 +8,12 @@ module Data.Vinyl.Idiom.Thunk where
 import Control.Applicative
 import Data.Foldable
 import Data.Traversable
+import Data.Typeable
 
 data Thunk a
   = Thunk
   { runThunk :: a
-  } deriving (Functor, Foldable, Traversable)
+  } deriving (Functor, Foldable, Traversable, Typeable)
 
 instance Applicative Thunk where
   pure = Thunk

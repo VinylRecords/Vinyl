@@ -1,3 +1,4 @@
+{-# LANGUAGE AutoDeriveTypeable    #-}
 {-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
@@ -26,4 +27,3 @@ instance Implicit (Elem x (x ': xs)) where
   implicitly = Here
 instance Implicit (Elem x xs) => Implicit (Elem x (y ': xs)) where
   implicitly = There implicitly
-

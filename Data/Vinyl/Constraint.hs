@@ -1,3 +1,4 @@
+{-# LANGUAGE AutoDeriveTypeable    #-}
 {-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
@@ -47,4 +48,3 @@ x ~= y = x == (cast y)
 type family RecAll (el :: TyFun k l -> *) (f :: * -> *) (rs :: [k]) (c :: * -> Constraint) :: Constraint
 type instance RecAll el f '[] c = ()
 type instance RecAll el f (r ': rs) c = (c (f (el $ r)), RecAll el f rs c)
-
