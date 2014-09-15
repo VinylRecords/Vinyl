@@ -29,10 +29,7 @@ import Data.Vinyl.TypeLevel
 -- given by its interpretation @f r :: *@.
 data Rec :: (u -> *) -> [u] -> * where
   RNil :: Rec f '[]
-  -- ^ The empty record has no fields.
-
   (:&) :: !(f r) -> !(Rec f rs) -> Rec f (r ': rs)
-  -- ^ A field may be consed onto the front of a record.
 
 infixr :&
 infixr 5  <+>
@@ -47,16 +44,16 @@ rappend
 rappend RNil ys = ys
 rappend (x :& xs) ys = x :& (xs `rappend` ys)
 
--- | A shorthand for @rappend@.
+-- | A shorthand for 'rappend'.
 (<+>)
   :: Rec f as
   -> Rec f bs
   -> Rec f (as ++ bs)
 (<+>) = rappend
 
--- | @Rec _ rs@ with labels in kind @u@ gives rise to a functor @Hask^u ->
+-- | 'Rec' @_ rs@ with labels in kind @u@ gives rise to a functor @Hask^u ->
 -- Hask@; that is, a natural transformation between two interpretation functors
--- @f,g@ may be used to transport a value from @Rec f rs@ to @Rec g rs@.
+-- @f,g@ may be used to transport a value from 'Rec' @f rs@ to 'Rec' @g rs@.
 rmap
   :: (forall x. f x -> g x)
   -> Rec f rs
@@ -65,7 +62,7 @@ rmap _ RNil = RNil
 rmap η (x :& xs) = η x :& (η `rmap` xs)
 {-# INLINE rmap #-}
 
--- | A shorthand for @rmap@.
+-- | A shorthand for 'rmap'.
 (<<$>>)
   :: (forall x. f x -> g x)
   -> Rec f rs
@@ -73,7 +70,7 @@ rmap η (x :& xs) = η x :& (η `rmap` xs)
 (<<$>>) = rmap
 {-# INLINE (<<$>>) #-}
 
--- | An inverted shorthand for @rmap@.
+-- | An inverted shorthand for 'rmap'.
 (<<&>>)
   :: Rec f rs
   -> (forall x. f x -> g x)
@@ -91,7 +88,7 @@ rapply RNil RNil = RNil
 rapply (f :& fs) (x :& xs) = getLift f x :& (fs `rapply` xs)
 {-# INLINE rapply #-}
 
--- | A shorthand for @rapply@.
+-- | A shorthand for 'rapply'.
 (<<*>>)
   :: Rec (Lift (->) f g) rs
   -> Rec f rs
@@ -151,7 +148,7 @@ reifyConstraint prx rec =
     (x :& xs) -> Compose (Dict x) :& reifyConstraint prx xs
 
 -- | Records may be shown insofar as their points may be shown.
--- @reifyConstraint@ is used to great effect here.
+-- 'reifyConstraint' is used to great effect here.
 instance RecAll f rs Show => Show (Rec f rs) where
   show xs =
     (\str -> "{" <> str <> "}")
