@@ -1,41 +1,49 @@
-{-# LANGUAGE DeriveFunctor     #-}
-{-# LANGUAGE DeriveFoldable    #-}
-{-# LANGUAGE DeriveTraversable #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE PolyKinds         #-}
-{-# LANGUAGE TypeOperators     #-}
+{-# LANGUAGE DeriveFoldable             #-}
+{-# LANGUAGE DeriveFunctor              #-}
+{-# LANGUAGE DeriveTraversable          #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE PolyKinds                  #-}
+{-# LANGUAGE TypeOperators              #-}
 
 module Data.Vinyl.Functor where
 
 import Control.Applicative
 import Data.Foldable
 import Data.Traversable
+import Foreign.Storable
 
 newtype Identity a
-  = Identity
-  { getIdentity :: a
-  } deriving (Functor, Foldable, Traversable)
+  = Identity { getIdentity :: a }
+    deriving ( Functor
+             , Foldable
+             , Traversable
+             , Storable
+             )
 
 data Thunk a
-  = Thunk
-  { getThunk :: a
-  } deriving (Functor, Foldable, Traversable)
+  = Thunk { getThunk :: a }
+    deriving ( Functor
+             , Foldable
+             , Traversable
+             )
 
 newtype Lift (op :: l -> l' -> *) (f :: k -> l) (g :: k -> l') (x :: k)
-  = Lift
-  { getLift :: op (f x) (g x)
-  }
+  = Lift { getLift :: op (f x) (g x) }
 
-newtype Compose f g x
-  = Compose
-  { getCompose :: f (g x)
-  }
+newtype Compose (f :: l -> *) (g :: k -> l) (x :: k)
+  = Compose { getCompose :: f (g x) }
+    deriving (Storable)
+
 type f :. g = Compose f g
 
-newtype Const a b
-  = Const
-  { getConst :: a
-  } deriving (Functor, Foldable, Traversable)
+newtype Const (a :: *) (b :: k)
+  = Const { getConst :: a }
+    deriving ( Functor
+             , Foldable
+             , Traversable
+             , Storable
+             )
 
 instance (Functor f, Functor g) => Functor (Compose f g) where
   fmap f (Compose x) = Compose (fmap (fmap f) x)
