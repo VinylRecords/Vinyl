@@ -134,8 +134,8 @@ data Dict c a where
     => a
     -> Dict c a
 
--- | Sometimes we may know something for **all** fields of a record, but when
--- you expect to be able to **each* of the fields, you are then out of luck.
+-- | Sometimes we may know something for /all/ fields of a record, but when
+-- you expect to be able to /each/ of the fields, you are then out of luck.
 -- Surely given @∀x:u.φ(x)@ we should be able to recover @x:u ⊢ φ(x)@! Sadly,
 -- the constraint solver is not quite smart enough to realize this and we must
 -- make it patently obvious by reifying the constraint pointwise with proof.

@@ -13,8 +13,8 @@ module Data.Vinyl.TypeLevel where
 
 import GHC.Exts
 
--- | An approximation of the natural numbers. And their image as lifted by
--- -XDataKinds corresponds to the actual natural numbers.
+-- | A mere approximation of the natural numbers. And their image as lifted by
+-- @-XDataKinds@ corresponds to the actual natural numbers.
 data Nat = Z | S !Nat
 
 -- | A partial relation that gives the index of a value in a list.
