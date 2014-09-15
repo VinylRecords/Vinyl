@@ -23,36 +23,23 @@ import Data.Typeable (Proxy(..))
 import Data.List (intercalate)
 import Data.Vinyl.TypeLevel
 
--- | A record is parameterized by a universe @u@, list of rows @rs@, and an
--- interpretation @f@.
+-- | A record is parameterized by a universe @u@, an interpretation @f@ and a
+-- list of rows @rs@.  The labels or indices of the record are given by
+-- inhabitants of the kind @u@; the type of values at any label @r :: u@ is
+-- given by its interpretation @f r :: *@.
 data Rec :: (u -> *) -> [u] -> * where
   RNil :: Rec f '[]
+  -- ^ The empty record has no fields.
+
   (:&) :: !(f r) -> !(Rec f rs) -> Rec f (r ': rs)
+  -- ^ A field may be consed onto the front of a record.
+
 infixr :&
-
-instance Monoid (Rec f '[]) where
-  mempty = RNil
-  RNil `mappend` RNil = RNil
-
-instance (Monoid (f r), Monoid (Rec f rs)) => Monoid (Rec f (r ': rs)) where
-  mempty = mempty :& mempty
-  (x :& xs) `mappend` (y :& ys) = (x <> y) :& (xs <> ys)
-
-instance Eq (Rec f '[]) where
-  _ == _ = True
-instance (Eq (f r), Eq (Rec f rs)) => Eq (Rec f (r ': rs)) where
-  (x :& xs) == (y :& ys) = (x == y) && (xs == ys)
-
 infixr 5  <+>
 infixl 8 <<$>>
 infixl 8 <<*>>
 
--- | Append for type-level lists.
-type family (as :: [k]) ++ (bs :: [k]) :: [k] where
-  '[] ++ bs = bs
-  (a ': as) ++ bs = a ': (as ++ bs)
-
--- | Append for records.
+-- | Two records may be pasted together.
 rappend
   :: Rec f as
   -> Rec f bs
@@ -60,12 +47,16 @@ rappend
 rappend RNil ys = ys
 rappend (x :& xs) ys = x :& (xs `rappend` ys)
 
+-- | A shorthand for @rappend@.
 (<+>)
   :: Rec f as
   -> Rec f bs
   -> Rec f (as ++ bs)
 (<+>) = rappend
 
+-- | @Rec _ rs@ with labels in kind @u@ gives rise to a functor @Hask^u ->
+-- Hask@; that is, a natural transformation between two interpretation functors
+-- @f,g@ may be used to transport a value from @Rec f rs@ to @Rec g rs@.
 rmap
   :: (forall x. f x -> g x)
   -> Rec f rs
@@ -74,6 +65,7 @@ rmap _ RNil = RNil
 rmap η (x :& xs) = η x :& (η `rmap` xs)
 {-# INLINE rmap #-}
 
+-- | A shorthand for @rmap@.
 (<<$>>)
   :: (forall x. f x -> g x)
   -> Rec f rs
@@ -81,6 +73,7 @@ rmap η (x :& xs) = η x :& (η `rmap` xs)
 (<<$>>) = rmap
 {-# INLINE (<<$>>) #-}
 
+-- | An inverted shorthand for @rmap@.
 (<<&>>)
   :: Rec f rs
   -> (forall x. f x -> g x)
@@ -88,6 +81,8 @@ rmap η (x :& xs) = η x :& (η `rmap` xs)
 xs <<&>> f = rmap f xs
 {-# INLINE (<<&>>) #-}
 
+-- | A record of components @f r -> g r@ may be applied to a record of @f@ to
+-- get a record of @g@.
 rapply
   :: Rec (Lift (->) f g) rs
   -> Rec f rs
@@ -96,6 +91,7 @@ rapply RNil RNil = RNil
 rapply (f :& fs) (x :& xs) = getLift f x :& (fs `rapply` xs)
 {-# INLINE rapply #-}
 
+-- | A shorthand for @rapply@.
 (<<*>>)
   :: Rec (Lift (->) f g) rs
   -> Rec f rs
@@ -103,6 +99,8 @@ rapply (f :& fs) (x :& xs) = getLift f x :& (fs `rapply` xs)
 (<<*>>) = rapply
 {-# INLINE (<<*>>) #-}
 
+-- | Given a section of some functor, records in that functor of any size are
+-- inhabited.
 class RecApplicative rs where
   rpure
     :: (forall x. f x)
@@ -114,6 +112,9 @@ instance RecApplicative rs => RecApplicative (r ': rs) where
   rpure s = s :& rpure s
   {-# INLINE rpure #-}
 
+-- | A record may be traversed with respect to its interpretation functor. This
+-- can be used to yank (some or all) effects from the fields of the record to
+-- the outside of the record.
 rtraverse
   :: Applicative h
   => (forall x. f x -> h (g x))
@@ -122,6 +123,7 @@ rtraverse
 rtraverse _ RNil      = pure RNil
 rtraverse f (x :& xs) = (:&) <$> f x <*> rtraverse f xs
 
+-- | A record with uniform fields may be turned into a list.
 recordToList
   :: Rec (Const a) rs
   -> [a]
@@ -148,6 +150,8 @@ reifyConstraint prx rec =
     RNil -> RNil
     (x :& xs) -> Compose (Dict x) :& reifyConstraint prx xs
 
+-- | Records may be shown insofar as their points may be shown.
+-- @reifyConstraint@ is used to great effect here.
 instance RecAll f rs Show => Show (Rec f rs) where
   show xs =
     (\str -> "{" <> str <> "}")
@@ -155,6 +159,19 @@ instance RecAll f rs Show => Show (Rec f rs) where
       . recordToList
       . rmap (\(Compose (Dict x)) -> Const $ show x)
       $ reifyConstraint (Proxy :: Proxy Show) xs
+
+instance Monoid (Rec f '[]) where
+  mempty = RNil
+  RNil `mappend` RNil = RNil
+
+instance (Monoid (f r), Monoid (Rec f rs)) => Monoid (Rec f (r ': rs)) where
+  mempty = mempty :& mempty
+  (x :& xs) `mappend` (y :& ys) = (x <> y) :& (xs <> ys)
+
+instance Eq (Rec f '[]) where
+  _ == _ = True
+instance (Eq (f r), Eq (Rec f rs)) => Eq (Rec f (r ': rs)) where
+  (x :& xs) == (y :& ys) = (x == y) && (xs == ys)
 
 instance Storable (Rec f '[]) where
   sizeOf _    = 0
