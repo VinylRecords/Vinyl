@@ -13,7 +13,10 @@ module Data.Vinyl.TypeLevel where
 
 import GHC.Exts
 
+-- | An approximation of the natural numbers. And their image as lifted by
+-- -XDataKinds corresponds to the actual natural numbers.
 data Nat = Z | S !Nat
+
 type family RIndex (r :: k) (rs :: [k]) :: Nat where
   RIndex r (r ': rs) = Z
   RIndex r (s ': rs) = S (RIndex r rs)
