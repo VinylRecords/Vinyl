@@ -8,7 +8,6 @@ module Data.Vinyl.Derived where
 import Data.Vinyl.Core
 import Data.Vinyl.Functor
 
-import Control.Applicative
 import GHC.TypeLits
 
 data ElField (field :: (Symbol, *)) where
