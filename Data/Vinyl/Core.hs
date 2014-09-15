@@ -134,9 +134,11 @@ data Dict c a where
     => a
     -> Dict c a
 
--- | Sometimes we may know something for all fields of a record, but when you
--- try to use that judgement upon a particular field, you run into trouble. In
--- this case, it is necessary to reify the proof into each field.
+-- | Sometimes we may know something for **all** fields of a record, but when
+-- you expect to be able to **each* of the fields, you are then out of luck.
+-- Surely given @∀x:u.φ(x)@ we should be able to recover @x:u ⊢ φ(x)@! Sadly,
+-- the constraint solver is not quite smart enough to realize this and we must
+-- make it patently obvious by reifying the constraint pointwise with proof.
 reifyConstraint
   :: RecAll f rs c
   => proxy c
