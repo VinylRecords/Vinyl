@@ -1,82 +1,138 @@
+{-# LANGUAGE ConstraintKinds       #-}
+{-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 
--- | A small, /en passant/ lens implementation to provide accessors
--- for record fields. Lenses produced with 'rLens' are fully
--- compatible with the @lens@ package.
-module Data.Vinyl.Lens where
+module Data.Vinyl.Lens
+  ( RElem(..)
+  , RSubset(..)
+  , REquivalent
+  , type (∈)
+  , type (⊆)
+  , type (≅)
+  , type (<:)
+  , type (:~:)
+  ) where
 
 import Data.Vinyl.Core
-import Data.Vinyl.Derived
-import Data.Vinyl.TyFun
-import Data.Vinyl.Witnesses
-import Data.Vinyl.Idiom.Identity
+import Data.Vinyl.Functor
+import Data.Vinyl.TypeLevel
+import Data.Typeable (Proxy(..))
 
-import Control.Applicative
+-- | The presence of a field in a record is witnessed by a lens into its value.
+-- The third parameter to 'RElem', @i@, is there to help the constraint solver
+-- realize that this is a decidable predicate with respect to the judgemental
+-- equality in @k@.
+class i ~ RIndex r rs => RElem (r :: k) (rs :: [k]) (i :: Nat) where
 
--- | Project a field from a 'Rec'.
-rGet' :: (r ∈ rs) => sing r -> Rec el f rs -> f (el $ r)
-rGet' r = getConst . rLens' r Const
-{-# INLINE rGet' #-}
+  -- | We can get a lens for getting and setting the value of a field which is
+  -- in a record. As a convenience, we take a proxy argument to fix the
+  -- particular field being viewed. These lenses are compatible with the @lens@
+  -- library. Morally:
+  --
+  -- > rlens :: sing r => Lens' (Rec f rs) (f r)
+  rlens
+    :: Functor g
+    => sing r
+    -> (f r -> g (f r))
+    -> Rec f rs
+    -> g (Rec f rs)
 
--- | Project a field from a 'PlainRec'.
-rGet :: (r ∈ rs) => sing r -> PlainRec el rs -> el $ r
-rGet = (runIdentity .) . rGet'
-{-# INLINE rGet #-}
+  -- | For Vinyl users who are not using the @lens@ package, we provide a getter.
+  rget
+    :: sing r
+    -> Rec f rs
+    -> f r
+  rget k = getConst . rlens k Const
 
--- | Set a field in a 'Rec' over an arbitrary functor.
-rPut' :: (r ∈ rs) => sing r -> f (el $ r) -> Rec el f rs -> Rec el f rs
-rPut' r x = runIdentity . rLens' r (Identity . const x)
-{-# INLINE rPut' #-}
+  -- | For Vinyl users who are not using the @lens@ package, we also provide a
+  -- setter. In general, it will be unambiguous what field is being written to,
+  -- and so we do not take a proxy argument here.
+  rput
+    :: f r
+    -> Rec f rs
+    -> Rec f rs
+  rput y = getIdentity . rlens Proxy (\_ -> Identity y)
 
--- | Set a field in a 'PlainRec'.
-rPut :: (r ∈ rs) => sing r -> el $ r -> PlainRec el rs -> PlainRec el rs
-rPut r x = rPut' r (Identity x)
-{-# INLINE rPut #-}
+-- This is an internal convenience stolen from the @lens@ library.
+lens
+  :: Functor f
+  => (t -> s)
+  -> (t -> a -> b)
+  -> (s -> f a)
+  -> t
+  -> f b
+lens sa sbt afb s = fmap (sbt s) $ afb (sa s)
+{-# INLINE lens #-}
 
--- | Modify a field.
-rMod :: (r ∈ rs , Functor f) => sing r -> (el $ r -> el $ r) -> Rec el f rs -> Rec el f rs
-rMod r f = runIdentity . rLens' r (Identity . fmap f)
-{-# INLINE rMod #-}
+instance RElem r (r ': rs) Z where
+  rlens _ f (x :& xs) = fmap (:& xs) (f x)
+  {-# INLINE rlens #-}
 
--- We manually unroll several levels of 'Elem' value traversal to help
--- GHC statically index into small records.
+instance (RIndex r (s ': rs) ~ S i, RElem r rs i) => RElem r (s ': rs) (S i) where
+  rlens p f (x :& xs) = fmap (x :&) (rlens p f xs)
+  {-# INLINE rlens #-}
 
--- | Provide a lens to a record field. Note that this implementation
--- does not support polymorphic update. In the parlance of the @lens@
--- package,
---
--- > rLens' :: (r ∈ rs) => Sing r -> Lens' (Rec el f rs) (f (el $ r))
-rLens' :: forall r rs f g el sing. (r ∈ rs , Functor g) => sing r -> (f (el $ r) -> g (f (el $ r))) -> Rec el f rs -> g (Rec el f rs)
-rLens' _ f = go implicitly
-  where go :: Elem r rr -> Rec el f rr -> g (Rec el f rr)
-        go Here (x :& xs) = fmap (:& xs) (f x)
-        go (There Here) (a :& x :& xs) = fmap ((a :&) . (:& xs)) (f x)
-        go (There (There Here)) (a :& b :& x :& xs) =
-          fmap (\x' -> a :& b :& x' :& xs) (f x)
-        go (There (There (There Here))) (a :& b :& c :& x :& xs) =
-          fmap (\x' -> a :& b :& c :& x' :& xs) (f x)
-        go (There (There (There (There Here)))) (a :& b :& c :& d :& x :& xs) =
-          fmap (\x' -> a :& b :& c :& d :& x' :& xs) (f x)
-        go (There (There (There (There p)))) (a :& b :& c :& d :& xs) =
-          fmap (\xs' -> a :& b :& c :& d :& xs') (go' p xs)
-        {-# INLINE go #-}
+-- | If one field set is a subset another, then a lens of from the latter's
+-- record to the former's is evident. That is, we can either cast a larger
+-- record to a smaller one, or we may replace the values in a slice of a
+-- record.
+class is ~ RImage rs ss => RSubset (rs :: [k]) (ss :: [k]) is where
 
-        go' :: Elem r rr -> Rec el f rr -> g (Rec el f rr)
-        go' Here (x :& xs) = fmap (:& xs) (f x)
-        go' (There p) (x :& xs) = fmap (x :&) (go p xs)
-        {-# INLINABLE go' #-}
-{-# INLINE rLens' #-}
+  -- | This is a lens into a slice of the larger record. Morally, we have:
+  --
+  -- > rsubset :: Lens' (Rec f ss) (Rec f rs)
+  rsubset
+    :: Functor g
+    => (Rec f rs -> g (Rec f rs))
+    -> Rec f ss
+    -> g (Rec f ss)
 
--- | A lens into a 'PlainRec' that smoothly interoperates with lenses
--- from the @lens@ package. Note that polymorphic update is not
--- supported. In the parlance of the @lens@ package,
---
--- > rLens :: (r ∈ rs) => sing r -> Lens' (PlainRec el rs) (el $ r)
-rLens :: forall r rs g el sing. (r ∈ rs , Functor g) => sing r -> (el $ r -> g (el $ r)) -> PlainRec el rs -> g (PlainRec el rs)
-rLens r = rLens' r . lenser runIdentity (const Identity)
-  where lenser sa sbt afb s = sbt s <$> afb (sa s)
-{-# INLINE rLens #-}
+  -- | The getter of the 'rsubset' lens is 'rcast', which takes a larger record
+  -- to a smaller one by forgetting fields.
+  rcast
+    :: Rec f ss
+    -> Rec f rs
+  rcast = getConst . rsubset Const
+  {-# INLINE rcast #-}
+
+  -- | The setter of the 'rsubset' lens is 'rreplace', which allows a slice of
+  -- a record to be replaced with different values.
+  rreplace
+    :: Rec f rs
+    -> Rec f ss
+    -> Rec f ss
+  rreplace rs = getIdentity . rsubset (\_ -> Identity rs)
+  {-# INLINE rreplace #-}
+
+instance RSubset '[] ss '[] where
+  rsubset = lens (const RNil) const
+
+instance (RElem r ss i , RSubset rs ss is) => RSubset (r ': rs) ss (i ': is) where
+  rsubset = lens (\ss -> rget Proxy ss :& rcast ss) set
+    where
+      set :: Rec f ss -> Rec f (r ': rs) -> Rec f ss
+      set ss (r :& rs) = rput r $ rreplace rs ss
+
+-- | Two record types are equivalent when they are subtypes of each other.
+type REquivalent rs ss is js = (RSubset rs ss is, RSubset ss rs js)
+
+-- | A shorthand for 'RElem' which supplies its index.
+type r ∈ rs = RElem r rs (RIndex r rs)
+
+-- | A shorthand for 'RSubset' which supplies its image.
+type rs ⊆ ss = RSubset rs ss (RImage rs ss)
+
+-- | A shorthand for 'REquivalent' which supplies its images.
+type rs ≅ ss = REquivalent rs ss (RImage rs ss) (RImage ss rs)
+
+-- | A non-unicode equivalent of @(⊆)@.
+type rs <: ss = rs ⊆ ss
+
+-- | A non-unicode equivalent of @(≅)@.
+type rs :~: ss = rs ≅ ss

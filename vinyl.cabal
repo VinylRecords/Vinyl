@@ -1,5 +1,5 @@
 name:                vinyl
-version:             0.4.3
+version:             0.5
 synopsis:            Extensible Records
 -- description:
 license:             MIT
@@ -21,23 +21,12 @@ source-repository head
 library
   exposed-modules:     Data.Vinyl
                      , Data.Vinyl.Core
-                     , Data.Vinyl.Operators
                      , Data.Vinyl.Lens
                      , Data.Vinyl.Derived
-                     , Data.Vinyl.Witnesses
-                     , Data.Vinyl.Constraint
-                     , Data.Vinyl.Idiom.Validation
-                     , Data.Vinyl.Idiom.Identity
-                     , Data.Vinyl.Idiom.Thunk
-                     , Data.Vinyl.TyFun
+                     , Data.Vinyl.TypeLevel
                      , Data.Vinyl.Functor
                      , Data.Vinyl.Notation
-                     , Data.Vinyl.Universe
-                     , Data.Vinyl.Universe.Id
-                     , Data.Vinyl.Universe.Const
-                     , Data.Vinyl.Universe.Field
-                     , Data.Vinyl.TH
-  build-depends:       base >=4.6 && <= 5, ghc-prim, template-haskell >= 2.7.0.0
+  build-depends:       base >=4.7 && <= 5, ghc-prim
   default-language:    Haskell2010
   ghc-options: -fwarn-dodgy-exports -fwarn-dodgy-imports -fwarn-unused-matches -fwarn-unused-imports -fwarn-unused-binds -fwarn-incomplete-record-updates -fwarn-missing-signatures -fwarn-name-shadowing -fwarn-orphans -fwarn-overlapping-patterns -fwarn-tabs -fwarn-type-defaults
 
@@ -45,7 +34,7 @@ benchmark bench-builder-all
   type:             exitcode-stdio-1.0
   hs-source-dirs:   benchmarks
   main-is:          StorableBench.hs
-  build-depends:    base >= 4.6 && <= 5, vector, criterion, vinyl == 0.4.3, mwc-random, lens, linear
+  build-depends:    base >= 4.7 && <= 5, vector, criterion, vinyl == 0.5, mwc-random, lens, linear
   ghc-options:      -O2 -fllvm
   default-language: Haskell2010
 
@@ -53,5 +42,5 @@ test-suite doctests
   type:             exitcode-stdio-1.0
   hs-source-dirs:   tests
   main-is:          Intro.lhs
-  build-depends:    base >= 4.6 && <= 5, lens, vinyl == 0.4.3, doctest >= 0.8, singletons >= 0.10
+  build-depends:    base >= 4.7 && <= 5, lens, vinyl == 0.5, doctest >= 0.8, singletons >= 0.10
   default-language: Haskell2010
