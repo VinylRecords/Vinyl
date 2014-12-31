@@ -11,6 +11,7 @@ category:            Records
 stability:           Experimental
 build-type:          Simple
 cabal-version:       >=1.10
+extra-source-files:  CHANGELOG.md
 
 description: Extensible records for Haskell with lenses using modern GHC features.
 
