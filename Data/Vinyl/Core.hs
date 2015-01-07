@@ -119,6 +119,7 @@ rtraverse
   -> h (Rec g rs)
 rtraverse _ RNil      = pure RNil
 rtraverse f (x :& xs) = (:&) <$> f x <*> rtraverse f xs
+{-# INLINABLE rtraverse #-}
 
 -- | A record with uniform fields may be turned into a list.
 recordToList
