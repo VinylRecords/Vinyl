@@ -63,7 +63,7 @@ Automatically, we can show the record:
 
 > -- |
 > -- >>> show jon
-> -- "{name: \"jon\"; age: 23; sleeping: False}"
+> -- "{name: \"jon\", age: 23, sleeping: False}"
 
 And its types are all inferred with no problem. Now, make a dog! Dogs are
 life-forms, but unlike men, they have masters. So, let’s build my dog:
