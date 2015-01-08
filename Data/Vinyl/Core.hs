@@ -155,7 +155,7 @@ reifyConstraint prx rec =
 instance RecAll f rs Show => Show (Rec f rs) where
   show xs =
     (\str -> "{" <> str <> "}")
-      . intercalate "; "
+      . intercalate ", "
       . recordToList
       . rmap (\(Compose (Dict x)) -> Const $ show x)
       $ reifyConstraint (Proxy :: Proxy Show) xs
