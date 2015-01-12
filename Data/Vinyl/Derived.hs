@@ -47,6 +47,14 @@ rfield f (Field x) = fmap Field (f x)
 (=:) :: KnownSymbol s => proxy '(s,a) -> a -> FieldRec '[ '(s,a) ]
 (=:) _ x = Field x :& RNil
 
+-- | A proxy for field types.
+data SField (field :: k) = SField
+
+instance Eq (SField a) where _ == _ = True
+instance Ord (SField a) where compare _ _ = EQ
+instance KnownSymbol s => Show (SField '(s,t)) where
+  show _ = "SField "++symbolVal (Proxy::Proxy s)
+
 instance forall s t. (KnownSymbol s, Storable t)
     => Storable (ElField '(s,t)) where
   sizeOf _ = sizeOf (undefined::t)
