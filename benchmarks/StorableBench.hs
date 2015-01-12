@@ -11,10 +11,10 @@ import Control.Applicative
 import Control.Lens
 import Control.Monad (when)
 import qualified Data.Foldable as F
+import Data.Proxy
 import qualified Data.Vector.Storable as V
 import qualified Data.Vector.Storable.Mutable as VM
 import Data.Vinyl
-import Data.Vinyl.Universe.Field
 import Foreign.Ptr (castPtr)
 import Foreign.Storable (Storable(..))
 import Linear (V2, V3, _y)
@@ -28,23 +28,23 @@ randVec n g = VM.replicateM n (uniform g) >>=
 randVecStd :: (Storable a, Variate a) => Int -> IO (V.Vector a)
 randVecStd = withSystemRandom . randVec
 
-vNorm :: SField ("normal" ::: V3 a)
-vNorm = SField
+vNorm :: Proxy '("normal", V3 a)
+vNorm = Proxy
 
-type MyFields a = [ "pos" ::: V3 a, "tex" ::: V2 a, "normal" ::: V3 a ]
-type MyVertex a = PlainRec ElField (MyFields a)
+type MyFields a = [ '("pos", V3 a), '("tex", V2 a), '("normal", V3 a) ]
+type MyVertex a = FieldRec (MyFields a)
 
 doubleNviL :: V.Vector (MyVertex Float) -> V.Vector (MyVertex Float)
-doubleNviL = V.map (rLens vNorm . _y *~ (2::Float))
+doubleNviL = V.map (rlens vNorm . rfield . _y *~ (2::Float))
 
 vinylNSumL :: (Num a, Storable a) => V.Vector (MyVertex a) -> a
-vinylNSumL = V.sum . V.map (F.sum . view (rLens vNorm))
+vinylNSumL = V.sum . V.map (F.sum . view (rlens vNorm . rfield))
 
 doubleNvi :: V.Vector (MyVertex Float) -> V.Vector (MyVertex Float)
-doubleNvi = V.map (rMod vNorm (_y *~ (2::Float)))
+doubleNvi = V.map (rlens vNorm . rfield . _y *~ (2::Float))
 
 vinylNSum :: (Num a, Storable a) => V.Vector (MyVertex a) -> a
-vinylNSum = V.sum . V.map (F.sum . rGet vNorm)
+vinylNSum = V.sum . V.map (F.sum . view rfield . rget vNorm)
 
 main :: IO ()
 main = do vals <- randVecStd $ n * 8 :: IO (V.Vector Float)
