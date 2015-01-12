@@ -44,8 +44,8 @@ rfield f (Field x) = fmap Field (f x)
 {-# INLINE rfield #-}
 
 -- | Shorthand for a 'FieldRec' with a single field.
-(=::) :: KnownSymbol s => proxy '(s,a) -> a -> FieldRec '[ '(s,a) ]
-(=::) _ x = Field x :& RNil
+(=:) :: KnownSymbol s => proxy '(s,a) -> a -> FieldRec '[ '(s,a) ]
+(=:) _ x = Field x :& RNil
 
 instance forall s t. (KnownSymbol s, Storable t)
     => Storable (ElField '(s,t)) where

@@ -47,16 +47,16 @@ Let’s define a universe of fields which we want to use:
 > instance Show (Attr Sleeping) where show (Attr x) = "sleeping: " ++ show x
 > instance Show (Attr Master) where show (Attr x) = "master: " ++ show x
 
-> (=:) :: sing f -> ElF f -> Attr f
-> _ =: x = Attr x
+> (=::) :: sing f -> ElF f -> Attr f
+> _ =:: x = Attr x
 
 > genSingletons [ ''Fields ]
 
 Now, let’s try to make an entity that represents a man:
 
-> jon = (SName =: "jon")
->    :& (SAge =: 23)
->    :& (SSleeping =: False)
+> jon = (SName =:: "jon")
+>    :& (SAge =:: 23)
+>    :& (SSleeping =:: False)
 >    :& RNil
 
 Automatically, we can show the record:
@@ -68,10 +68,10 @@ Automatically, we can show the record:
 And its types are all inferred with no problem. Now, make a dog! Dogs are
 life-forms, but unlike men, they have masters. So, let’s build my dog:
 
-> tucker = (SName =: "tucker")
->       :& (SAge =: 9)
->       :& (SSleeping =: True)
->       :& (SMaster =: jon)
+> tucker = (SName =:: "tucker")
+>       :& (SAge =:: 9)
+>       :& (SSleeping =:: True)
+>       :& (SMaster =:: jon)
 >       :& RNil
 
 Using Lenses
@@ -85,7 +85,7 @@ losing additional information:
 
 
 > wakeUp :: (Sleeping ∈ fields) => Rec Attr fields -> Rec Attr fields
-> wakeUp = rput $ SSleeping =: False
+> wakeUp = rput $ SSleeping =:: False
 
 Now, the type annotation on wakeUp was not necessary; I just wanted to
 show how intuitive the type is. Basically, it takes as an input any
@@ -110,7 +110,7 @@ function; since lenses are composable, it’s super easy to do deep
 update on a record:
 
 > masterSleeping = rlens SMaster . unAttr . rlens SSleeping
-> tucker'' = masterSleeping .~ (SSleeping =: True) $ tucker'
+> tucker'' = masterSleeping .~ (SSleeping =:: True) $ tucker'
 
 > -- | >>> tucker'' ^. masterSleeping
 > -- sleeping: True
@@ -169,18 +169,18 @@ validation, we’ll use `Maybe` for now, though you should use a
 left-accumulating `Validation` type.
 
 > goodPerson :: Rec Attr Person
-> goodPerson = (SName =: "Jon")
->           :& (SAge =: 20)
+> goodPerson = (SName =:: "Jon")
+>           :& (SAge =:: 20)
 >           :& RNil
 
-> badPerson = (SName =: "J#@#$on")
->           :& (SAge =: 20)
+> badPerson = (SName =:: "J#@#$on")
+>           :& (SAge =:: 20)
 >           :& RNil
 
 We'll give validation a (rather poor) shot.
 
 > validatePerson :: Rec Attr Person -> Maybe (Rec Attr Person)
-> validatePerson p = (\n a -> (SName =: n) :& (SAge =: a) :& RNil) <$> vName <*> vAge where
+> validatePerson p = (\n a -> (SName =:: n) :& (SAge =:: a) :& RNil) <$> vName <*> vAge where
 >   vName = validateName $ p ^. rlens SName . unAttr
 >   vAge  = validateAge $ p ^. rlens SAge . unAttr
 >
