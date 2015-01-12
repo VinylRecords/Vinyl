@@ -1,3 +1,8 @@
+0.5.1
+---------
+
+Added utilities for working with the `FieldRec` type.
+
 Vinyl 0.5
 =========
 
