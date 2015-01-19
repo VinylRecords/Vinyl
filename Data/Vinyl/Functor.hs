@@ -36,6 +36,7 @@ newtype Compose (f :: l -> *) (g :: k -> l) (x :: k)
     deriving (Storable)
 
 type f :. g = Compose f g
+infixr 9 :.
 
 newtype Const (a :: *) (b :: k)
   = Const { getConst :: a }
