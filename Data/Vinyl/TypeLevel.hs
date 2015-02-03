@@ -46,3 +46,30 @@ type family RIndexMaybe (r :: k) (rs :: [k]) :: Maybe Nat where
   RIndexMaybe r '[] = 'Nothing
   RIndexMaybe r (r ': rs) = Just Z
   RIndexMaybe r (s ': rs) = FmapMaybe S (RIndexMaybe r rs)
+
+type family FmapMaybeConst a t where
+  FmapMaybeConst a Nothing = Nothing
+  FmapMaybeConst a (Just t) = Just a
+
+type family Intersection' rs ss where
+  Intersection' '[] ss = '[]
+  Intersection' (r ': rs) ss = FmapMaybeConst r (RIndexMaybe r ss)
+                               ': Intersection' rs ss
+
+type Intersection rs ss = CatMaybes (Intersection' rs ss)
+
+type family Intersection2' rs ss where
+  Intersection2' '[] ss = '[]
+  Intersection2' (r ': rs) ss = FmapMaybeConst (r,r) (RIndexMaybe r ss)
+                               ': Intersection2' rs ss
+
+type Intersection2 rs ss = CatMaybes (Intersection2' rs ss)
+
+type family CatMaybes rs where
+  CatMaybes '[] = '[]
+  CatMaybes (Nothing ': rs) = CatMaybes rs
+  CatMaybes (Just r ': rs) = r ': CatMaybes rs
+
+type family RImageMaybe rs ss :: [Maybe Nat] where
+  RImageMaybe '[] ss = '[]
+  RImageMaybe (r ': rs) ss = RIndexMaybe r ss ': RImageMaybe rs ss
