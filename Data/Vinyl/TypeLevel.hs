@@ -8,6 +8,7 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module Data.Vinyl.TypeLevel where
 
@@ -37,3 +38,11 @@ type family (as :: [k]) ++ (bs :: [k]) :: [k] where
   '[] ++ bs = bs
   (a ': as) ++ bs = a ': (as ++ bs)
 
+type family FmapMaybe f t where
+  FmapMaybe f Nothing = Nothing
+  FmapMaybe f (Just t) = Just (f t)
+
+type family RIndexMaybe (r :: k) (rs :: [k]) :: Maybe Nat where
+  RIndexMaybe r '[] = 'Nothing
+  RIndexMaybe r (r ': rs) = Just Z
+  RIndexMaybe r (s ': rs) = FmapMaybe S (RIndexMaybe r rs)
