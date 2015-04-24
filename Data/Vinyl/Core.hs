@@ -31,7 +31,7 @@ data Rec :: (u -> *) -> [u] -> * where
   RNil :: Rec f '[]
   (:&) :: !(f r) -> !(Rec f rs) -> Rec f (r ': rs)
 
-infixr :&
+infixr 7 :&
 infixr 5  <+>
 infixl 8 <<$>>
 infixl 8 <<*>>
