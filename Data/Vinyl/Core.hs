@@ -169,25 +169,12 @@ instance (Monoid (f r), Monoid (Rec f rs)) => Monoid (Rec f (r ': rs)) where
   (x :& xs) `mappend` (y :& ys) = (x <> y) :& (xs <> ys)
 
 instance RecAll f rs Eq => Eq (Rec f rs) where
-  (==) r1 r2 = recordEqualityImplicit r1 r2
-    where recordEquality :: Rec (Dict Eq :. g) as -> Rec g as -> Bool
-          recordEquality bs cs = case (bs,cs) of
-            (Compose (Dict b) :& bsNext, c :& csNext) -> (b == c) && recordEquality bsNext csNext
-            (RNil,RNil) -> True
-          recordEqualityImplicit :: RecAll g as Eq => Rec g as -> Rec g as -> Bool
-          recordEqualityImplicit a b = 
-            recordEquality (reifyConstraint (Proxy :: Proxy Eq) a) b
-
+  (==) RNil RNil = True
+  (==) (a :& as) (b :& bs) = a == b && as == bs
 
 instance (RecAll f rs Eq, RecAll f rs Ord) => Ord (Rec f rs) where
-  compare r1 r2 = recordInequalityImplicit r1 r2
-    where recordInequality :: Rec (Dict Ord :. g) as -> Rec g as -> Ordering
-          recordInequality bs cs = case (bs,cs) of
-            (Compose (Dict b) :& bsNext, c :& csNext) -> (compare b c) <> recordInequality bsNext csNext
-            (RNil,RNil) -> EQ
-          recordInequalityImplicit :: RecAll g as Ord => Rec g as -> Rec g as -> Ordering
-          recordInequalityImplicit a b = 
-            recordInequality (reifyConstraint (Proxy :: Proxy Ord) a) b
+  compare RNil RNil = EQ
+  compare (a :& as) (b :& bs) = compare a b <> compare as bs
 
 instance Storable (Rec f '[]) where
   sizeOf _    = 0
