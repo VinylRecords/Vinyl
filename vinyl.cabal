@@ -21,6 +21,7 @@ source-repository head
 
 library
   exposed-modules:     Data.Vinyl
+                     , Data.Vinyl.All
                      , Data.Vinyl.Core
                      , Data.Vinyl.Lens
                      , Data.Vinyl.Derived
