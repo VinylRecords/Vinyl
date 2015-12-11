@@ -4,7 +4,7 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE BangPatterns          #-}
 
-module Data.Vinyl.All where
+module Data.Vinyl.Class.Method where
 
 import Data.Vinyl.Core
 import Data.Vinyl.TypeLevel
