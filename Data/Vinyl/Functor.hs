@@ -19,6 +19,8 @@ newtype Identity a
              , Foldable
              , Traversable
              , Storable
+             , Eq
+             , Ord
              )
 
 data Thunk a
