@@ -173,6 +173,11 @@ instance Eq (Rec f '[]) where
 instance (Eq (f r), Eq (Rec f rs)) => Eq (Rec f (r ': rs)) where
   (x :& xs) == (y :& ys) = (x == y) && (xs == ys)
 
+instance Ord (Rec f '[]) where
+  compare _ _ = EQ
+instance (Ord (f r), Ord (Rec f rs)) => Ord (Rec f (r ': rs)) where
+  compare (x :& xs) (y :& ys) = mappend (compare x y) (compare xs ys)
+
 instance Storable (Rec f '[]) where
   sizeOf _    = 0
   alignment _ = 0
