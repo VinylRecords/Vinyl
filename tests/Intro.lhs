@@ -29,17 +29,25 @@ extensions first:
 > import Test.DocTest
 > import Data.Singletons.TH
 
-Let’s define a universe of fields which we want to use:
+Let’s define a universe of fields which we want to use.
+
+First of all, we need a data type defining the field labels:
 
 > data Fields = Name | Age | Sleeping | Master deriving Show
+
+Any record can be now described by a type-level list of these labels.
+The DataKinds extension must be enabled to autmatically turn all the constructors of the Field type into types.
 > type LifeForm = [Name, Age, Sleeping]
 
+Now, we need a way to map our labels to concrete types. We use a type family for this purpose:
 > type family ElF (f :: Fields) :: * where
 >   ElF Name = String
 >   ElF Age = Int
 >   ElF Sleeping = Bool
 >   ElF Master = Rec Attr LifeForm
 
+Unfortunately, type families aren't first class in Haskell.
+That's why we also need a data type, with which we will parametrise Rec:
 > newtype Attr f = Attr { _unAttr :: ElF f }
 > makeLenses ''Attr
 > instance Show (Attr Name) where show (Attr x) = "name: " ++ show x
@@ -47,9 +55,14 @@ Let’s define a universe of fields which we want to use:
 > instance Show (Attr Sleeping) where show (Attr x) = "sleeping: " ++ show x
 > instance Show (Attr Master) where show (Attr x) = "master: " ++ show x
 
+To make field construction easier, we define an operator.
+The first argument of this operator is a singleton - a constructor bringing the data-kinded field label type into the data level.
+It's needed because there can be multiple label with the same field type,
+so by just supplying a value of type (ElF f) there would be no way to deduce the correct "f".
 > (=::) :: sing f -> ElF f -> Attr f
 > _ =:: x = Attr x
 
+We generate the necessary singletons for each field label using Template Haskell:
 > genSingletons [ ''Fields ]
 
 Now, let’s try to make an entity that represents a man:
