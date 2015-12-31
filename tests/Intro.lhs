@@ -12,7 +12,7 @@ row-polymorphic lenses. All this is possible without Template Haskell.
 First, install Vinyl from Hackage:
 
 < cabal update
-< cabal install vinyl
+< cabal install vinyl singletons
 
 Let’s work through a quick example. We’ll need to enable some language
 extensions first:
@@ -36,18 +36,23 @@ First of all, we need a data type defining the field labels:
 > data Fields = Name | Age | Sleeping | Master deriving Show
 
 Any record can be now described by a type-level list of these labels.
-The DataKinds extension must be enabled to autmatically turn all the constructors of the Field type into types.
+The `DataKinds` extension must be enabled to autmatically turn all the
+constructors of the `Field` type into types.
+
 > type LifeForm = [Name, Age, Sleeping]
 
-Now, we need a way to map our labels to concrete types. We use a type family for this purpose:
+Now, we need a way to map our labels to concrete types. We use a type
+family for this purpose:
+
 > type family ElF (f :: Fields) :: * where
 >   ElF Name = String
 >   ElF Age = Int
 >   ElF Sleeping = Bool
 >   ElF Master = Rec Attr LifeForm
 
-Unfortunately, type families aren't first class in Haskell.
-That's why we also need a data type, with which we will parametrise Rec:
+Unfortunately, type families aren't first class in Haskell.  That's
+why we also need a data type, with which we will parametrise `Rec`:
+
 > newtype Attr f = Attr { _unAttr :: ElF f }
 > makeLenses ''Attr
 > instance Show (Attr Name) where show (Attr x) = "name: " ++ show x
@@ -55,17 +60,22 @@ That's why we also need a data type, with which we will parametrise Rec:
 > instance Show (Attr Sleeping) where show (Attr x) = "sleeping: " ++ show x
 > instance Show (Attr Master) where show (Attr x) = "master: " ++ show x
 
-To make field construction easier, we define an operator.
-The first argument of this operator is a singleton - a constructor bringing the data-kinded field label type into the data level.
-It's needed because there can be multiple label with the same field type,
-so by just supplying a value of type (ElF f) there would be no way to deduce the correct "f".
+To make field construction easier, we define an operator.  The first
+argument of this operator is a singleton - a constructor bringing the
+data-kinded field label type into the data level.  It's needed because
+there can be multiple labels with the same field type, so by just
+supplying a value of type `ElF f` there would be no way to deduce the
+correct `f`.
+
 > (=::) :: sing f -> ElF f -> Attr f
 > _ =:: x = Attr x
 
-We generate the necessary singletons for each field label using Template Haskell:
+We generate the necessary singletons for each field label using
+Template Haskell:
+
 > genSingletons [ ''Fields ]
 
-Now, let’s try to make an entity that represents a man:
+Now, let’s try to make an entity that represents a human:
 
 > jon = (SName =:: "jon")
 >    :& (SAge =:: 23)
@@ -78,8 +88,9 @@ Automatically, we can show the record:
 > -- >>> show jon
 > -- "{name: \"jon\", age: 23, sleeping: False}"
 
-And its types are all inferred with no problem. Now, make a dog! Dogs are
-life-forms, but unlike men, they have masters. So, let’s build my dog:
+And its types are all inferred with no problem. Now, make a dog! Dogs
+are life-forms, but unlike humans, they have masters. So, let’s build
+my dog:
 
 > tucker = (SName =:: "tucker")
 >       :& (SAge =:: 9)
@@ -91,19 +102,19 @@ Using Lenses
 ------------
 
 Now, if we want to wake entities up, we don’t want to have to write a
-separate wake-up function for both dogs and men (even though they are
-of different type). Luckily, we can use the built-in lenses to focus
-on a particular field in the record for access and update, without
-losing additional information:
+separate wake-up function for both dogs and humans (even though they
+are of different type). Luckily, we can use the built-in lenses to
+focus on a particular field in the record for access and update,
+without losing additional information:
 
 
 > wakeUp :: (Sleeping ∈ fields) => Rec Attr fields -> Rec Attr fields
 > wakeUp = rput $ SSleeping =:: False
 
-Now, the type annotation on wakeUp was not necessary; I just wanted to
-show how intuitive the type is. Basically, it takes as an input any
-record that has a `Bool` field labelled `sleeping`, and modifies that
-specific field in the record accordingly.
+Now, the type annotation on `wakeUp` was not necessary; I just wanted
+to show how intuitive the type is. Basically, it takes as an input
+any record that has a `Bool` field labelled `sleeping`, and modifies
+that specific field in the record accordingly.
 
 > tucker' = wakeUp tucker
 > jon' = wakeUp jon
