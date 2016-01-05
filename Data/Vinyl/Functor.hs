@@ -37,6 +37,8 @@ import Foreign.Storable
     to the bottom.
 -}
 
+-- | This is identical to the "Identity" from "Data.Functor.Identity"
+-- in "base" except for its 'Show' instance.
 newtype Identity a
   = Identity { getIdentity :: a }
     deriving ( Functor
@@ -47,7 +49,7 @@ newtype Identity a
              , Ord
              )
 
--- | Used in place of 'Identity' to make a record
+-- | Used this instead of 'Identity' to make a record
 --   lazy in its fields.
 data Thunk a
   = Thunk { getThunk :: a }
