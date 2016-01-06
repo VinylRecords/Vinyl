@@ -122,6 +122,11 @@ instance (Applicative f, Applicative g) => Applicative (Lift (,) f g) where
   pure x = Lift (pure x, pure x)
   Lift (f, g) <*> Lift (x, y) = Lift (f <*> x, g <*> y)
 
+-- $setup
+-- >>> import Data.Vinyl.Core
+-- >>> :set -XDataKinds
+--
+
 {- $example
     The data types in this module are used to build interpretation
     fuctions for a 'Rec'. To build a 'Rec' that is simply a heterogeneous
@@ -133,8 +138,10 @@ instance (Applicative f, Applicative g) => Applicative (Lift (,) f g) where
     For a record in which the fields are optional, you could alternatively
     write:
 
-> myRec2 :: Rec Maybe '[Int,Bool,Char]
-> myRec2 = Just 4 :& Nothing :& Nothing :& RNil
+>>> :{
+let myRec2 :: Rec Maybe '[Int,Bool,Char]
+    myRec2 = Just 4 :& Nothing :& Nothing :& RNil
+:}
 
     And we can gather all of the effects with 'rtraverse':
 
@@ -147,8 +154,10 @@ Nothing
     If the fields only exist once an environment is provided, you can 
     build the record as follows:
 
-> myRec3 :: Rec ((->) Int) '[Int,Bool,Char]
-> myRec3 = (+5) :& (const True) :& (head . show) :& RNil
+>>> :{
+let myRec3 :: Rec ((->) Int) '[Int,Bool,Char]
+    myRec3 = (+5) :& (const True) :& (head . show) :& RNil
+:}
 
     And again, we can collect these effects with "rtraverse":
 
@@ -177,10 +186,12 @@ Nothing
     it provided here is that this one has a different 'Show'
     instance. This is illustrated below:
 
->>> import qualified Data.Vinyl.Functor as Vinyl
->>> import qualified Data.Functor.Identity as Base
->>> Vinyl.Identity "hello"
+>>> Identity "hello"
 "hello"
+
+    But, when using "Identity" from "base":
+
+>>> import qualified Data.Functor.Identity as Base
 >>> Base.Identity "hello"
 Identity "hello"
 
