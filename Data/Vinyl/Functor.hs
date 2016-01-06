@@ -132,8 +132,10 @@ instance (Applicative f, Applicative g) => Applicative (Lift (,) f g) where
     fuctions for a 'Rec'. To build a 'Rec' that is simply a heterogeneous
     list, use 'Identity':
 
-> myRec1 :: Rec Identity '[Int,Bool,Char]
-> myRec1 = Identity 4 :& Identity True :& Identity 'c' :& RNil
+>>> :{
+let myRec1 :: Rec Identity '[Int,Bool,Char]
+    myRec1 = Identity 4 :& Identity True :& Identity 'c' :& RNil
+:}
 
     For a record in which the fields are optional, you could alternatively
     write:
@@ -166,8 +168,13 @@ let myRec3 :: Rec ((->) Int) '[Int,Bool,Char]
 
     If you want the composition of these two effects, you can use "Compose":
 
-> myRec4 :: Rec (Compose Maybe ((->) Int)) '[Int,Char]
-> myRec4 = (Compose safeSqrt) :& (Compose $ safeHead . show) :& RNil
+>>> import Data.Char (chr)
+>>> :{
+let safeDiv a b = if b == 0 then Nothing else Just (div a b)
+    safeChr i = if i >= 32 && i <= 126 then Just (chr i) else Nothing
+    myRec4 :: Rec (Compose ((->) Int) Maybe) '[Int,Char]
+    myRec4 = (Compose $ safeDiv 42) :& (Compose safeChr) :& RNil
+:}
 
 -}
 
