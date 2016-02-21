@@ -28,6 +28,7 @@ library
                      , Data.Vinyl.TypeLevel
                      , Data.Vinyl.Functor
                      , Data.Vinyl.Notation
+                     , Data.Vinyl.Tutorial.Overview
   build-depends:       base >=4.7 && <= 5, ghc-prim
   default-language:    Haskell2010
   ghc-options: -fwarn-dodgy-exports -fwarn-dodgy-imports -fwarn-unused-matches -fwarn-unused-imports -fwarn-unused-binds -fwarn-incomplete-record-updates -fwarn-missing-signatures -fwarn-name-shadowing -fwarn-orphans -fwarn-overlapping-patterns -fwarn-tabs -fwarn-type-defaults

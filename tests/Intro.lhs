@@ -155,7 +155,7 @@ Therefore, the following works:
 > upcastedTucker = rcast tucker
 
 The subtyping relationship between record types is expressed with the
-`(<:)` constraint; so, cast is of the following type:
+`(<:)` constraint; so, rcast is of the following type:
 
 < rcast :: r1 <: r2 => Rec f r1 -> Rec f r2
 
@@ -281,4 +281,4 @@ give us a value of type `Maybe (Rec Attr Person)`) using `rtraverse`:
 > -- False
 
 > main :: IO ()
-> main = doctest ["tests/Intro.lhs"]
+> main = doctest ["tests/Intro.lhs", "Data/Vinyl/Tutorial/Overview.hs"]
