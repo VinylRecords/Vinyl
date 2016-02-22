@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DeriveFoldable             #-}
 {-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE DeriveTraversable          #-}
@@ -25,9 +26,11 @@ module Data.Vinyl.Functor
     -- $ecosystem
   ) where
 
+#if __GLASGOW_HASKELL__ < 710
 import Control.Applicative hiding (Const)
 import Data.Foldable
 import Data.Traversable
+#endif
 import Foreign.Storable
 
 {- $introduction
