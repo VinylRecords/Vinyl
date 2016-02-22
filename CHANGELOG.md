@@ -1,10 +1,12 @@
-0.5.1
----------
+# 0.5.2
+
+Ported the tutorial to haddocks (andrewthad)
+
+# 0.5.1
 
 Added utilities for working with the `FieldRec` type.
 
-Vinyl 0.5
-=========
+# 0.5
 
 Vinyl 0.5 combines the generality of Vinyl 0.4 with the ease-of-use of previous
 versions by eschewing the defunctionalized type families and just using plain
@@ -14,8 +16,7 @@ modular manner without baking it into the fabric of Vinyl itself.
 Also new in 0.5 is a unified lens-based approach to subtyping, coercion and
 projection.
 
-Vinyl 0.4
-=========
+# 0.4
 
 Vinyl 0.4 is a big departure from previous versions, in that it introduces a
 universe encoding as a means to generalize the space of keys from strings to
