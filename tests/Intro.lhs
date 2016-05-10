@@ -36,7 +36,7 @@ First of all, we need a data type defining the field labels:
 > data Fields = Name | Age | Sleeping | Master deriving Show
 
 Any record can be now described by a type-level list of these labels.
-The `DataKinds` extension must be enabled to autmatically turn all the
+The `DataKinds` extension must be enabled to automatically turn all the
 constructors of the `Field` type into types.
 
 > type LifeForm = [Name, Age, Sleeping]
@@ -155,7 +155,7 @@ Therefore, the following works:
 > upcastedTucker = rcast tucker
 
 The subtyping relationship between record types is expressed with the
-`(<:)` constraint; so, rcast is of the following type:
+`(<:)` constraint; so, `rcast` is of the following type:
 
 < rcast :: r1 <: r2 => Rec f r1 -> Rec f r2
 
