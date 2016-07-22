@@ -25,6 +25,8 @@ import Control.Applicative hiding (Const(..))
 import Data.Typeable (Proxy(..))
 import Data.List (intercalate)
 import Data.Vinyl.TypeLevel
+import Data.Type.Equality (TestEquality (..), (:~:) (..))
+import Data.Type.Coercion (TestCoercion (..), Coercion (..))
 
 -- | A record is parameterized by a universe @u@, an interpretation @f@ and a
 -- list of rows @rs@.  The labels or indices of the record are given by
@@ -38,6 +40,22 @@ infixr 7 :&
 infixr 5  <+>
 infixl 8 <<$>>
 infixl 8 <<*>>
+
+instance TestEquality f => TestEquality (Rec f) where
+  testEquality RNil RNil = Just Refl
+  testEquality (x :& xs) (y :& ys) = do
+    Refl <- testEquality x y
+    Refl <- testEquality xs ys
+    Just Refl
+  testEquality _ _ = Nothing
+
+instance TestCoercion f => TestCoercion (Rec f) where
+  testCoercion RNil RNil = Just Coercion
+  testCoercion (x :& xs) (y :& ys) = do
+    Coercion <- testCoercion x y
+    Coercion <- testCoercion xs ys
+    Just Coercion
+  testCoercion _ _ = Nothing
 
 -- | Two records may be pasted together.
 rappend
