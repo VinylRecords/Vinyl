@@ -14,4 +14,4 @@ module Data.Vinyl.Notation
   ) where
 
 import Data.Vinyl.Core
-import Data.Vinyl.Lens
+import Data.Vinyl.Index

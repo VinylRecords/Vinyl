@@ -293,6 +293,5 @@ module Data.Vinyl.Tutorial.Overview where
 
 import Data.Vinyl.Core
 import Data.Vinyl.Functor
-import Data.Vinyl.Lens
 
 
