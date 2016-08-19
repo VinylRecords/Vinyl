@@ -25,9 +25,11 @@ rlensIx
   -> Rec f rs -> g (Rec f rs)
 rlensIx Z f (r:&rs) = fmap (:& rs) (f r)
 rlensIx (S ix) f (r:&rs) = fmap (r :&) (rlensIx ix f rs)
+{-# INLINABLE rlensIx #-}
 
 rgetIx :: RIndex rs r -> Rec f rs -> f r
 rgetIx ix = getConst . rlensIx ix Const
+{-# INLINABLE rgetIx #-}
 
 (!) :: Rec f rs -> RIndex rs r -> f r
 infixl 9 !
@@ -35,6 +37,7 @@ infixl 9 !
 
 rputIx :: RIndex rs r -> f r -> Rec f rs -> Rec f rs
 rputIx ix r = getIdentity . rlensIx ix (\_ -> Identity r)
+{-# INLINABLE rputIx #-}
 
 class Rid rs where rid :: Rec (RIndex rs) rs
 instance Rid '[] where rid = RNil
@@ -68,12 +71,15 @@ rlens
   -> (f r     -> g (f r))
   -> Rec f rs -> g (Rec f rs)
 rlens _ = rlensIx relemIndex
+{-# INLINE rlens #-}
 
 rget :: RElem r rs => sing r -> Rec f rs -> f r
 rget _ = rgetIx relemIndex
+{-# INLINE rget #-}
 
 rput :: RElem r rs => f r -> Rec f rs -> Rec f rs
 rput = rputIx relemIndex
+{-# INLINE rput #-}
 
 class RSubset (ss :: [k]) (rs :: [k]) where rsubIndices :: Rec (RIndex rs) ss
 instance '[] `RSubset` rs where rsubIndices = RNil
