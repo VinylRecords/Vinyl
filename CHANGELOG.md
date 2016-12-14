@@ -1,3 +1,7 @@
+# 0.5.3
+
+Added a concise `Show` instance for `Const`.
+
 # 0.5.2
 
 Ported the tutorial to haddocks (andrewthad)

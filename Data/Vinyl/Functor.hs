@@ -79,6 +79,9 @@ newtype Const (a :: *) (b :: k)
              , Storable
              )
 
+instance Show a => Show (Const a b) where
+  show (Const x) = "(Const "++show x ++")"
+
 instance (Functor f, Functor g) => Functor (Compose f g) where
   fmap f (Compose x) = Compose (fmap (fmap f) x)
 
