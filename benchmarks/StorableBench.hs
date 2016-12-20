@@ -34,34 +34,34 @@ vNorm = Proxy
 type MyFields a = [ '("pos", V3 a), '("tex", V2 a), '("normal", V3 a) ]
 type MyVertex a = FieldRec (MyFields a)
 
-doubleNviL :: V.Vector (MyVertex Float) -> V.Vector (MyVertex Float)
-doubleNviL = V.map (rlens vNorm . rfield . _y *~ (2::Float))
+vinylNormSumLens :: (Num a, Storable a) => V.Vector (MyVertex a) -> a
+vinylNormSumLens = V.sum . V.map (F.sum . view (rlens vNorm . rfield))
 
-vinylNSumL :: (Num a, Storable a) => V.Vector (MyVertex a) -> a
-vinylNSumL = V.sum . V.map (F.sum . view (rlens vNorm . rfield))
+doubleNormY :: V.Vector (MyVertex Float) -> V.Vector (MyVertex Float)
+doubleNormY = V.map (rlens vNorm . rfield . _y *~ (2::Float))
 
-doubleNvi :: V.Vector (MyVertex Float) -> V.Vector (MyVertex Float)
-doubleNvi = V.map (rlens vNorm . rfield . _y *~ (2::Float))
-
-vinylNSum :: (Num a, Storable a) => V.Vector (MyVertex a) -> a
-vinylNSum = V.sum . V.map (F.sum . view rfield . rget vNorm)
+vinylNormSum :: (Num a, Storable a) => V.Vector (MyVertex a) -> a
+vinylNormSum = V.sum . V.map (F.sum . view rfield . rget vNorm)
 
 main :: IO ()
 main = do vals <- randVecStd $ n * 8 :: IO (V.Vector Float)
           let vinylVerts = V.unsafeCast vals :: V.Vector (MyVertex Float)
               flatVerts = V.unsafeCast vals
               reasVerts = V.unsafeCast vals
-              vinylAns = vinylNSum $ doubleNvi vinylVerts
-              vinylLans = vinylNSumL $ doubleNviL vinylVerts
-              flatAns = flatNSum $ doubleNfl flatVerts
-              reasAns = reasNSum $ doubleNre reasVerts
+              vinylAns = vinylNormSum $ doubleNormY vinylVerts
+              vinylLans = vinylNormSumLens $ doubleNormY vinylVerts
+              flatAns = flatNormSum $ doubleNormFlat flatVerts
+              reasAns = reasNormSum $ doubleNormReas reasVerts
           when (any (/= vinylAns) [vinylLans, flatAns, reasAns])
                (error "Not all versions compute the same answer")
-          defaultMain [ bench "flat" $ whnf (flatNSum . doubleNfl) flatVerts
-                      , bench "vinyl" $ whnf (vinylNSum . doubleNvi) vinylVerts
-                      , bench "vinyl-lens" $ whnf (vinylNSumL . doubleNviL) vinylVerts
+          defaultMain [ bench "flat" $
+                        whnf (flatNormSum . doubleNormFlat) flatVerts
+                      , bench "vinyl" $
+                        whnf (vinylNormSum . doubleNormY) vinylVerts
+                      , bench "vinyl-lens" $
+                        whnf (vinylNormSumLens . doubleNormY) vinylVerts
                       , bench "reasonable" $
-                        whnf (reasNSum . doubleNre) reasVerts ]
+                        whnf (reasNormSum . doubleNormReas) reasVerts ]
   where n = 1000
 
 --------------------------------------------------------------------------------
@@ -96,11 +96,11 @@ instance Storable a => Storable (TotallyFlat a) where
                                                        pokeElemOff ptr' 7 nz'
     where ptr' = castPtr ptr
 
-flatNSum :: (Num a, Storable a) => V.Vector (TotallyFlat a) -> a
-flatNSum = V.sum . V.map (\v -> nx v + ny v + nz v)
+flatNormSum :: (Num a, Storable a) => V.Vector (TotallyFlat a) -> a
+flatNormSum = V.sum . V.map (\v -> nx v + ny v + nz v)
 
-doubleNfl :: V.Vector (TotallyFlat Float) -> V.Vector (TotallyFlat Float)
-doubleNfl = V.map (\v -> v { ny = ny v * 2 })
+doubleNormFlat :: V.Vector (TotallyFlat Float) -> V.Vector (TotallyFlat Float)
+doubleNormFlat = V.map (\v -> v { ny = ny v * 2 })
 
 -- A more reasonable approach to a vertex record.
 data Reasonable a = Reasonable { rPos  :: V3 a
@@ -121,8 +121,8 @@ instance Storable a => Storable (Reasonable a) where
     where szx = sizeOf (undefined::V3 a)
           szy = sizeOf (undefined::V2 a)
 
-reasNSum :: (Num a, Storable a) => V.Vector (Reasonable a) -> a
-reasNSum = V.sum . V.map (F.sum . rNorm)
+reasNormSum :: (Num a, Storable a) => V.Vector (Reasonable a) -> a
+reasNormSum = V.sum . V.map (F.sum . rNorm)
 
-doubleNre :: V.Vector (Reasonable Float) -> V.Vector (Reasonable Float)
-doubleNre = V.map (\v -> v { rNorm = (_y *~ 2) $ rNorm v })
+doubleNormReas :: V.Vector (Reasonable Float) -> V.Vector (Reasonable Float)
+doubleNormReas = V.map (\v -> v { rNorm = (_y *~ 2) $ rNorm v })
