@@ -48,7 +48,6 @@ class i ~ RIndex r rs => RElem (r :: k) (rs :: [k]) (i :: Nat) where
     :: sing r
     -> Rec f rs
     -> f r
-  rget k = getConst . rlens k Const
 
   -- | For Vinyl users who are not using the @lens@ package, we also provide a
   -- setter. In general, it will be unambiguous what field is being written to,
@@ -57,7 +56,6 @@ class i ~ RIndex r rs => RElem (r :: k) (rs :: [k]) (i :: Nat) where
     :: f r
     -> Rec f rs
     -> Rec f rs
-  rput y = getIdentity . rlens Proxy (\_ -> Identity y)
 
 -- This is an internal convenience stolen from the @lens@ library.
 lens
@@ -73,10 +71,18 @@ lens sa sbt afb s = fmap (sbt s) $ afb (sa s)
 instance RElem r (r ': rs) Z where
   rlens _ f (x :& xs) = fmap (:& xs) (f x)
   {-# INLINE rlens #-}
+  rget k = getConst . rlens k Const
+  {-# INLINE rget #-}
+  rput y = getIdentity . rlens Proxy (\_ -> Identity y)
+  {-# INLINE rput #-}
 
 instance (RIndex r (s ': rs) ~ S i, RElem r rs i) => RElem r (s ': rs) (S i) where
   rlens p f (x :& xs) = fmap (x :&) (rlens p f xs)
   {-# INLINE rlens #-}
+  rget k = getConst . rlens k Const
+  {-# INLINE rget #-}
+  rput y = getIdentity . rlens Proxy (\_ -> Identity y)
+  {-# INLINE rput #-}
 
 -- | If one field set is a subset another, then a lens of from the latter's
 -- record to the former's is evident. That is, we can either cast a larger
