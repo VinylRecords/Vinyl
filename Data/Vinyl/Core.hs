@@ -142,6 +142,17 @@ rtraverse _ RNil      = pure RNil
 rtraverse f (x :& xs) = (:&) <$> f x <*> rtraverse f xs
 {-# INLINABLE rtraverse #-}
 
+-- | Given a natural transformation from the product of @f@ and @g@ to @h@, we
+-- have a natural transformation from the product of @'Rec' f@ and @'Rec' g@ to
+-- @'Rec' h@. You can also think about this operation as zipping two records
+-- with the same element types but different interpretations.
+rzipWith
+  :: (forall x  .     f x  ->     g x  ->     h x)
+  -> (forall xs . Rec f xs -> Rec g xs -> Rec h xs)
+rzipWith m = \r -> case r of
+  RNil        -> \RNil        -> RNil
+  (fa :& fas) -> \(ga :& gas) -> m fa ga :& rzipWith m fas gas
+
 -- | A record with uniform fields may be turned into a list.
 recordToList
   :: Rec (Const a) rs
