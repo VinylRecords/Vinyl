@@ -1,4 +1,4 @@
-{-# LANGUAGE DataKinds, ScopedTypeVariables, TypeOperators #-}
+{-# LANGUAGE DataKinds, GADTs, ScopedTypeVariables, TypeOperators #-}
 -- A benchmark where we initialize a 'V.Vector' of random vertices,
 -- each carrying 3D position, 2D texture coordinates, and a 3D normal
 -- vector. A calculation is carried out where we multiply the y
@@ -37,11 +37,15 @@ type MyVertex a = FieldRec (MyFields a)
 vinylNormSumLens :: (Num a, Storable a) => V.Vector (MyVertex a) -> a
 vinylNormSumLens = V.sum . V.map (F.sum . view (rlens vNorm . rfield))
 
+doubleNormYLens :: V.Vector (MyVertex Float) -> V.Vector (MyVertex Float)
+doubleNormYLens = V.map (rlens vNorm . rfield . _y *~ (2::Float))
+
 doubleNormY :: V.Vector (MyVertex Float) -> V.Vector (MyVertex Float)
-doubleNormY = V.map (rlens vNorm . rfield . _y *~ (2::Float))
+doubleNormY = V.map (\(p :& t :& Field n :& RNil) ->
+                       p :& t :& Field (_y *~ (2::Float) $ n) :& RNil)
 
 vinylNormSum :: (Num a, Storable a) => V.Vector (MyVertex a) -> a
-vinylNormSum = V.sum . V.map (F.sum . view rfield . rget vNorm)
+vinylNormSum = V.sum . V.map (F.sum . (\(_ :& _ :& Field vn :& RNil) -> vn))
 
 main :: IO ()
 main = do vals <- randVecStd $ n * 8 :: IO (V.Vector Float)
@@ -49,7 +53,7 @@ main = do vals <- randVecStd $ n * 8 :: IO (V.Vector Float)
               flatVerts = V.unsafeCast vals
               reasVerts = V.unsafeCast vals
               vinylAns = vinylNormSum $ doubleNormY vinylVerts
-              vinylLans = vinylNormSumLens $ doubleNormY vinylVerts
+              vinylLans = vinylNormSumLens $ doubleNormYLens vinylVerts
               flatAns = flatNormSum $ doubleNormFlat flatVerts
               reasAns = reasNormSum $ doubleNormReas reasVerts
           when (any (/= vinylAns) [vinylLans, flatAns, reasAns])
@@ -59,7 +63,7 @@ main = do vals <- randVecStd $ n * 8 :: IO (V.Vector Float)
                       , bench "vinyl" $
                         whnf (vinylNormSum . doubleNormY) vinylVerts
                       , bench "vinyl-lens" $
-                        whnf (vinylNormSumLens . doubleNormY) vinylVerts
+                        whnf (vinylNormSumLens . doubleNormYLens) vinylVerts
                       , bench "reasonable" $
                         whnf (reasNormSum . doubleNormReas) reasVerts ]
   where n = 1000
