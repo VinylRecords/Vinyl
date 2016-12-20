@@ -218,12 +218,12 @@ instance Storable (Rec f '[]) where
 
 instance (Storable (f r), Storable (Rec f rs)) => Storable (Rec f (r ': rs)) where
   sizeOf _ = sizeOf (undefined :: f r) + sizeOf (undefined :: Rec f rs)
-  {-# INLINABLE sizeOf #-}
+  {-# INLINE sizeOf #-}
   alignment _ =  alignment (undefined :: f r)
-  {-# INLINABLE alignment #-}
+  {-# INLINE alignment #-}
   peek ptr = do !x <- peek (castPtr ptr)
                 !xs <- peek (ptr `plusPtr` sizeOf (undefined :: f r))
                 return $ x :& xs
-  {-# INLINABLE peek #-}
+  {-# INLINE peek #-}
   poke ptr (!x :& xs) = poke (castPtr ptr) x >> poke (ptr `plusPtr` sizeOf (undefined :: f r)) xs
-  {-# INLINEABLE poke #-}
+  {-# INLINE poke #-}
