@@ -7,7 +7,6 @@
 -- by interfacing the vertex data as a flat record, a traditional
 -- record of "Linear" finite dimensional vector types, and a vinyl
 -- record of linear fields.
-import Control.Applicative
 import Control.Lens
 import Control.Monad (when)
 import qualified Data.Foldable as F
