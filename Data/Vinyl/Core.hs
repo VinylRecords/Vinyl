@@ -197,6 +197,25 @@ reifyConstraint prx rec =
     RNil -> RNil
     (x :& xs) -> Compose (Dict x) :& reifyConstraint prx xs
 
+-- | Build a record whose elements are derived solely from a
+-- constraint satisfied by each.
+rpureConstrained :: forall c (f :: * -> *) proxy ts.
+                    (AllConstrained c ts, RecApplicative ts)
+                 => proxy c -> (forall a. c a => f a) -> Rec f ts
+rpureConstrained _ f = go (rpure Nothing)
+  where go :: AllConstrained c ts' => Rec Maybe ts' -> Rec f ts'
+        go RNil = RNil
+        go (_ :& xs) = f :& go xs
+
+-- | Build a record whose elements are derived solely from a
+-- list of constraint constructors satisfied by each.
+rpureConstraints :: forall cs (f :: * -> *) proxy ts. (AllAllSat cs ts, RecApplicative ts)
+                 => proxy cs -> (forall a. AllSatisfied cs a => f a) -> Rec f ts
+rpureConstraints _ f = go (rpure Nothing)
+  where go :: AllAllSat cs ts' => Rec Maybe ts' -> Rec f ts'
+        go RNil = RNil
+        go (_ :& xs) = f :& go xs
+
 -- | Records may be shown insofar as their points may be shown.
 -- 'reifyConstraint' is used to great effect here.
 instance RecAll f rs Show => Show (Rec f rs) where

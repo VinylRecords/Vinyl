@@ -1,4 +1,3 @@
-# This file has been generated -- see https://github.com/hvr/multi-ghc-travis
 language: c
 sudo: false
 
@@ -16,9 +15,9 @@ matrix:
     - env: CABALVER=1.22 GHCVER=7.10.3
       compiler: ": #GHC 7.10.3"
       addons: {apt: {packages: [cabal-install-1.22,ghc-7.10.3], sources: [hvr-ghc]}}
-    - env: CABALVER=1.24 GHCVER=8.0.1
-      compiler: ": #GHC 8.0.1"
-      addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.1], sources: [hvr-ghc]}}
+    - env: CABALVER=1.24 GHCVER=8.0.2
+      compiler: ": #GHC 8.0.2"
+      addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.2], sources: [hvr-ghc]}}
 
 before_install:
  - unset CC
@@ -33,6 +32,15 @@ install:
           $HOME/.cabal/packages/hackage.haskell.org/00-index.tar;
    fi
  - travis_retry cabal update -v
+ - |-
+   case "$GHCVER" in
+     7.10.3) curl -L https://www.stackage.org/lts-6.27/cabal.config > cabal.config
+             sed 's/[[:space:]]*vinyl[[:space:]].*$//' -i cabal.config
+             ;;
+     8.0.2) curl -L https://www.stackage.org/lts-8.21/cabal.config > cabal.config
+            sed 's/[[:space:]]*vinyl[[:space:]].*$//' -i cabal.config
+            ;;
+   esac
  - sed -i 's/^jobs:/-- jobs:/' ${HOME}/.cabal/config
  - cabal install --only-dependencies --enable-tests --enable-benchmarks --dry -v > installplan.txt
  - sed -i -e '1,/^Resolving /d' installplan.txt; cat installplan.txt

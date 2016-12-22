@@ -1,3 +1,7 @@
+# 0.6.0
+
+Added a `CoRec` (co-record) type constructed in the same style as the existing `Rec` type for records. A `CoRec` is an open sum type: a value of `CoRec [a,b,c]` is either an `a`, a `b`, *or* a `c`. In contrast a `Rec [a,b,c]` includes an `a`, a `b`, *and*, a `c`.
+
 # 0.5.3
 
 Added a concise `Show` instance for `Const`.

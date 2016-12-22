@@ -68,7 +68,7 @@ lens
 lens sa sbt afb s = fmap (sbt s) $ afb (sa s)
 {-# INLINE lens #-}
 
-instance RElem r (r ': rs) Z where
+instance RElem r (r ': rs) 'Z where
   rlens _ f (x :& xs) = fmap (:& xs) (f x)
   {-# INLINE rlens #-}
   rget k = getConst . rlens k Const
@@ -76,7 +76,7 @@ instance RElem r (r ': rs) Z where
   rput y = getIdentity . rlens Proxy (\_ -> Identity y)
   {-# INLINE rput #-}
 
-instance (RIndex r (s ': rs) ~ S i, RElem r rs i) => RElem r (s ': rs) (S i) where
+instance (RIndex r (s ': rs) ~ 'S i, RElem r rs i) => RElem r (s ': rs) ('S i) where
   rlens p f (x :& xs) = fmap (x :&) (rlens p f xs)
   {-# INLINE rlens #-}
   rget k = getConst . rlens k Const
