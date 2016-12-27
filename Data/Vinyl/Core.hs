@@ -153,6 +153,21 @@ rzipWith m = \r -> case r of
   RNil        -> \RNil        -> RNil
   (fa :& fas) -> \(ga :& gas) -> m fa ga :& rzipWith m fas gas
 
+-- | Map each element of a record to a monoid and combine the results.
+rfoldMap :: forall f m rs.
+     Monoid m
+  => (forall x. f x -> m)
+  -> Rec f rs
+  -> m
+rfoldMap f = go mempty
+  where
+  go :: forall ss. m -> Rec f ss -> m
+  go !m record = case record of
+    RNil -> m
+    r :& rs -> go (mappend m (f r)) rs
+  {-# INLINABLE go #-}
+{-# INLINE rfoldMap #-}
+
 -- | A record with uniform fields may be turned into a list.
 recordToList
   :: Rec (Const a) rs
