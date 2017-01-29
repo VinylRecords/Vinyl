@@ -215,10 +215,13 @@ instance (Monoid (f r), Monoid (Rec f rs)) => Monoid (Rec f (r ': rs)) where
   mempty = mempty :& mempty
   (x :& xs) `mappend` (y :& ys) = (x <> y) :& (xs <> ys)
 
-instance Eq (Rec f '[]) where
-  _ == _ = True
-instance (Eq (f r), Eq (Rec f rs)) => Eq (Rec f (r ': rs)) where
-  (x :& xs) == (y :& ys) = (x == y) && (xs == ys)
+instance RecAll f rs Eq => Eq (Rec f rs) where
+  (==) RNil RNil = True
+  (==) (a :& as) (b :& bs) = a == b && as == bs
+
+instance (RecAll f rs Eq, RecAll f rs Ord) => Ord (Rec f rs) where
+  compare RNil RNil = EQ
+  compare (a :& as) (b :& bs) = compare a b <> compare as bs
 
 instance Ord (Rec f '[]) where
   compare _ _ = EQ
