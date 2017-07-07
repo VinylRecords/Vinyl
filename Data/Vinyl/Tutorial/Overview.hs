@@ -4,7 +4,7 @@
     type level strings and other modern GHC features, featuring static
     structural typing (with a subtyping relation), and automatic
     row-polymorphic lenses. All this is possible without Template Haskell.
-    
+
     Let's work through a quick example. We'll need to enable some language
     extensions first:
 
@@ -93,7 +93,7 @@ And its types are all inferred with no problem. Now, make a dog! Dogs
 are life-forms, but unlike humans, they have masters. So, let’s build
 my dog:
 
->>> :{ 
+>>> :{
 let tucker = (SName =:: "tucker")
           :& (SAge =:: 9)
           :& (SSleeping =:: True)
@@ -206,7 +206,7 @@ let badPerson = (SName =:: "J#@#$on")
 We\'ll give validation a (rather poor) shot.
 
 >>> :{
-let 
+let
     validatePerson :: Rec Attr Person -> Maybe (Rec Attr Person)
     validatePerson p = (\n a -> (SName =:: n) :& (SAge =:: a) :& RNil) <$> vName <*> vAge
       where
@@ -288,11 +288,9 @@ True
 False
 
 -}
-
+{-# OPTIONS_GHC -fno-warn-unused-imports #-}
 module Data.Vinyl.Tutorial.Overview where
 
 import Data.Vinyl.Core
 import Data.Vinyl.Functor
 import Data.Vinyl.Lens
-
-
