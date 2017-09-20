@@ -49,8 +49,8 @@ instance RecordCurry '[] where
   rcurry' f = f RNil
 
 instance RecordCurry ts => RecordCurry (t ': ts) where
-  type CurriedF f (t : ts) a = f t -> CurriedF f ts a
-  type Curried (t : ts) a = t -> Curried ts a
+  type CurriedF f (t ': ts) a = f t -> CurriedF f ts a
+  type Curried (t ': ts) a = t -> Curried ts a
 
   rcurry f x = rcurry (\xs -> f (x :& xs))
   rcurry' f x = rcurry' (\xs -> f (Identity x :& xs))
