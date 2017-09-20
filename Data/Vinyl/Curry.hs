@@ -46,14 +46,18 @@ instance RecordCurry '[] where
   type Curried '[] a = a
 
   rcurry f = f RNil
+  {-# INLINABLE rcurry #-}
   rcurry' f = f RNil
+  {-# INLINABLE rcurry' #-}
 
 instance RecordCurry ts => RecordCurry (t ': ts) where
   type CurriedF f (t ': ts) a = f t -> CurriedF f ts a
   type Curried (t ': ts) a = t -> Curried ts a
 
   rcurry f x = rcurry (\xs -> f (x :& xs))
+  {-# INLINABLE rcurry #-}
   rcurry' f x = rcurry' (\xs -> f (Identity x :& xs))
+  {-# INLINABLE rcurry' #-}
 
 -- * Uncurrying
 
@@ -61,6 +65,7 @@ instance RecordCurry ts => RecordCurry (t ': ts) where
 runcurry :: CurriedF f ts a -> Rec f ts -> a
 runcurry x RNil = x
 runcurry f (x :& xs) = runcurry (f x) xs
+{-# INLINABLE runcurry #-}
 
 
 {-|
@@ -74,17 +79,26 @@ f = runcurry' $ \b x y -> if b then 'Left' x else 'Right' y
 runcurry' :: Curried ts a -> Rec Identity ts -> a
 runcurry' x RNil = x
 runcurry' f (Identity x :& xs) = runcurry' (f x) xs
+{-# INLINABLE runcurry' #-}
 
 -- * Applicative Combinators
 
 -- | N-ary version of 'Control.Applicative.liftA2' over records where the
 -- functor is 'Applicative'.
 rliftA :: (Applicative f) => (Rec Identity ts -> a) -> Rec f ts -> f a
-rliftA = go . pure
+rliftA f = rliftComposeA f . rmap (Compose . fmap Identity)
+{-# INLINE rliftA #-}
+
+-- | Generalized version of 'rliftA' where the input function can accept a
+-- record over an arbitrary functor.
+rliftComposeA :: (Applicative f) => (Rec g ts -> a) -> Rec (Compose f g) ts -> f a
+rliftComposeA = go . pure
   where
-    go :: (Applicative f) => f (Rec Identity ts -> a) -> Rec f ts -> f a
+    go :: (Applicative f) => f (Rec g ts -> a) -> Rec (Compose f g) ts -> f a
     go f RNil = f <*> pure RNil
-    go f (x :& xs) = go ((\f' x' xs' -> f' (Identity x' :& xs')) <$> f <*> x) xs
+    go f (Compose x :& xs) = go ((\f' x' xs' -> f' (x' :& xs')) <$> f <*> x) xs
+    {-# INLINABLE go #-}
+{-# INLINE rliftComposeA #-}
 
 
 {-|
@@ -102,3 +116,4 @@ Nothing
 -}
 runcurryA :: (Applicative f, RecordCurry ts) => Curried ts a -> Rec f ts -> f a
 runcurryA = rliftA . runcurry'
+{-# INLINE runcurryA #-}
