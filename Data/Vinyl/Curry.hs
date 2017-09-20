@@ -18,10 +18,32 @@ import           Data.Vinyl.Functor
 -- * Currying
 
 class RecordCurry ts where
-  -- | N-ary version of 'curry' over functorial records.
+  {-|
+  N-ary version of 'curry' over functorial records.
+
+  Example specialized signatures:
+
+  @
+  rcurry :: (Rec Maybe '[Int, Double] -> Bool) -> Maybe Int -> Maybe Double -> Bool
+  rcurry :: (Rec (Either Int) '[Double, String, ()] -> Int) -> Either Int Double -> Either Int String -> Either Int () -> Int
+  rcurry :: (Rec f '[] -> Bool) -> Bool
+  @
+
+  -}
   rcurry :: (Rec f ts -> a) -> CurriedF f ts a
 
-  -- | N-ary version of 'curry' over pure records.
+  {-|
+  N-ary version of 'curry' over pure records.
+
+  Example specialized signatures:
+
+  @
+  rcurry' :: (Rec Identity '[Int, Double] -> Bool) -> Int -> Double -> Bool
+  rcurry' :: (Rec Identity '[Double, String, ()] -> Int) -> Double -> String -> () -> Int
+  rcurry' :: (Rec Identity '[] -> Bool) -> Bool
+  @
+
+  -}
   rcurry' :: (Rec Identity ts -> a) -> Curried ts a
 
 
@@ -39,7 +61,17 @@ instance RecordCurry ts => RecordCurry (t ': ts) where
 
 -- * Uncurrying
 
--- | N-ary version of 'uncurry' over functorial records.
+{-|
+N-ary version of 'uncurry' over functorial records.
+
+Example specialized signatures:
+
+@
+runcurry :: (Maybe Int -> Maybe Double -> String) -> Rec Maybe '[Int, Double] -> String
+runcurry :: (IO FilePath -> String) -> Rec IO '[FilePath] -> String
+runcurry :: Int -> Rec f '[] -> Int
+@
+-}
 runcurry :: CurriedF f ts a -> Rec f ts -> a
 runcurry x RNil      = x
 runcurry f (x :& xs) = runcurry (f x) xs
@@ -49,9 +81,18 @@ runcurry f (x :& xs) = runcurry (f x) xs
 {-|
 N-ary version of 'uncurry' over pure records.
 
+Example specialized signatures:
+
 @
-f :: 'Rec' 'Identity' '['Bool', 'Int', 'Double'] -> 'Either' 'Int' 'Double'
-f = runcurry' $ \b x y -> if b then 'Left' x else 'Right' y
+runcurry' :: (Int -> Double -> String) -> Rec Identity '[Int, Double] -> String
+runcurry' :: Int -> Rec Identity '[] -> Int
+@
+
+Example usage:
+
+@
+f :: Rec Identity '[Bool, Int, Double] -> Either Int Double
+f = runcurry' $ \b x y -> if b then Left x else Right y
 @
 -}
 runcurry' :: Curried ts a -> Rec Identity ts -> a
@@ -61,8 +102,17 @@ runcurry' f (Identity x :& xs) = runcurry' (f x) xs
 
 -- * Applicative Combinators
 
--- | N-ary version of 'Control.Applicative.liftA2' over records where the
--- functor is 'Applicative'.
+{-|
+N-ary version of 'Control.Applicative.liftA2' over records where the
+functor is 'Applicative'.
+
+Example specialized signatures:
+
+@
+rliftA :: (Rec Identity '[Int, Int] -> Int) -> Rec Maybe '[Int, Int] -> Maybe Int
+rliftA :: (Rec Identity '[String, Double] -> String) -> Rec IO '[String, Double] -> IO String
+@
+-}
 rliftA :: (Applicative f) => (Rec Identity ts -> a) -> Rec f ts -> f a
 rliftA f = rliftComposeA f . rmap (Compose . fmap Identity)
 {-# INLINE rliftA #-}
