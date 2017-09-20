@@ -1,7 +1,8 @@
-{-# LANGUAGE DataKinds              #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE TypeFamilies           #-}
-{-# LANGUAGE TypeOperators          #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PolyKinds             #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeOperators         #-}
 
 {-|
 
@@ -17,23 +18,6 @@ import           Data.Vinyl.Functor
 -- * Currying
 
 class RecordCurry ts where
-
-  -- | For the type-level list @ts@, @'CurriedF' f ts a@ is a curried function
-  -- from arguments of type @f t@ for @t@ in @ts@, to a result of type @a@. E.g.
-  --
-  -- @
-  -- CurriedF 'Maybe' '['Int', 'Bool', 'String'] 'Int' ~ ('Maybe' 'Int' -> 'Maybe' 'Bool' -> 'Maybe' 'String' -> 'Int')
-  -- @
-  type CurriedF (f :: * -> *) ts a
-
-  -- | For the list of types @ts@, @'Curried' ts a@ is a curried function from
-  -- arguments of types in @ts@ to a result of type @a@. E.g.
-  --
-  -- @
-  -- Curried '['Int', 'Bool', 'String'] 'Int' ~ '('Int -> 'Bool' -> 'String' -> 'Int')
-  -- @
-  type Curried ts a
-
   -- | N-ary version of 'curry' over functorial records.
   rcurry :: (Rec f ts -> a) -> CurriedF f ts a
 
@@ -42,18 +26,12 @@ class RecordCurry ts where
 
 
 instance RecordCurry '[] where
-  type CurriedF f '[] a = a
-  type Curried '[] a = a
-
   rcurry f = f RNil
   {-# INLINABLE rcurry #-}
   rcurry' f = f RNil
   {-# INLINABLE rcurry' #-}
 
 instance RecordCurry ts => RecordCurry (t ': ts) where
-  type CurriedF f (t ': ts) a = f t -> CurriedF f ts a
-  type Curried (t ': ts) a = t -> Curried ts a
-
   rcurry f x = rcurry (\xs -> f (x :& xs))
   {-# INLINABLE rcurry #-}
   rcurry' f x = rcurry' (\xs -> f (Identity x :& xs))
@@ -63,7 +41,7 @@ instance RecordCurry ts => RecordCurry (t ': ts) where
 
 -- | N-ary version of 'uncurry' over functorial records.
 runcurry :: CurriedF f ts a -> Rec f ts -> a
-runcurry x RNil = x
+runcurry x RNil      = x
 runcurry f (x :& xs) = runcurry (f x) xs
 {-# INLINABLE runcurry #-}
 
@@ -77,7 +55,7 @@ f = runcurry' $ \b x y -> if b then 'Left' x else 'Right' y
 @
 -}
 runcurry' :: Curried ts a -> Rec Identity ts -> a
-runcurry' x RNil = x
+runcurry' x RNil               = x
 runcurry' f (Identity x :& xs) = runcurry' (f x) xs
 {-# INLINABLE runcurry' #-}
 
@@ -88,6 +66,7 @@ runcurry' f (Identity x :& xs) = runcurry' (f x) xs
 rliftA :: (Applicative f) => (Rec Identity ts -> a) -> Rec f ts -> f a
 rliftA f = rliftComposeA f . rmap (Compose . fmap Identity)
 {-# INLINE rliftA #-}
+
 
 -- | Generalized version of 'rliftA' where the input function can accept a
 -- record over an arbitrary functor.
@@ -117,3 +96,30 @@ Nothing
 runcurryA :: (Applicative f, RecordCurry ts) => Curried ts a -> Rec f ts -> f a
 runcurryA = rliftA . runcurry'
 {-# INLINE runcurryA #-}
+
+-- * Curried Function Types
+
+{-|
+For the list of types @ts@, @'Curried' ts a@ is a curried function type from
+arguments of types in @ts@ to a result of type @a@.
+
+>>> :kind! Curried '[Int, Bool, String] Int
+Curried '[Int, Bool, String] Int :: *
+= Int -> Bool -> [Char] -> Int
+-}
+type family Curried ts a where
+  Curried '[] a = a
+  Curried (t ': ts) a = t -> Curried ts a
+
+
+{-|
+For the type-level list @ts@, @'CurriedF' f ts a@ is a curried function type
+from arguments of type @f t@ for @t@ in @ts@, to a result of type @a@.
+
+>>> :kind! CurriedF Maybe '[Int, Bool, String] Int
+CurriedF Maybe '[Int, Bool, String] Int :: *
+= Maybe Int -> Maybe Bool -> Maybe [Char] -> Int
+-}
+type family CurriedF (f :: u -> *) (ts :: [u]) a where
+  CurriedF f '[] a = a
+  CurriedF f (t ': ts) a = f t -> CurriedF f ts a
