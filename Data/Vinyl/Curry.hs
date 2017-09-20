@@ -103,34 +103,6 @@ runcurry' f (Identity x :& xs) = runcurry' (f x) xs
 -- * Applicative Combinators
 
 {-|
-N-ary version of 'Control.Applicative.liftA2' over records where the
-functor is 'Applicative'.
-
-Example specialized signatures:
-
-@
-rliftA :: (Rec Identity '[Int, Int] -> Int) -> Rec Maybe '[Int, Int] -> Maybe Int
-rliftA :: (Rec Identity '[String, Double] -> String) -> Rec IO '[String, Double] -> IO String
-@
--}
-rliftA :: (Applicative f) => (Rec Identity ts -> a) -> Rec f ts -> f a
-rliftA f = rliftComposeA f . rmap (Compose . fmap Identity)
-{-# INLINE rliftA #-}
-
-
--- | Generalized version of 'rliftA' where the input function can accept a
--- record over an arbitrary functor.
-rliftComposeA :: (Applicative f) => (Rec g ts -> a) -> Rec (Compose f g) ts -> f a
-rliftComposeA = go . pure
-  where
-    go :: (Applicative f) => f (Rec g ts -> a) -> Rec (Compose f g) ts -> f a
-    go f RNil = f <*> pure RNil
-    go f (Compose x :& xs) = go ((\f' x' xs' -> f' (x' :& xs')) <$> f <*> x) xs
-    {-# INLINABLE go #-}
-{-# INLINE rliftComposeA #-}
-
-
-{-|
 Lift an N-ary function to work over a record of 'Applicative' computations.
 
 @
@@ -143,9 +115,17 @@ Just 5
 >>> runcurryA (+) (Nothing :& Just 3 :& RNil)
 Nothing
 -}
-runcurryA :: (Applicative f, RecordCurry ts) => Curried ts a -> Rec f ts -> f a
-runcurryA = rliftA . runcurry'
+runcurryA :: (Applicative f) => Curried ts a -> Rec f ts -> f a
+runcurryA f = fmap (runcurry' f) . rtraverse (fmap Identity)
 {-# INLINE runcurryA #-}
+
+{-|
+A generalized version of 'runcurryA' where the input function can work over
+types in an arbitrary functor @g@.
+-}
+runcurryComposeA :: (Applicative f) => CurriedF g ts a -> Rec (Compose f g) ts -> f a
+runcurryComposeA f = fmap (runcurry f) . rtraverse getCompose
+{-# INLINE runcurryComposeA #-}
 
 -- * Curried Function Types
 
