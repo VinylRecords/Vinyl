@@ -25,6 +25,7 @@ library
                      , Data.Vinyl.Class.Method
                      , Data.Vinyl.Core
                      , Data.Vinyl.CoRec
+                     , Data.Vinyl.Curry
                      , Data.Vinyl.Lens
                      , Data.Vinyl.Derived
                      , Data.Vinyl.TypeLevel
