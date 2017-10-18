@@ -156,9 +156,8 @@ reifyDicts _ f = go (rpure Nothing)
 asA             :: (t ∈ ts, RecApplicative ts) => proxy t -> CoRec Identity ts -> Maybe t
 asA p c@(CoRec _) = rget p $ coRecToRec' c
 
--- | Pattern match on a CoRec by specifying handlers for each case. If the
--- CoRec is non-empty this function is total. Note that the order of the
--- Handlers has to match the type level list (t:ts).
+-- | Pattern match on a CoRec by specifying handlers for each case. Note that
+-- the order of the Handlers has to match the type level list (t:ts).
 --
 -- >>> :{
 -- let testCoRec = Col (Identity False) :: CoRec Identity [Int, String, Bool] in
@@ -169,21 +168,8 @@ asA p c@(CoRec _) = rget p $ coRecToRec' c
 --    :& RNil
 -- :}
 -- "my Bool is not: True thus it is False"
-match      :: RecApplicative (t ': ts)
-           => CoRec Identity (t ': ts) -> Handlers (t ': ts) b -> b
-match c hs = fromJust $ match' c hs
-           -- Since we require 'ts' both for the Handlers and the CoRec, Handlers
-           -- effectively defines a total function. Hence, we can safely use fromJust
-
--- | Pattern match on a CoRec by specifying handlers for each case. The only case
--- in which this can produce a Nothing is if the list ts is empty.
-match'      :: RecApplicative ts => CoRec Identity ts -> Handlers ts b -> Maybe b
-match' c hs = match'' hs $ coRecToRec' c
-  where
-    match''                             :: Handlers ts b -> Rec Maybe ts -> Maybe b
-    match'' RNil        RNil            = Nothing
-    match'' (H f :& _)  (Just x  :& _)  = Just $ f x
-    match'' (H _ :& fs) (Nothing :& c') = match'' fs c'
+match :: CoRec Identity ts -> Handlers ts b -> b
+match (CoRec (Identity t)) hs = case rget Proxy hs of H f -> f t
 
 -- | Helper for handling a variant of a 'CoRec': either the function
 -- is applied to the variant or the type of the 'CoRec' is refined to
