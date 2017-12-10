@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds  #-}
 {-# LANGUAGE FlexibleInstances  #-}
 {-# LANGUAGE GADTs      #-}
@@ -58,15 +59,12 @@ infix 3 =:
 _ =: v = Field v
 
 rgetf
-  :: forall l f v i us.
-     ( RElem (l ::: v) us i
-     , FindField l us ~ (l ::: v) )
+  :: forall l f v i us. HasValue l us v i
   => Label l -> Rec f us -> f (l ::: v)
 rgetf _ = rget (Proxy :: Proxy (l ::: v))
 
 rvalf
-  :: ( RElem (l ::: v) us i
-     , FindField l us ~ (l ::: v) )
+  :: HasValue l us v i
   => Label l -> Rec ElField us -> v
 rvalf x = getField . rgetf x
 
@@ -89,12 +87,13 @@ instance forall s t. (KnownSymbol s, Storable t)
   peek ptr = Field `fmap` peek (castPtr ptr)
   poke ptr (Field x) = poke (castPtr ptr) x
 
-type family FindField l fs where
-  FindField l '[] = TypeError ('Text "Cannot find label "
+type family FindValue l fs where
+  FindValue l '[] = TypeError ('Text "Cannot find label "
                                ':<>: 'ShowType l
                                ':<>: 'Text " in fields")
-  FindField l ((l ::: v) ': fs) = l ::: v
-  FindField l ((l' ::: v') ': fs) = FindField l fs
+  FindValue l ((l ::: v) ': fs) = v
+  FindValue l ((l' ::: v') ': fs) = FindValue l fs
+type HasValue l fs v i = (RElem (l ::: v) fs i, FindValue l fs ~ v)
 
 -- proxy for label type
 data Label (a :: Symbol) = Label
