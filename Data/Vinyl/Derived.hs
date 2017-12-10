@@ -5,15 +5,25 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Data.Vinyl.Derived where
 
 import Data.Proxy
 import Data.Vinyl.Core
 import Data.Vinyl.Functor
+import Data.Vinyl.Lens
 import Foreign.Ptr (castPtr)
 import Foreign.Storable
+import GHC.OverloadedLabels
 import GHC.TypeLits
+
+-- | Alias for Field spec
+type a ::: b = '(a, b)
 
 data ElField (field :: (Symbol, *)) where
   Field :: KnownSymbol s => !t -> ElField '(s,t)
@@ -43,9 +53,26 @@ rfield :: Functor f => (a -> f b) -> ElField '(s,a) -> f (ElField '(s,b))
 rfield f (Field x) = fmap Field (f x)
 {-# INLINE rfield #-}
 
+infix 3 =:
+(=:) :: KnownSymbol l => Label (l :: Symbol) -> (v :: *) -> ElField (l ::: v)
+_ =: v = Field v
+
+rgetf
+  :: forall l f v i us.
+     ( RElem (l ::: v) us i
+     , FindField l us ~ (l ::: v) )
+  => Label l -> Rec f us -> f (l ::: v)
+rgetf _ = rget (Proxy :: Proxy (l ::: v))
+
+rvalf
+  :: ( RElem (l ::: v) us i
+     , FindField l us ~ (l ::: v) )
+  => Label l -> Rec ElField us -> v
+rvalf x = getField . rgetf x
+
 -- | Shorthand for a 'FieldRec' with a single field.
-(=:) :: KnownSymbol s => proxy '(s,a) -> a -> FieldRec '[ '(s,a) ]
-(=:) _ x = Field x :& RNil
+(=:=) :: KnownSymbol s => proxy '(s,a) -> a -> FieldRec '[ '(s,a) ]
+(=:=) _ x = Field x :& RNil
 
 -- | A proxy for field types.
 data SField (field :: k) = SField
@@ -61,3 +88,27 @@ instance forall s t. (KnownSymbol s, Storable t)
   alignment _ = alignment (undefined::t)
   peek ptr = Field `fmap` peek (castPtr ptr)
   poke ptr (Field x) = poke (castPtr ptr) x
+
+type family FindField l fs where
+  FindField l '[] = TypeError ('Text "Cannot find label "
+                               ':<>: 'ShowType l
+                               ':<>: 'Text " in fields")
+  FindField l ((l ::: v) ': fs) = l ::: v
+  FindField l ((l' ::: v') ': fs) = FindField l fs
+
+-- proxy for label type
+data Label (a :: Symbol) = Label
+  deriving (Eq, Show)
+
+instance s ~ s' => IsLabel s (Label s') where
+  fromLabel _ = Label
+
+-- rlabels :: Rec (Const String) us
+class GetLabels fs where
+  rlabels :: Rec (Const String) fs
+
+instance GetLabels '[] where
+  rlabels = RNil
+
+instance (KnownSymbol l, GetLabels fs) => GetLabels ((l ::: v) ': fs) where
+  rlabels = Const (symbolVal (Proxy :: Proxy l)) :& rlabels
