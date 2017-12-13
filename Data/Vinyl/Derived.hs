@@ -106,11 +106,29 @@ instance s ~ s' => IsLabel s (Label s') where
   fromLabel _ = Label
 
 -- rlabels :: Rec (Const String) us
-class GetLabels fs where
-  rlabels :: Rec (Const String) fs
+rlabels :: AllFields fs => Rec (Const String) fs
+rlabels = rpuref getLabel
+  where getLabel :: forall l v. KnownSymbol l
+                 => Const String (l ::: v)
+        getLabel = Const (symbolVal (Proxy::Proxy l))
 
-instance GetLabels '[] where
-  rlabels = RNil
+type FieldConstraint l v = (KnownSymbol l)
 
-instance (KnownSymbol l, GetLabels fs) => GetLabels ((l ::: v) ': fs) where
-  rlabels = Const (symbolVal (Proxy :: Proxy l)) :& rlabels
+class AllFields fs where
+  rmapf :: (forall l v. FieldConstraint l v => f (l ::: v) -> g (l ::: v))
+        -> Rec f fs -> Rec g fs
+  rpuref :: (forall l v. FieldConstraint l v => f (l ::: v)) -> Rec f fs
+
+(<<$$>>)
+  :: AllFields fs
+  => (forall l v. FieldConstraint l v => f (l ::: v) -> g (l ::: v))
+  -> Rec f fs -> Rec g fs
+(<<$$>>) = rmapf
+
+instance AllFields '[] where
+  rmapf _ _ = RNil
+  rpuref _ = RNil
+
+instance (FieldConstraint l v, AllFields fs) => AllFields ((l ::: v) ': fs) where
+  rmapf f (x :& xs) = f x :& rmapf f xs
+  rpuref s = s :& rpuref s
