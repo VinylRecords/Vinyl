@@ -37,11 +37,14 @@ deriving instance Eq t => Eq (ElField '(s,t))
 deriving instance Ord t => Ord (ElField '(s,t))
 
 instance Show t => Show (ElField '(s,t)) where
-  show (Field x) = (symbolVal (Proxy::Proxy s))++" :-> "++show x
+  show (Field x) = symbolVal (Proxy::Proxy s) ++" :-> "++show x
 
 -- | Get the data payload of an 'ElField'.
 getField :: ElField '(s,t) -> t
 getField (Field x) = x
+
+getLabel :: forall s t. ElField '(s,t) -> String
+getLabel (Field x) = symbolVal (Proxy::Proxy s)
 
 -- | 'ElField' is isomorphic to a functor something like @Compose
 -- ElField ('(,) s)@.
