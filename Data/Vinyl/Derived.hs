@@ -74,6 +74,20 @@ rvalf
   :: HasField l us v => Label l -> Rec ElField us -> v
 rvalf x = getField . rgetf x
 
+-- | A lens into a 'Rec' identified by a 'Label'.
+rlensf' :: forall l v g f us. (Functor g, HasField l us v)
+        => Label l
+        -> (f (l ::: v) -> g (f (l ::: v)))
+        -> Rec f us
+        -> g (Rec f us)
+rlensf' _ f = rlens (Proxy :: Proxy (l ::: v)) f
+
+-- | A lens into the payload value of a 'Rec' field identified by a
+-- 'Label'.
+rlensf :: forall l v g f us. (Functor g, HasField l us v)
+       => Label l -> (v -> g v) -> Rec ElField us -> g (Rec ElField us)
+rlensf _ f = rlens (Proxy :: Proxy (l ::: v)) (rfield f)
+
 -- | Shorthand for a 'FieldRec' with a single field.
 (=:=) :: KnownSymbol s => proxy '(s,a) -> a -> FieldRec '[ '(s,a) ]
 (=:=) _ x = Field x :& RNil
