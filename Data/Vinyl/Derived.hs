@@ -1,4 +1,5 @@
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds  #-}
 {-# LANGUAGE FlexibleInstances  #-}
 {-# LANGUAGE GADTs      #-}
@@ -103,7 +104,11 @@ data Label (a :: Symbol) = Label
   deriving (Eq, Show)
 
 instance s ~ s' => IsLabel s (Label s') where
+#if __GLASGOW_HASKELL__ < 802
   fromLabel _ = Label
+#else
+  fromLabel = Label
+#endif
 
 -- rlabels :: Rec (Const String) us
 rlabels :: AllFields fs => Rec (Const String) fs
