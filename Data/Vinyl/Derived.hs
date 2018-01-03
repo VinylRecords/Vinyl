@@ -19,6 +19,7 @@ import Data.Proxy
 import Data.Vinyl.Core
 import Data.Vinyl.Functor
 import Data.Vinyl.Lens
+import Data.Vinyl.TypeLevel (RIndex)
 import Foreign.Ptr (castPtr)
 import Foreign.Storable
 import GHC.OverloadedLabels
@@ -62,14 +63,15 @@ infix 3 =:
 (=:) :: KnownSymbol l => Label (l :: Symbol) -> (v :: *) -> ElField (l ::: v)
 _ =: v = Field v
 
+-- | Get a named field from a record.
 rgetf
-  :: forall l f v i us. HasValue l us v i
+  :: forall l f v us. HasField l us v
   => Label l -> Rec f us -> f (l ::: v)
 rgetf _ = rget (Proxy :: Proxy (l ::: v))
 
+-- | Get the value associated with a named field from a record.
 rvalf
-  :: HasValue l us v i
-  => Label l -> Rec ElField us -> v
+  :: HasField l us v => Label l -> Rec ElField us -> v
 rvalf x = getField . rgetf x
 
 -- | Shorthand for a 'FieldRec' with a single field.
@@ -91,13 +93,15 @@ instance forall s t. (KnownSymbol s, Storable t)
   peek ptr = Field `fmap` peek (castPtr ptr)
   poke ptr (Field x) = poke (castPtr ptr) x
 
-type family FindValue l fs where
-  FindValue l '[] = TypeError ('Text "Cannot find label "
+type family FieldType l fs where
+  FieldType l '[] = TypeError ('Text "Cannot find label "
                                ':<>: 'ShowType l
                                ':<>: 'Text " in fields")
-  FindValue l ((l ::: v) ': fs) = v
-  FindValue l ((l' ::: v') ': fs) = FindValue l fs
-type HasValue l fs v i = (RElem (l ::: v) fs i, FindValue l fs ~ v)
+  FieldType l ((l ::: v) ': fs) = v
+  FieldType l ((l' ::: v') ': fs) = FieldType l fs
+
+type HasField l fs v =
+  (RElem (l ::: v) fs (RIndex (l ::: v) fs), FieldType l fs ~ v)
 
 -- proxy for label type
 data Label (a :: Symbol) = Label
