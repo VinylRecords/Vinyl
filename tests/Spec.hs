@@ -1,5 +1,9 @@
-{-# LANGUAGE DataKinds, FlexibleContexts, GADTs, ScopedTypeVariables,
+{-# LANGUAGE CPP, DataKinds, FlexibleContexts, GADTs, ScopedTypeVariables,
              TypeOperators #-}
+#if __GLASGOW_HASKELL__ > 800
+{-# LANGUAGE OverloadedLabels #-}
+#endif
+
 {-# OPTIONS_GHC -Wall #-}
 import Data.Vinyl
 import Data.Vinyl.Functor (Lift(..), Const(..), Compose(..), (:.))
@@ -15,13 +19,13 @@ import qualified CoRecSpec as C
 --      :& Field @"Y" (id :: String -> String)
 --      :& RNil
 
-d1' :: Rec (Const String) '[ '("X", Int), '("Y", String) ]
+d1' :: Rec (Const String) '[ '("x", Int), '("y", String) ]
 d1' = Const "5" :& Const "Hi" :& RNil
 
-d2' :: Rec ((->) String :. ElField) '[ '("X", Int), '("Y", String) ]
+d2' :: Rec ((->) String :. ElField) '[ '("x", Int), '("y", String) ]
 d2' = Compose (Field . read) :& Compose (Field . id) :& RNil
 
-d3 :: Rec ElField '[ '("X", Int), '("Y", String) ]
+d3 :: Rec ElField '[ '("x", Int), '("y", String) ]
 d3 = rmap (\(Compose f) -> Lift (f . getConst)) d2' <<*>> d1'
 
 main :: IO ()
@@ -29,3 +33,8 @@ main = hspec $ do
   C.spec
   describe "Rec is like an Applicative" $ do
     it "Can apply parsing functions" $ d3 `shouldBe` Field 5 :& Field "Hi" :& RNil
+#if __GLASGOW_HASKELL__ > 800
+  describe "Fields may be accessed by overloaded labels" $ do
+    it "Can get field X" $ rvalf #x d3 `shouldBe` 5
+    it "Can get field Y" $ rvalf #y d3 `shouldBe` "Hi"
+#endif
