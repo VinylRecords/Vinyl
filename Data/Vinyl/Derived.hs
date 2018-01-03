@@ -112,10 +112,10 @@ instance s ~ s' => IsLabel s (Label s') where
 
 -- rlabels :: Rec (Const String) us
 rlabels :: AllFields fs => Rec (Const String) fs
-rlabels = rpuref getLabel
-  where getLabel :: forall l v. KnownSymbol l
-                 => Const String (l ::: v)
-        getLabel = Const (symbolVal (Proxy::Proxy l))
+rlabels = rpuref getLabel'
+  where getLabel' :: forall l v. KnownSymbol l
+                  => Const String (l ::: v)
+        getLabel' = Const (symbolVal (Proxy::Proxy l))
 
 type FieldConstraint l v = (KnownSymbol l)
 
