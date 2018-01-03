@@ -1,4 +1,5 @@
-{-# LANGUAGE DataKinds, GADTs, ScopedTypeVariables, TypeOperators #-}
+{-# LANGUAGE DataKinds, GADTs, OverloadedLabels, ScopedTypeVariables,
+             TypeOperators #-}
 -- A benchmark where we initialize a 'V.Vector' of random vertices,
 -- each carrying 3D position, 2D texture coordinates, and a 3D normal
 -- vector. A calculation is carried out where we multiply the y
@@ -36,6 +37,12 @@ type MyVertex a = FieldRec (MyFields a)
 vinylNormSumLens :: (Num a, Storable a) => V.Vector (MyVertex a) -> a
 vinylNormSumLens = V.sum . V.map (F.sum . view (rlens vNorm . rfield))
 
+vinylNormSumLabelLens :: (Num a, Storable a) => V.Vector (MyVertex a) -> a
+vinylNormSumLabelLens = V.sum . V.map (F.sum . view (rlensf #normal))
+
+vinylNormSumLabel :: (Num a, Storable a) => V.Vector (MyVertex a) -> a
+vinylNormSumLabel = V.sum . V.map (F.sum . rvalf #normal)
+
 doubleNormYLens :: V.Vector (MyVertex Float) -> V.Vector (MyVertex Float)
 doubleNormYLens = V.map (rlens vNorm . rfield . _y *~ (2::Float))
 
@@ -53,9 +60,12 @@ main = do vals <- randVecStd $ n * 8 :: IO (V.Vector Float)
               reasVerts = V.unsafeCast vals
               vinylAns = vinylNormSum $ doubleNormY vinylVerts
               vinylLans = vinylNormSumLens $ doubleNormYLens vinylVerts
+              vinylLabAns = vinylNormSumLabel $ doubleNormYLens vinylVerts
+              vinylLabLans = vinylNormSumLabelLens $ doubleNormYLens vinylVerts
               flatAns = flatNormSum $ doubleNormFlat flatVerts
               reasAns = reasNormSum $ doubleNormReas reasVerts
-          when (any (/= vinylAns) [vinylLans, flatAns, reasAns])
+          when (any (/= vinylAns) [ vinylLans, flatAns, reasAns
+                                  , vinylLabAns, vinylLabLans ])
                (error "Not all versions compute the same answer")
           defaultMain [ bench "flat" $
                         whnf (flatNormSum . doubleNormFlat) flatVerts
@@ -63,6 +73,10 @@ main = do vals <- randVecStd $ n * 8 :: IO (V.Vector Float)
                         whnf (vinylNormSum . doubleNormY) vinylVerts
                       , bench "vinyl-lens" $
                         whnf (vinylNormSumLens . doubleNormYLens) vinylVerts
+                      , bench "vinyl-label" $
+                        whnf (vinylNormSumLabel . doubleNormYLens) vinylVerts
+                      , bench "vinyl-label-lens" $
+                        whnf (vinylNormSumLabelLens . doubleNormYLens) vinylVerts
                       , bench "reasonable" $
                         whnf (reasNormSum . doubleNormReas) reasVerts ]
   where n = 1000
