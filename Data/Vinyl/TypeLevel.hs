@@ -17,6 +17,12 @@ import GHC.Exts
 -- @-XDataKinds@ corresponds to the actual natural numbers.
 data Nat = Z | S !Nat
 
+-- | Project the first component of a type-level tuple.
+type family Fst (a :: (k1,k2)) where Fst '(x,y) = x
+
+-- | Project the second component of a type-level tuple.
+type family Snd (a :: (k1,k2)) where Snd '(x,y) = y
+
 -- | A partial relation that gives the index of a value in a list.
 type family RIndex (r :: k) (rs :: [k]) :: Nat where
   RIndex r (r ': rs) = 'Z

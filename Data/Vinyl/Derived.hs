@@ -19,7 +19,7 @@ import Data.Proxy
 import Data.Vinyl.Core
 import Data.Vinyl.Functor
 import Data.Vinyl.Lens
-import Data.Vinyl.TypeLevel (RIndex)
+import Data.Vinyl.TypeLevel (Fst, Snd, AllConstrained, RIndex)
 import Foreign.Ptr (castPtr)
 import Foreign.Storable
 import GHC.OverloadedLabels
@@ -128,30 +128,35 @@ instance s ~ s' => IsLabel s (Label s') where
   fromLabel = Label
 #endif
 
--- rlabels :: Rec (Const String) us
+-- | Defines a constraint that lets us extract the label from an
+-- 'ElField'. Used in 'rmapf' and 'rpuref'.
+class (KnownSymbol (Fst a), a ~ '(Fst a, Snd a)) => KnownField a where
+instance KnownSymbol l => KnownField (l ::: v) where
+
+-- | Shorthand for working with records of fields as in 'rmapf' and
+-- 'rpuref'.
+type AllFields fs = (AllConstrained KnownField fs, RecApplicative fs)
+
+-- | Map a function between functors across a 'Rec' taking advantage
+-- of knowledge that each element is an 'ElField'.
+rmapf :: AllFields fs
+      => (forall a. KnownField a => f a -> g a)
+      -> Rec f fs -> Rec g fs
+rmapf f = (rpureConstrained (Proxy :: Proxy KnownField) (Lift f) <<*>>)
+
+-- | Construct a 'Rec' with 'ElField' elements.
+rpuref :: AllFields fs => (forall a. KnownField a => f a) -> Rec f fs
+rpuref f = rpureConstrained (Proxy :: Proxy KnownField) f
+
+-- | Operator synonym for 'rmapf'.
+(<<$$>>)
+  :: AllFields fs
+  => (forall a. KnownField a => f a -> g a) -> Rec f fs -> Rec g fs
+(<<$$>>) = rmapf
+
+-- | Produce a 'Rec' of the labels of a 'Rec' of 'ElField's.
 rlabels :: AllFields fs => Rec (Const String) fs
 rlabels = rpuref getLabel'
   where getLabel' :: forall l v. KnownSymbol l
                   => Const String (l ::: v)
         getLabel' = Const (symbolVal (Proxy::Proxy l))
-
-type FieldConstraint l v = (KnownSymbol l)
-
-class AllFields fs where
-  rmapf :: (forall l v. FieldConstraint l v => f (l ::: v) -> g (l ::: v))
-        -> Rec f fs -> Rec g fs
-  rpuref :: (forall l v. FieldConstraint l v => f (l ::: v)) -> Rec f fs
-
-(<<$$>>)
-  :: AllFields fs
-  => (forall l v. FieldConstraint l v => f (l ::: v) -> g (l ::: v))
-  -> Rec f fs -> Rec g fs
-(<<$$>>) = rmapf
-
-instance AllFields '[] where
-  rmapf _ _ = RNil
-  rpuref _ = RNil
-
-instance (FieldConstraint l v, AllFields fs) => AllFields ((l ::: v) ': fs) where
-  rmapf f (x :& xs) = f x :& rmapf f xs
-  rpuref s = s :& rpuref s
