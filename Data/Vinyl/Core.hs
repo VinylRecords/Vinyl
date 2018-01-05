@@ -199,11 +199,11 @@ reifyConstraint prx rec =
 
 -- | Build a record whose elements are derived solely from a
 -- constraint satisfied by each.
-rpureConstrained :: forall c (f :: * -> *) proxy ts.
+rpureConstrained :: forall c (f :: u -> *) proxy ts.
                     (AllConstrained c ts, RecApplicative ts)
                  => proxy c -> (forall a. c a => f a) -> Rec f ts
-rpureConstrained _ f = go (rpure Nothing)
-  where go :: AllConstrained c ts' => Rec Maybe ts' -> Rec f ts'
+rpureConstrained _ f = go (rpure Proxy)
+  where go :: AllConstrained c ts' => Rec Proxy ts' -> Rec f ts'
         go RNil = RNil
         go (_ :& xs) = f :& go xs
 
