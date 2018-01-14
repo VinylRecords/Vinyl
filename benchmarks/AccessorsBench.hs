@@ -1,19 +1,20 @@
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedLabels      #-}
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
 
+import           Control.Monad (unless)
 import           Criterion.Main
 import           Data.Tagged
 import           Data.Vinyl
 import           Data.Vinyl.Functor
 import           Data.Vinyl.TypeLevel
-
-{-# INLINE getF #-}
-getF :: RElem '(s, t) rs (RIndex '(s, t) rs) => sing '(s, t) -> FieldRec rs -> t
-getF l = getField . rget l
+import qualified Foreign.Marshal.Alloc as Ptr
+import qualified Foreign.Storable as FS
+import           System.Exit (exitFailure)
 
 newF :: FieldRec '[ '( "a0", Int ), '( "a1", Int ), '( "a2", Int ), '( "a3", Int )
                   , '( "a4", Int ), '( "a5", Int ), '( "a6", Int ), '( "a7", Int )
@@ -23,7 +24,7 @@ newF :: FieldRec '[ '( "a0", Int ), '( "a1", Int ), '( "a2", Int ), '( "a3", Int
 newF = Field 0 :& Field 0 :& Field 0 :& Field 0 :&
        Field 0 :& Field 0 :& Field 0 :& Field 0 :&
        Field 0 :& Field 0 :& Field 0 :& Field 0 :&
-       Field 0 :& Field 0 :& Field 0 :& Field 0 :&
+       Field 0 :& Field 0 :& Field 0 :& Field 99 :&
        RNil
 
 {-# INLINE getH #-}
@@ -31,10 +32,10 @@ getH :: forall t r sing rs . RElem (Tagged t r) rs (RIndex (Tagged t r) rs) => s
 getH _ = untag . getIdentity . rget (SField :: SField (Tagged t r))
 
 newH :: HList '[ Tagged "a0" Int, Tagged  "a1" Int,  Tagged  "a2" Int,  Tagged  "a3" Int
-               , Tagged "a4" Int, Tagged  "a5" Int,  Tagged  "a6" Int,  Tagged  "a7" Int
-               , Tagged "a8" Int, Tagged  "a9" Int,  Tagged  "a10" Int,  Tagged  "a11" Int
-               , Tagged "a12" Int, Tagged  "a13" Int,  Tagged  "a14" Int,  Tagged  "a15" Int
-               ]
+                 , Tagged "a4" Int, Tagged  "a5" Int,  Tagged  "a6" Int,  Tagged  "a7" Int
+                 , Tagged "a8" Int, Tagged  "a9" Int,  Tagged  "a10" Int,  Tagged  "a11" Int
+                 , Tagged "a12" Int, Tagged  "a13" Int,  Tagged  "a14" Int,  Tagged  "a15" Int
+                 ]
 newH = Identity (Tagged 0) :& Identity (Tagged 0) :& Identity (Tagged 0) :& Identity (Tagged 0) :&
        Identity (Tagged 0) :& Identity (Tagged 0) :& Identity (Tagged 0) :& Identity (Tagged 0) :&
        Identity (Tagged 0) :& Identity (Tagged 0) :& Identity (Tagged 0) :& Identity (Tagged 0) :&
@@ -42,19 +43,33 @@ newH = Identity (Tagged 0) :& Identity (Tagged 0) :& Identity (Tagged 0) :& Iden
        RNil
 
 main :: IO ()
-main = defaultMain
-  [ bgroup "FieldRec"
-    [ bench "a0" $ nf (getF @"a0" @Int SField) newF
-    , bench "a4" $ nf (getF @"a4" @Int SField) newF
-    , bench "a8" $ nf (getF @"a8" @Int SField) newF
-    , bench "a12" $ nf (getF @"a12" @Int SField) newF
-    , bench "a15"  $ nf (getF @"a15" @Int SField) newF
-    ]
-    , bgroup "HList"
-    [ bench "a0" $ nf (getH @"a0" @Int SField) newH
-    , bench "a4" $ nf (getH @"a4" @Int SField) newH
-    , bench "a8" $ nf (getH @"a8" @Int SField) newH
-    , bench "a12" $ nf (getH @"a12" @Int SField) newH
-    , bench "a15" $ nf (getH @"a15" @Int SField) newH
-    ]
-  ]
+main =
+  do ptr <- Ptr.malloc
+     FS.poke ptr newF
+     let fieldGet = rvalf #a15 newF
+     fieldPeek <- rvalf #a15 <$> FS.peek ptr
+     unless (fieldGet == fieldPeek)
+            (putStrLn "Field accessors don't agree" >> exitFailure)
+     defaultMain
+       [ bgroup "FieldRec"
+         [ bench "a0" $ nf (rvalf #a0) newF
+         , bench "a4" $ nf (rvalf #a4) newF
+         , bench "a8" $ nf (rvalf #a8) newF
+         , bench "a12" $ nf (rvalf #a12) newF
+         , bench "a15"  $ nf (rvalf #a15) newF
+         ]
+         , bgroup "FieldRec Storable"
+         [ bench "a0" $ nfIO (fmap (rvalf #a0) . FS.peek $ ptr)
+         , bench "a4" $ nfIO (fmap (rvalf #a4) . FS.peek $ ptr)
+         , bench "a8" $ nfIO (fmap (rvalf #a8) . FS.peek $ ptr)
+         , bench "a12" $ nfIO (fmap (rvalf #a12) . FS.peek $ ptr)
+         , bench "a15"  $ nfIO (fmap (rvalf #a15) . FS.peek $ ptr)
+         ]
+         , bgroup "HList"
+         [ bench "a0" $ nf (getH @"a0" @Int SField) newH
+         , bench "a4" $ nf (getH @"a4" @Int SField) newH
+         , bench "a8" $ nf (getH @"a8" @Int SField) newH
+         , bench "a12" $ nf (getH @"a12" @Int SField) newH
+         , bench "a15" $ nf (getH @"a15" @Int SField) newH
+         ]
+       ]
