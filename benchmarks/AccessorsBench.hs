@@ -49,7 +49,12 @@ main =
      let fieldGet = rvalf #a15 newF
      fieldPeek <- rvalf #a15 <$> FS.peek ptr
      unless (fieldGet == fieldPeek)
-            (putStrLn "Field accessors don't agree" >> exitFailure)
+            (do putStrLn "Storable field accessor disagrees with rvalf"
+                exitFailure)
+     let arec = toARec newF
+     unless (rvalf #a15 arec == fieldGet)
+            (do putStrLn "AFieldRec accessor disagrees with rvalf"
+                exitFailure)
      defaultMain
        [ bgroup "FieldRec"
          [ bench "a0" $ nf (rvalf #a0) newF
@@ -64,6 +69,13 @@ main =
          , bench "a8" $ nfIO (fmap (rvalf #a8) . FS.peek $ ptr)
          , bench "a12" $ nfIO (fmap (rvalf #a12) . FS.peek $ ptr)
          , bench "a15"  $ nfIO (fmap (rvalf #a15) . FS.peek $ ptr)
+         ]
+         , bgroup "AFieldRec"
+         [ bench "a0" $ nf (rvalf #a0) arec
+         , bench "a4" $ nf (rvalf #a4) arec
+         , bench "a8" $ nf (rvalf #a8) arec
+         , bench "a12" $ nf (rvalf #a12) arec
+         , bench "a15"  $ nf (rvalf #a15) arec
          ]
          , bgroup "HList"
          [ bench "a0" $ nf (getH @"a0" @Int SField) newH

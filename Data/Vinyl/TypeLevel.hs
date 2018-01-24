@@ -1,3 +1,5 @@
+{-# LANGUAGE AllowAmbiguousTypes   #-}
+
 {-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
@@ -6,6 +8,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 
@@ -17,11 +20,40 @@ import GHC.Exts
 -- @-XDataKinds@ corresponds to the actual natural numbers.
 data Nat = Z | S !Nat
 
+-- | Produce a runtime 'Int' value corresponding to a 'Nat' type.
+class NatToInt (n :: Nat) where
+  natToInt :: Int
+
+instance NatToInt 'Z where
+  natToInt = 0
+  {-# INLINE natToInt #-}
+
+instance NatToInt n => NatToInt ('S n) where
+  natToInt = 1 + natToInt @n
+  {-# INLINE natToInt #-}
+
+-- | Reify a list of type-level natural number indices as runtime
+-- 'Int's relying on instances of 'NatToInt'.
+class IndexWitnesses (is :: [Nat]) where
+  indexWitnesses :: [Int]
+
+instance IndexWitnesses '[] where
+  indexWitnesses = []
+  {-# INLINE indexWitnesses #-}
+
+instance (IndexWitnesses is, NatToInt i) => IndexWitnesses (i ': is) where
+  indexWitnesses = natToInt @i : indexWitnesses @is
+  {-# INLINE indexWitnesses #-}
+
 -- | Project the first component of a type-level tuple.
 type family Fst (a :: (k1,k2)) where Fst '(x,y) = x
 
 -- | Project the second component of a type-level tuple.
 type family Snd (a :: (k1,k2)) where Snd '(x,y) = y
+
+type family RLength xs where
+  RLength '[] = 'Z
+  RLength (x ': xs) = 'S (RLength xs)
 
 -- | A partial relation that gives the index of a value in a list.
 type family RIndex (r :: k) (rs :: [k]) :: Nat where

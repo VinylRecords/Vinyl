@@ -1,3 +1,11 @@
+# 0.8.0
+
+- Overhaul of `FieldRec`: records with named fields. We now take advantage of the `-XOverloadedLabels` extension to support referring to record fields by names such a `#myField`.
+
+- A new `ARec` type for constant-time field access. You can convert a classic, HList-like `Rec` into an `ARec` with `toARec`, or back the other way with `fromARec`. An `ARec` uses an `Array` to store record fields, so the usual trade-offs between lists and arrays apply: lists are cheap to construct by adding an element to the head, but slow to access; it is expensive to modify the shape of an array, but element lookup is constant-time.
+
+**Compatibility Break**: The operator `=:` for constructing a record with a single field has changed. That operation is now known as `=:=`, while `=:` is now used to construct an `ElField`. It was decided that single-field record construction was not a common use-case, so the shorter name could be used for the more common operation. Apologies for making the upgrade a bit bumpy.
+
 # 0.7.0
 - Simplified `match`
 - Added `Data.Vinyl.Curry`

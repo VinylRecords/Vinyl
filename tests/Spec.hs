@@ -7,6 +7,7 @@
 {-# OPTIONS_GHC -Wall #-}
 import Data.Vinyl
 import Data.Vinyl.Functor (Lift(..), Const(..), Compose(..), (:.))
+import Lens.Micro
 import Test.Hspec
 
 import qualified CoRecSpec as C
@@ -37,4 +38,12 @@ main = hspec $ do
   describe "Fields may be accessed by overloaded labels" $ do
     it "Can get field X" $ rvalf #x d3 `shouldBe` 5
     it "Can get field Y" $ rvalf #y d3 `shouldBe` "Hi"
+  describe "ARec provides field accessors" $ do
+    it "Can get field Y" $ rvalf #y (toARec d3) `shouldBe` "Hi"
+    it "Can set field X" $ rvalf #x (rputf #x 7 (toARec d3)) `shouldBe` 7
+  describe "Converting between Rec and ARec" $ do
+    it "Can go back and forth" $
+      rvalf #y (toARec (rlensf #y %~ (show . length) $
+                            fromARec (rputf #x 7 (toARec d3))))
+      `shouldBe` "2"
 #endif
