@@ -8,7 +8,8 @@
 -- by interfacing the vertex data as a flat record, a traditional
 -- record of "Linear" finite dimensional vector types, and a vinyl
 -- record of linear fields.
-import Control.Lens
+import Lens.Micro
+import Lens.Micro.Extras (view)
 import Control.Monad (when)
 import qualified Data.Foldable as F
 import Data.Proxy
@@ -33,6 +34,10 @@ vNorm = Proxy
 
 type MyFields a = [ '("pos", V3 a), '("tex", V2 a), '("normal", V3 a) ]
 type MyVertex a = FieldRec (MyFields a)
+
+(*~) :: Num a => ASetter s t a a -> a -> s -> t
+l *~ x = l %~ (* x)
+infixr 4 *~
 
 vinylNormSumLens :: (Num a, Storable a) => V.Vector (MyVertex a) -> a
 vinylNormSumLens = V.sum . V.map (F.sum . view (rlens vNorm . rfield))

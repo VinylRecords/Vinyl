@@ -48,7 +48,7 @@ benchmark storable
                     criterion,
                     vinyl,
                     mwc-random,
-                    lens,
+                    microlens,
                     linear,
                     primitive
   ghc-options:      -O2
