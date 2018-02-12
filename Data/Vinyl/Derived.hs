@@ -73,7 +73,7 @@ rfield :: Functor f => (a -> f b) -> ElField '(s,a) -> f (ElField '(s,b))
 rfield f (Field x) = fmap Field (f x)
 {-# INLINE rfield #-}
 
-infix 3 =:
+infix 8 =:
 
 -- | Operator for creating an 'ElField'. With the @-XOverloadedLabels@
 -- extension, this permits usage such as, @#foo =: 23@ to produce a
@@ -138,10 +138,12 @@ type family FieldType l fs where
   FieldType l ((l ::: v) ': fs) = v
   FieldType l ((l' ::: v') ': fs) = FieldType l fs
 
+-- | Constraint that a label is associated with a particular type in a
+-- record.
 type HasField record l fs v =
   (RecElem record (l ::: v) fs (RIndex (l ::: v) fs), FieldType l fs ~ v)
 
--- proxy for label type
+-- | Proxy for label type
 data Label (a :: Symbol) = Label
   deriving (Eq, Show)
 
