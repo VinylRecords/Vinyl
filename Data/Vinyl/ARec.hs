@@ -99,3 +99,18 @@ instance (is ~ RImage rs ss, IndexWitnesses is, NatToInt (RLength rs))
          => RecSubset ARec rs ss is where
   rsubset f big = fmap (arecSetSubset big) (f (arecGetSubset big))
   {-# INLINE rsubset #-}
+
+instance (AllConstrained (IndexableField rs) rs,
+          RecApplicative rs,
+          Show (Rec f rs)) => Show (ARec f rs) where
+  show = show . fromARec
+
+instance (AllConstrained (IndexableField rs) rs,
+          RecApplicative rs,
+          Eq (Rec f rs)) => Eq (ARec f rs) where
+  x == y = fromARec x == fromARec y
+
+instance (AllConstrained (IndexableField rs) rs,
+          RecApplicative rs,
+          Ord (Rec f rs)) => Ord (ARec f rs) where
+  compare x y = compare (fromARec x) (fromARec y)
