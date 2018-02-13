@@ -39,7 +39,6 @@ type FieldRec = Rec ElField
 -- | An 'ARec' of named fields to provide constant-time field access.
 type AFieldRec ts = ARec ElField ts
 
-
 -- | Heterogeneous list whose elements are evaluated during list
 -- construction.
 type HList = Rec Identity
