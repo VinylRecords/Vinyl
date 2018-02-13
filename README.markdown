@@ -17,10 +17,9 @@ Vinyl is an approach to records in Haskell based on a heterogeneous list type: a
 This benchmark suggests the trends we should expect
 
 * Getting a field deeper in a Vinyl record takes more time than getting one earlier (i.e. it appears to the left, or under fewer `:&` constructors) in the record
-* Different varieties of Vinyl records perform similarly (here we see `FieldRec` that has `Symbol` labels of each field, and `HList` whose field types are unadorned)
 * Getting a field of an `ARec` (or `AFieldRec`, which is an `ARec` with named fields) array-backed record does not depend on where in the record that field lies
 * Getting the field of a Vinyl record by composing the field accessor with a `Storable` `peek` is both very fast and has performance independent of the field's position in the record
 
-The x-axis of this graph should be labeled as *nanoseconds*, but the `Storable` benchmarks all complete in about 450 *picoseconds*.
+The x-axis of this graph should be labeled as *nanoseconds*, but the `Storable` benchmarks all complete in about 420 *picoseconds*.
 
 ![Accessors benchmark plot](/images/accessors.png)

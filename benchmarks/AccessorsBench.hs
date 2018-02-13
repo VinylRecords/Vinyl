@@ -27,21 +27,6 @@ newF = Field 0 :& Field 0 :& Field 0 :& Field 0 :&
        Field 0 :& Field 0 :& Field 0 :& Field 99 :&
        RNil
 
-{-# INLINE getH #-}
-getH :: forall t r sing rs . RElem (Tagged t r) rs (RIndex (Tagged t r) rs) => sing t -> HList rs -> r
-getH _ = untag . getIdentity . rget (SField :: SField (Tagged t r))
-
-newH :: HList '[ Tagged "a0" Int, Tagged  "a1" Int,  Tagged  "a2" Int,  Tagged  "a3" Int
-                 , Tagged "a4" Int, Tagged  "a5" Int,  Tagged  "a6" Int,  Tagged  "a7" Int
-                 , Tagged "a8" Int, Tagged  "a9" Int,  Tagged  "a10" Int,  Tagged  "a11" Int
-                 , Tagged "a12" Int, Tagged  "a13" Int,  Tagged  "a14" Int,  Tagged  "a15" Int
-                 ]
-newH = Identity (Tagged 0) :& Identity (Tagged 0) :& Identity (Tagged 0) :& Identity (Tagged 0) :&
-       Identity (Tagged 0) :& Identity (Tagged 0) :& Identity (Tagged 0) :& Identity (Tagged 0) :&
-       Identity (Tagged 0) :& Identity (Tagged 0) :& Identity (Tagged 0) :& Identity (Tagged 0) :&
-       Identity (Tagged 0) :& Identity (Tagged 0) :& Identity (Tagged 0) :& Identity (Tagged 0) :&
-       RNil
-
 main :: IO ()
 main =
   do ptr <- Ptr.malloc
@@ -63,13 +48,6 @@ main =
          , bench "a12" $ nf (rvalf #a12) newF
          , bench "a15"  $ nf (rvalf #a15) newF
          ]
-         , bgroup "FieldRec Storable"
-         [ bench "a0" $ nfIO (fmap (rvalf #a0) . FS.peek $ ptr)
-         , bench "a4" $ nfIO (fmap (rvalf #a4) . FS.peek $ ptr)
-         , bench "a8" $ nfIO (fmap (rvalf #a8) . FS.peek $ ptr)
-         , bench "a12" $ nfIO (fmap (rvalf #a12) . FS.peek $ ptr)
-         , bench "a15"  $ nfIO (fmap (rvalf #a15) . FS.peek $ ptr)
-         ]
          , bgroup "AFieldRec"
          [ bench "a0" $ nf (rvalf #a0) arec
          , bench "a4" $ nf (rvalf #a4) arec
@@ -77,11 +55,11 @@ main =
          , bench "a12" $ nf (rvalf #a12) arec
          , bench "a15"  $ nf (rvalf #a15) arec
          ]
-         , bgroup "HList"
-         [ bench "a0" $ nf (getH @"a0" @Int SField) newH
-         , bench "a4" $ nf (getH @"a4" @Int SField) newH
-         , bench "a8" $ nf (getH @"a8" @Int SField) newH
-         , bench "a12" $ nf (getH @"a12" @Int SField) newH
-         , bench "a15" $ nf (getH @"a15" @Int SField) newH
+         , bgroup "FieldRec Storable"
+         [ bench "a0" $ nfIO (fmap (rvalf #a0) . FS.peek $ ptr)
+         , bench "a4" $ nfIO (fmap (rvalf #a4) . FS.peek $ ptr)
+         , bench "a8" $ nfIO (fmap (rvalf #a8) . FS.peek $ ptr)
+         , bench "a12" $ nfIO (fmap (rvalf #a12) . FS.peek $ ptr)
+         , bench "a15"  $ nfIO (fmap (rvalf #a15) . FS.peek $ ptr)
          ]
        ]
