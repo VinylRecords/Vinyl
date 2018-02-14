@@ -21,6 +21,7 @@ module Data.Vinyl.Lens
   , type (:~:)
   ) where
 
+import Data.Kind (Constraint)
 import Data.Vinyl.Core
 import Data.Vinyl.Functor
 import Data.Vinyl.TypeLevel
@@ -31,6 +32,10 @@ import Data.Typeable (Proxy(..))
 -- realize that this is a decidable predicate with respect to the judgemental
 -- equality in @k@.
 class i ~ RIndex r rs => RecElem record (r :: k) (rs :: [k]) (i :: Nat) where
+  -- | An opportunity for instances to generate constraints based on
+  -- the functor parameter of records passed to class methods.
+  type RecElemFCtx record (f :: k -> *) :: Constraint
+  type RecElemFCtx record f = ()
 
   -- | We can get a lens for getting and setting the value of a field which is
   -- in a record. As a convenience, we take a proxy argument to fix the
@@ -39,7 +44,7 @@ class i ~ RIndex r rs => RecElem record (r :: k) (rs :: [k]) (i :: Nat) where
   --
   -- > rlens :: sing r => Lens' (Rec f rs) (f r)
   rlens
-    :: Functor g
+    :: (Functor g, RecElemFCtx record f)
     => sing r
     -> (f r -> g (f r))
     -> record f rs
@@ -47,7 +52,8 @@ class i ~ RIndex r rs => RecElem record (r :: k) (rs :: [k]) (i :: Nat) where
 
   -- | For Vinyl users who are not using the @lens@ package, we provide a getter.
   rget
-    :: sing r
+    :: RecElemFCtx record f
+    => sing r
     -> record f rs
     -> f r
 
@@ -55,7 +61,8 @@ class i ~ RIndex r rs => RecElem record (r :: k) (rs :: [k]) (i :: Nat) where
   -- setter. In general, it will be unambiguous what field is being written to,
   -- and so we do not take a proxy argument here.
   rput
-    :: f r
+    :: RecElemFCtx record f
+    => f r
     -> record f rs
     -> record f rs
 
@@ -94,12 +101,16 @@ instance (RIndex r (s ': rs) ~ 'S i, RElem r rs i) => RecElem Rec r (s ': rs) ('
 -- record to a smaller one, or we may replace the values in a slice of a
 -- record.
 class is ~ RImage rs ss => RecSubset record (rs :: [k]) (ss :: [k]) is where
+  -- | An opportunity for instances to generate constraints based on
+  -- the functor parameter of records passed to class methods.
+  type RecSubsetFCtx record (f :: k -> *) :: Constraint
+  type RecSubsetFCtx record f = ()
 
   -- | This is a lens into a slice of the larger record. Morally, we have:
   --
   -- > rsubset :: Lens' (Rec f ss) (Rec f rs)
   rsubset
-    :: Functor g
+    :: (Functor g, RecSubsetFCtx record f)
     => (record f rs -> g (record f rs))
     -> record f ss
     -> g (record f ss)
@@ -107,7 +118,8 @@ class is ~ RImage rs ss => RecSubset record (rs :: [k]) (ss :: [k]) is where
   -- | The getter of the 'rsubset' lens is 'rcast', which takes a larger record
   -- to a smaller one by forgetting fields.
   rcast
-    :: record f ss
+    :: RecSubsetFCtx record f
+    => record f ss
     -> record f rs
   rcast = getConst . rsubset Const
   {-# INLINE rcast #-}
@@ -115,7 +127,8 @@ class is ~ RImage rs ss => RecSubset record (rs :: [k]) (ss :: [k]) is where
   -- | The setter of the 'rsubset' lens is 'rreplace', which allows a slice of
   -- a record to be replaced with different values.
   rreplace
-    :: record f rs
+    :: RecSubsetFCtx record f
+    => record f rs
     -> record f ss
     -> record f ss
   rreplace rs = getIdentity . rsubset (\_ -> Identity rs)
