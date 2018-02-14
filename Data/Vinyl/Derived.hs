@@ -82,23 +82,26 @@ _ =: v = Field v
 
 -- | Get a named field from a record.
 rgetf
-  :: forall l f v record us. HasField record l us v
+  :: forall l f v record us. (HasField record l us v, RecElemFCtx record f)
   => Label l -> record f us -> f (l ::: v)
 rgetf _ = rget (Proxy :: Proxy (l ::: v))
 
 -- | Get the value associated with a named field from a record.
 rvalf
-  :: HasField record l us v => Label l -> record ElField us -> v
+  :: (HasField record l us v, RecElemFCtx record ElField)
+  => Label l -> record ElField us -> v
 rvalf x = getField . rgetf x
 
 -- | Set a named field. @rputf #foo 23@ sets the field named @#foo@ to
 -- @23@.
-rputf :: forall l v record us. (HasField record l us v, KnownSymbol l)
+rputf :: forall l v record us.
+         (HasField record l us v, KnownSymbol l, RecElemFCtx record ElField)
       => Label l -> v -> record ElField us -> record ElField us
 rputf _ = rput . (Field :: v -> ElField '(l,v))
 
 -- | A lens into a 'Rec' identified by a 'Label'.
-rlensf' :: forall l v record g f us. (Functor g, HasField record l us v)
+rlensf' :: forall l v record g f us.
+           (Functor g, HasField record l us v, RecElemFCtx record f)
         => Label l
         -> (f (l ::: v) -> g (f (l ::: v)))
         -> record f us
