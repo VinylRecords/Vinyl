@@ -1,3 +1,8 @@
+# 0.9.0
+- A new `SRec` type for constant time field access for records with densely packed `Storable` fields. Conversion from `Rec` is accomplished with `toSRec`, while `fromSRec` takes you back to `Rec`. Record updates are fairly slow compared to native Haskell records and even `Rec`, but reading a field is as fast as anything.
+
+- Changed the type of `=:=` again to work directly with `Label`s as this is the most convenient usage.
+
 # 0.8.0
 
 - Overhaul of `FieldRec`: records with named fields. We now take advantage of the `-XOverloadedLabels` extension to support referring to record fields by names such a `#myField`.

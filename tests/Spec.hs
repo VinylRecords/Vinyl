@@ -46,4 +46,11 @@ main = hspec $ do
       rvalf #y (toARec (rlensf #y %~ (show . length) $
                             fromARec (rputf #x 7 (toARec d3))))
       `shouldBe` "2"
+  describe "Converting between Rec and SRec" $ do
+    it "Can go back and forth" $
+      let d4 = #x =:= 5 <+> #y =:= 4 :: FieldRec '[ '("x",Int), '("y",Int)]
+          isqrt = floor . (sqrt :: Double -> Double) . fromIntegral
+      in rvalf #y (toSRec (rlensf #y %~ isqrt $
+           fromSRec (rputf #x (7::Int) (toSRec d4))))
+      `shouldBe` 2
 #endif
