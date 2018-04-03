@@ -4,8 +4,6 @@
 import           Control.Monad (unless)
 import           Criterion.Main
 import           Data.Vinyl
-import qualified Foreign.Marshal.Alloc as Ptr
-import qualified Foreign.Storable as FS
 import           System.Exit (exitFailure)
 
 newF :: FieldRec '[ '( "a0", Int ), '( "a1", Int ), '( "a2", Int ), '( "a3", Int )
@@ -84,16 +82,9 @@ ushaskRec = UStrictHaskRec 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 99
 
 main :: IO ()
 main =
-  do ptr <- Ptr.malloc
-     FS.poke ptr newF
-     let fieldGet = rvalf #a15 newF
-     fieldPeek <- rvalf #a15 <$> FS.peek ptr
-     unless (fieldGet == fieldPeek)
-            (do putStrLn "Storable field accessor disagrees with rvalf"
-                exitFailure)
-     let arec = toARec newF
+  do let arec = toARec newF
          srec = toSRec newF
-     unless (rvalf #a15 arec == fieldGet)
+     unless (rvalf #a15 arec == rvalf #a15 newF)
             (do putStrLn "AFieldRec accessor disagrees with rvalf"
                 exitFailure)
      unless (rvalf #a15 srec == fieldGet)

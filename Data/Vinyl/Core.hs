@@ -15,7 +15,8 @@
 
 module Data.Vinyl.Core where
 
-import Data.Monoid
+import Data.Monoid (Monoid)
+import Data.Semigroup
 import Foreign.Ptr (castPtr, plusPtr)
 import Foreign.Storable (Storable(..))
 import Data.Vinyl.Functor
@@ -226,13 +227,17 @@ instance RecAll f rs Show => Show (Rec f rs) where
       . rmap (\(Compose (Dict x)) -> Const $ show x)
       $ reifyConstraint (Proxy :: Proxy Show) xs
 
+instance Semigroup (Rec f '[]) where
+instance (Monoid (f r), Monoid (Rec f rs))
+  => Semigroup (Rec f (r ': rs)) where
+
 instance Monoid (Rec f '[]) where
   mempty = RNil
   RNil `mappend` RNil = RNil
 
 instance (Monoid (f r), Monoid (Rec f rs)) => Monoid (Rec f (r ': rs)) where
   mempty = mempty :& mempty
-  (x :& xs) `mappend` (y :& ys) = (x <> y) :& (xs <> ys)
+  (x :& xs) `mappend` (y :& ys) = (mappend x y) :& (mappend xs ys)
 
 instance Eq (Rec f '[]) where
   _ == _ = True

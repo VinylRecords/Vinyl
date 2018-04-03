@@ -27,7 +27,7 @@
 >>> import Control.Lens.TH
 >>> import Data.Char
 >>> import Test.DocTest
->>> import Data.Singletons.TH
+>>> import Data.Singletons.TH (genSingletons)
 >>> import Data.Maybe
 
     Let's define a universe of fields which we want to use.
