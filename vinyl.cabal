@@ -68,7 +68,7 @@ benchmark accessors
   type:             exitcode-stdio-1.0
   hs-source-dirs:   benchmarks
   main-is:          AccessorsBench.hs
-  build-depends:    base >= 4.7 && <= 5, criterion, tagged, vinyl
+  build-depends:    base >= 4.7 && <= 5, criterion, tagged, vinyl, microlens
   ghc-options:      -O2
   default-language: Haskell2010
 

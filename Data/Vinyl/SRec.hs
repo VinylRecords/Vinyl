@@ -172,20 +172,40 @@ sget :: forall f t ts. FieldOffset f ts t
 sget (SRec2 ptr) = inlinePerformIO (peekField ptr)
 {-# INLINE sget #-}
 
+mallocAndCopy :: ForeignPtr a -> Int -> IO (ForeignPtr a)
+mallocAndCopy src n = do
+  dst <- mallocForeignPtrBytes n
+  withForeignPtr src $ \src' ->
+    withForeignPtr dst $ \dst' ->
+      dst <$ copyBytes dst' src' n
+
 -- | Set a field.
 sput :: forall (f :: u -> *) (t :: u) (ts :: [u]).
         ( FieldOffset f ts t
         , RecApplicative ts
         , AllConstrained (FieldOffset f ts) ts)
      => f t -> SRec2 f f ts -> SRec2 f f ts
-sput x (SRec2 src) = unsafeDupablePerformIO $ do
-  let n = sizeOfRec @u @f @ts @ts
-  dst <- mallocForeignPtrBytes n
-  withForeignPtr src $ \src' ->
-    withForeignPtr dst $ \dst' ->
-      copyBytes dst' src' n
+-- sput x (SRec2 src) = unsafeDupablePerformIO $ do
+--   let n = sizeOfRec @u @f @ts @ts
+--   dst <- mallocForeignPtrBytes n
+--   withForeignPtr src $ \src' ->
+--     withForeignPtr dst $ \dst' ->
+--       copyBytes dst' src' n
+sput !x (SRec2 src) = unsafePerformIO $ do
+  let !n = sizeOfRec @u @f @ts @ts
+  dst <- mallocAndCopy src n
   SRec2 dst <$ pokeField dst x
-{-# INLINE sput #-}
+{-# INLINE [1] sput #-}
+
+-- pokeFieldUnsafe :: forall f t ts. FieldOffset f ts t
+--                 => f t -> SRec2 f f ts -> SRec2 f f ts
+-- pokeFieldUnsafe x y@(SRec2 ptr) = unsafeDupablePerformIO (y <$ pokeField ptr x)
+-- {-# INLINE [1] pokeFieldUnsafe #-}
+
+{- RULES
+"sput" forall x y z. sput x (sput y z) = pokeFieldUnsafe x (sput y z)
+"sputUnsafe" forall x y z. sput x (pokeFieldUnsafe y z) = pokeFieldUnsafe x (pokeFieldUnsafe y z)
+  #-}
 
 -- | A lens for a field of an 'SRec2'.
 slens :: ( Functor g
@@ -233,9 +253,6 @@ instance ( i ~ RIndex (t :: (Symbol,*)) (ts :: [(Symbol,*)])
   rput x = SRecNT . sput x . getSRecNT
   {-# INLINE rput #-}
 
-data WithOffset f a where
-  WithOffset :: Storable (f a) => (f a) -> Int -> WithOffset f a
-
 -- | Compute the size in bytes needed to represent a 'Rec' without a
 -- 'Storable' instance.
 sizeOfRec :: forall (f :: u -> *) (ss :: [u]) (rs :: [u]).
@@ -253,22 +270,28 @@ sizeOfRec = (getSum . rfoldMap go)
         {-# INLINE go #-}
 {-# INLINE sizeOfRec #-}
 
--- -- | Get a subset of a record's fields.
+-- | Get a subset of a record's fields.
 srecGetSubset :: forall (ss :: [u]) (rs :: [u]) (f :: u -> *).
-                 (AllConstrained (FieldOffset f ss) rs, RecApplicative rs)
+                 (AllConstrained (FieldOffset f ss) rs,
+                  AllConstrained (FieldOffset f rs) rs,
+                  RecApplicative rs)
               => SRec2 f f ss -> SRec2 f f rs
 srecGetSubset (SRec2 ptr) = unsafeDupablePerformIO $ do
   dst <- mallocForeignPtrBytes
            (sizeOfRec @u @f @ss @rs)
-  SRec2 dst <$ (withForeignPtr dst $ \dst' -> rfoldMap (poker dst') peeker)
-  where prox = Proxy :: Proxy (FieldOffset f ss)
-        peeker = rpureConstrained prox go :: Rec (IO :. WithOffset f) rs
-        go :: forall t. (FieldOffset f ss t) => (IO :. WithOffset f) t
-        go = case fieldOffset @f @ss @t 0 of
-               StorableAt i -> Compose (flip WithOffset i <$> peekField ptr)
-        poker :: forall t b. Ptr b -> (IO :. WithOffset f) t -> IO ()
-        poker dst m = do WithOffset x i <- getCompose m
-                         pokeByteOff dst i x
+  SRec2 dst <$ (withForeignPtr dst $ \dst' ->
+                 rfoldMap unTagIO (Lift . peekNPoke <<$>> peekers <<*>> pokers dst'))
+  where peekers :: Rec (IO :. f) rs
+        peekers = rpureConstrained (Proxy :: Proxy (FieldOffset f ss)) mkPeeker
+        mkPeeker :: FieldOffset f ss t => (IO :. f) t
+        mkPeeker = Compose (peekField ptr)
+        pokers :: Ptr (Rec f rs) -> Rec (Poker f) rs
+        pokers dst = rpureConstrained (Proxy :: Proxy (FieldOffset f rs)) (mkPoker dst)
+        mkPoker :: forall t. Ptr (Rec f rs) -> FieldOffset f rs t => Poker f t
+        mkPoker dst = case fieldOffset @f @rs @t 0 of
+                        StorableAt i -> Lift (TaggedIO . pokeByteOff dst i)
+        peekNPoke :: (IO :. f) t -> Poker f t -> TaggedIO t
+        peekNPoke (Compose m) (Lift f) = TaggedIO (m >>= unTagIO . f)
 {-# INLINABLE srecGetSubset #-}
 
 -- | Phantom tagged 'IO ()' value. Used to work with vinyl's 'Lift'
@@ -301,9 +324,11 @@ srecSetSubset (SRec2 srcBig) (SRec2 srcSmall) = unsafeDupablePerformIO $ do
   where pokers :: Ptr (Rec f ss) -> Rec (Poker f) rs
         pokers dst = rpureConstrained (Proxy :: Proxy (FieldOffset f ss))
                                       (mkPoker dst)
+        {-# INLINE pokers #-}
         mkPoker :: forall t. FieldOffset f ss t => Ptr (Rec f ss) -> Poker f t
         mkPoker dst = case fieldOffset @f @ss @t 0 of
                         StorableAt i -> Lift (TaggedIO . pokeByteOff dst i)
+        {-# INLINE mkPoker #-}
 {-# INLINABLE srecSetSubset #-}
 
 data Dic f c a where Dic :: c (f a) => Dic f c a
