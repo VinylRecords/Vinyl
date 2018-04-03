@@ -87,7 +87,7 @@ main =
      unless (rvalf #a15 arec == rvalf #a15 newF)
             (do putStrLn "AFieldRec accessor disagrees with rvalf"
                 exitFailure)
-     unless (rvalf #a15 srec == fieldGet)
+     unless (rvalf #a15 srec == rvalf #a15 newF)
             (do putStrLn "SFieldRec accessor disagrees with rvalf"
                 exitFailure)
      defaultMain
@@ -104,13 +104,6 @@ main =
          , bench "a8" $ nf (rvalf #a8) arec
          , bench "a12" $ nf (rvalf #a12) arec
          , bench "a15"  $ nf (rvalf #a15) arec
-         ]
-         , bgroup "FieldRec Storable"
-         [ bench "a0" $ nfIO (fmap (rvalf #a0) . FS.peek $ ptr)
-         , bench "a4" $ nfIO (fmap (rvalf #a4) . FS.peek $ ptr)
-         , bench "a8" $ nfIO (fmap (rvalf #a8) . FS.peek $ ptr)
-         , bench "a12" $ nfIO (fmap (rvalf #a12) . FS.peek $ ptr)
-         , bench "a15"  $ nfIO (fmap (rvalf #a15) . FS.peek $ ptr)
          ]
          , bgroup "SFieldRec"
          [ bench "a0" $ nf (rvalf #a0) srec
