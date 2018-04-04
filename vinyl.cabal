@@ -37,8 +37,7 @@ library
                        ghc-prim,
                        array
   default-language:    Haskell2010
-  ghc-options: -fwarn-dodgy-exports -fwarn-dodgy-imports -fwarn-unused-matches -fwarn-unused-imports -fwarn-unused-binds -fwarn-incomplete-record-updates -fwarn-missing-signatures -fwarn-name-shadowing -fwarn-orphans -fwarn-overlapping-patterns -fwarn-tabs -fwarn-type-defaults
-  other-extensions:    TypeApplications
+  ghc-options: -Wall
 
 benchmark storable
   type:             exitcode-stdio-1.0
