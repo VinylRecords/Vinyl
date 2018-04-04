@@ -10,17 +10,17 @@
 -- the functor argument of the record so that GHC can find all
 -- required instances at compile time (this is required for
 -- constant-time field access). What we do is allow ourselves to write
--- instances of the 'RecElem' and 'RecSubset' classes that provide the
--- main vinyl lens API that are actually restricted to particular
--- choices of the record functor. This is why the 'SRec2' type that
--- implements records here takes two functor arguments: they will
--- usually be the same; we fix one when writing instances and write
--- instance contexts that reference that type, and then require that
--- the methods (e.g. 'rget') are called on records whose functor
--- argument is equal to the one we picked. For usability, we provide
--- an 'SRec' type whose lens API is fixed to 'ElField' as the
--- functor. Other specializations are possible, and the work of those
--- instances can always be passed along to the 'SRec2' functions.
+-- instances of the 'RecElem' and 'RecSubset' classes (that provide
+-- the main vinyl lens API) that are restricted to particular choices
+-- of the record functor. This is why the 'SRec2' type that implements
+-- records here takes two functor arguments: they will usually be the
+-- same; we fix one when writing instances and write instance contexts
+-- that reference that type, and then require that the methods
+-- (e.g. 'rget') are called on records whose functor argument is equal
+-- to the one we picked. For usability, we provide an 'SRec' type
+-- whose lens API is fixed to 'ElField' as the functor. Other
+-- specializations are possible, and the work of those instances can
+-- always be passed along to the 'SRec2' functions.
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE ConstraintKinds #-}
@@ -29,20 +29,21 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE MagicHash #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UnboxedTuples #-}
 {-# LANGUAGE UndecidableInstances #-}
-
 {-# LANGUAGE UndecidableSuperClasses #-}
 
-{-# LANGUAGE MagicHash #-}
-{-# LANGUAGE UnboxedTuples #-}
+-- We get warnings about incomplete patterns on various class
+-- instances.
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Data.Vinyl.SRec (
   -- * Main record lens API
   SRec(..), toSRec, fromSRec
@@ -57,13 +58,13 @@ module Data.Vinyl.SRec (
 ) where
 import Data.Monoid (Sum(..))
 import Data.Proxy
-import Data.Vinyl.Core
+import Data.Vinyl.Core hiding ((<<$>>), (<<*>>))
 import Data.Vinyl.Derived (ElField)
 import Data.Vinyl.Functor (Lift(..), Compose(..), type (:.))
 import Data.Vinyl.Lens (RecElem(..), RecSubset(..), type (⊆), RecElemFCtx)
 import Data.Vinyl.TypeLevel (RImage, RIndex, Nat(..), RecAll, AllConstrained)
 import Foreign.Marshal.Utils (copyBytes)
-import Foreign.ForeignPtr (withForeignPtr, mallocForeignPtr, ForeignPtr, mallocForeignPtrBytes)
+-- import Foreign.ForeignPtr (withForeignPtr, mallocForeignPtr, ForeignPtr, mallocForeignPtrBytes)
 import Foreign.Ptr (Ptr)
 import Foreign.Storable (Storable(..))
 import System.IO.Unsafe (unsafePerformIO, unsafeDupablePerformIO)
@@ -71,6 +72,85 @@ import System.IO.Unsafe (unsafePerformIO, unsafeDupablePerformIO)
 import GHC.IO (IO(IO))
 import GHC.Base (realWorld#)
 import GHC.TypeLits (Symbol)
+
+import GHC.Prim (MutableByteArray#, newAlignedPinnedByteArray#, byteArrayContents#)
+import GHC.Prim (unsafeCoerce#, touch#, RealWorld)
+import GHC.Ptr (Ptr(..))
+import GHC.Types (Int(..))
+
+-- * Byte array code adapted from the `memory` package.
+
+data Bytes = Bytes (MutableByteArray# RealWorld)
+
+newBytes :: Int -> IO Bytes
+newBytes (I# n) = IO $ \s ->
+  case newAlignedPinnedByteArray# n 8# s of
+    (# s', mbarr #) -> (# s', Bytes mbarr #)
+
+touchBytes :: Bytes -> IO ()
+touchBytes (Bytes mbarr) = IO $ \s -> case touch# mbarr s of s' -> (# s', () #)
+{-# INLINE touchBytes #-}
+
+withBytesPtr :: Bytes -> (Ptr a -> IO r) -> IO r
+withBytesPtr b@(Bytes mbarr) f = do
+  f (Ptr (byteArrayContents# (unsafeCoerce# mbarr))) <* touchBytes b
+{-# INLINE withBytesPtr #-}
+
+-- * Pun ForeignPtr names to ease refactoring
+
+newtype ForeignPtr (a :: k) = ForeignPtr Bytes
+
+withForeignPtr :: ForeignPtr a -> (Ptr b -> IO r) -> IO r
+withForeignPtr (ForeignPtr b) = withBytesPtr b
+{-# INLINE withForeignPtr #-}
+
+mallocForeignPtrBytes :: Int -> IO (ForeignPtr a)
+mallocForeignPtrBytes = fmap ForeignPtr . newBytes
+{-# INLINE mallocForeignPtrBytes #-}
+
+-- * Inlinable rpureConstrained, rfoldMap, rmap, and rapply
+
+class RPureConstrained c ts where
+  rpureConstrainedC :: (forall a. c a => f a) -> Rec f ts
+
+instance RPureConstrained c '[] where rpureConstrainedC _ = RNil
+
+instance (RPureConstrained c ts, c t) => RPureConstrained c (t : ts) where
+  rpureConstrainedC f = f :& rpureConstrainedC @c f
+
+class RFoldMap ts where
+  rfoldMapC :: Monoid m => (forall x. f x -> m) -> Rec f xs -> m
+
+instance RFoldMap '[] where rfoldMapC _ RNil = mempty
+
+instance RFoldMap ts => RFoldMap (t : ts) where
+  rfoldMapC f (x :& xs) = mappend (f x) (rfoldMapC @ts f xs)
+
+class RMap ts where
+  rmapC :: (forall x. f x -> g x) -> Rec f xs -> Rec g xs
+
+instance RMap '[] where rmapC _ RNil = RNil
+
+instance RMap ts => RMap (t : ts) where
+  rmapC f (x :& xs) = f x :& rmapC @ts f xs
+
+(<<$>>) :: forall xs f g. RMap xs => (forall x. f x -> g x) -> Rec f xs -> Rec g xs
+(<<$>>) = rmapC @xs
+
+(<<*>>) :: RApply ts => Rec (Lift (->) f g) ts -> Rec f ts -> Rec g ts
+(<<*>>) = rapplyC
+
+infixl 8 <<$>>
+infixl 8 <<*>>
+
+class RApply ts where
+  rapplyC :: Rec (Lift (->) f g) ts -> Rec f ts -> Rec g ts
+
+instance RApply '[] where rapplyC RNil RNil = RNil
+instance RApply ts => RApply (t : ts) where
+  rapplyC (f :& fs) (x :& xs) = getLift f x :& rapplyC fs xs
+
+-- * The SRec types
 
 -- | A 'Storable'-backed 'Rec'. Each field of such a value has
 -- statically known size, allowing for a very efficient representation
@@ -90,9 +170,9 @@ newtype SRec2 (g :: k -> *) (f :: k -> *) (ts :: [k]) =
 newtype SRec f ts = SRecNT { getSRecNT :: SRec2 f f ts }
 
 -- | Create an 'SRec2' from a 'Rec'.
-toSRec2 :: Storable (Rec f ts) => Rec f ts -> SRec2 f f ts
+toSRec2 :: forall f ts. Storable (Rec f ts) => Rec f ts -> SRec2 f f ts
 toSRec2 x = unsafePerformIO $ do
-  ptr <- mallocForeignPtr
+  ptr <- mallocForeignPtrBytes (sizeOf (undefined :: Rec f ts))
   SRec2 ptr <$ (withForeignPtr ptr (flip poke x))
 {-# NOINLINE toSRec2 #-}
 
@@ -185,12 +265,6 @@ sput :: forall (f :: u -> *) (t :: u) (ts :: [u]).
         , RecApplicative ts
         , AllConstrained (FieldOffset f ts) ts)
      => f t -> SRec2 f f ts -> SRec2 f f ts
--- sput x (SRec2 src) = unsafeDupablePerformIO $ do
---   let n = sizeOfRec @u @f @ts @ts
---   dst <- mallocForeignPtrBytes n
---   withForeignPtr src $ \src' ->
---     withForeignPtr dst $ \dst' ->
---       copyBytes dst' src' n
 sput !x (SRec2 src) = unsafePerformIO $ do
   let !n = sizeOfRec @u @f @ts @ts
   dst <- mallocAndCopy src n
@@ -272,27 +346,33 @@ sizeOfRec = (getSum . rfoldMap go)
 
 -- | Get a subset of a record's fields.
 srecGetSubset :: forall (ss :: [u]) (rs :: [u]) (f :: u -> *).
-                 (AllConstrained (FieldOffset f ss) rs,
-                  AllConstrained (FieldOffset f rs) rs,
-                  RecApplicative rs)
+                 (RPureConstrained (FieldOffset f ss) rs,
+                  RPureConstrained (FieldOffset f rs) rs,
+                  RFoldMap rs, RMap rs, RApply rs,
+                  Storable (Rec f rs))
               => SRec2 f f ss -> SRec2 f f rs
 srecGetSubset (SRec2 ptr) = unsafeDupablePerformIO $ do
-  dst <- mallocForeignPtrBytes
-           (sizeOfRec @u @f @ss @rs)
+  dst <- mallocForeignPtrBytes (sizeOf (undefined :: Rec f rs))
   SRec2 dst <$ (withForeignPtr dst $ \dst' ->
-                 rfoldMap unTagIO (Lift . peekNPoke <<$>> peekers <<*>> pokers dst'))
+                 rfoldMapC @rs unTagIO
+                           (Lift . peekNPoke <<$>> peekers <<*>> pokers dst'))
   where peekers :: Rec (IO :. f) rs
-        peekers = rpureConstrained (Proxy :: Proxy (FieldOffset f ss)) mkPeeker
+        peekers = rpureConstrainedC @(FieldOffset f ss) mkPeeker
+        {-# INLINE peekers #-}
         mkPeeker :: FieldOffset f ss t => (IO :. f) t
         mkPeeker = Compose (peekField ptr)
+        {-# INLINE mkPeeker #-}
         pokers :: Ptr (Rec f rs) -> Rec (Poker f) rs
-        pokers dst = rpureConstrained (Proxy :: Proxy (FieldOffset f rs)) (mkPoker dst)
+        pokers dst = rpureConstrainedC @(FieldOffset f rs) (mkPoker dst)
+        {-# INLINE pokers #-}
         mkPoker :: forall t. Ptr (Rec f rs) -> FieldOffset f rs t => Poker f t
         mkPoker dst = case fieldOffset @f @rs @t 0 of
                         StorableAt i -> Lift (TaggedIO . pokeByteOff dst i)
+        {-# INLINE mkPoker #-}
         peekNPoke :: (IO :. f) t -> Poker f t -> TaggedIO t
         peekNPoke (Compose m) (Lift f) = TaggedIO (m >>= unTagIO . f)
-{-# INLINABLE srecGetSubset #-}
+        {-# INLINE peekNPoke #-}
+{-# INLINE srecGetSubset #-}
 
 -- | Phantom tagged 'IO ()' value. Used to work with vinyl's 'Lift'
 -- that wants @forall a. f a -> g a@.
@@ -303,63 +383,46 @@ type Poker f = Lift (->) f TaggedIO
 
 -- | Set a subset of a record's fields.
 srecSetSubset :: forall (f :: u -> *) (ss :: [u]) (rs :: [u]).
-                 (AllConstrained (FieldOffset f ss) rs,
-                  RecApplicative rs,
-                  rs ⊆ ss,
-                  RecAll f ss Storable,
-                  AllConstrained (FieldOffset f ss) ss,
-                  RecApplicative ss)
+                 (rs ⊆ ss,
+                  RPureConstrained (FieldOffset f ss) rs,
+                  RPureConstrained (FieldOffset f rs) rs,
+                  RFoldMap rs, RMap rs, RApply rs,
+                  Storable (Rec f ss))
               => SRec2 f f ss -> SRec2 f f rs -> SRec2 f f ss
 srecSetSubset (SRec2 srcBig) (SRec2 srcSmall) = unsafeDupablePerformIO $ do
-  let n = sizeOfRec @u @f @ss @ss
+  let n = sizeOf (undefined :: Rec f ss)
   dst <- mallocForeignPtrBytes n
   withForeignPtr srcBig $ \srcBig' ->
     withForeignPtr dst $ \dst' ->
       copyBytes dst' srcBig' n
-  let dic = rcast (reifyConstraintRec @f @ss) :: Rec (Dic f Storable) rs
-      smallRec = withStorableDicts dic
-                   (withForeignPtr srcSmall $ \srcSmall' -> peek srcSmall')
   SRec2 dst <$ (withForeignPtr dst $ \dst' ->
-                 smallRec >>= rfoldMap unTagIO . (pokers dst' <<*>>))
-  where pokers :: Ptr (Rec f ss) -> Rec (Poker f) rs
-        pokers dst = rpureConstrained (Proxy :: Proxy (FieldOffset f ss))
-                                      (mkPoker dst)
+                 rfoldMapC @rs unTagIO
+                           (Lift . peekNPoke <<$>> peekers <<*>> pokers dst'))
+  where peekers :: Rec (IO :. f) rs
+        peekers = rpureConstrainedC @(FieldOffset f rs) mkPeeker
+        {-# INLINE peekers #-}
+        mkPeeker :: FieldOffset f rs t => (IO :. f) t
+        mkPeeker = Compose (peekField srcSmall)
+
+        pokers :: Ptr (Rec f ss) -> Rec (Poker f) rs
+        pokers dst = rpureConstrainedC @(FieldOffset f ss) (mkPoker dst)
         {-# INLINE pokers #-}
         mkPoker :: forall t. FieldOffset f ss t => Ptr (Rec f ss) -> Poker f t
         mkPoker dst = case fieldOffset @f @ss @t 0 of
                         StorableAt i -> Lift (TaggedIO . pokeByteOff dst i)
         {-# INLINE mkPoker #-}
-{-# INLINABLE srecSetSubset #-}
+        peekNPoke :: (IO :. f) t -> Poker f t -> TaggedIO t
+        peekNPoke (Compose m) (Lift f) = TaggedIO (m >>= unTagIO . f)
+        {-# INLINE peekNPoke #-}
+{-# INLINE srecSetSubset #-}
 
-data Dic f c a where Dic :: c (f a) => Dic f c a
-
--- | Use a 'Rec' of dictionaries to satisfy a 'RecAll' constraint.
--- withRecDic :: Rec (Dic f c) ss -> (RecAll f ss c => r) -> r
--- withRecDic RNil x = x
--- withRecDic (Dic :& xs) x = withRecDic xs x
-
--- | Use a 'Rec' of dictionaries to satisfy a 'Storable' constraint on
--- the underlying 'Rec' itself.
-withStorableDicts :: Rec (Dic f Storable) ss -> (Storable (Rec f ss) => r) -> r
-withStorableDicts RNil r = r
-withStorableDicts (Dic :& xs) r = withStorableDicts xs r
-
--- | Produce a 'Rec' witness of a 'RecAll' constraint.
-reifyConstraintRec :: forall f ss c. (RecAll f ss c, RecApplicative ss)
-                   => Rec (Dic f c) ss
-reifyConstraintRec = go (rpure Proxy :: Rec Proxy ss)
-  where go :: RecAll f ss' c => Rec Proxy ss' -> Rec (Dic f c) ss'
-        go RNil = RNil
-        go (_ :& xs) = Dic :& go xs
-{-# INLINABLE reifyConstraintRec #-}
-
-instance (is ~ RImage rs ss, RecApplicative rs, RecApplicative ss,
+instance (is ~ RImage rs ss,
           RecSubset Rec rs ss is,
-          RecAll ElField ss Storable,
-          RecAll ElField rs Storable,
-          AllConstrained (FieldOffset ElField rs) rs,
-          AllConstrained (FieldOffset ElField ss) ss,
-          AllConstrained (FieldOffset ElField ss) rs)
+          Storable (Rec ElField rs),
+          Storable (Rec ElField ss),
+          RPureConstrained (FieldOffset ElField ss) rs,
+          RPureConstrained (FieldOffset ElField rs) rs,
+          RFoldMap rs, RMap rs, RApply rs)
   => RecSubset (SRec2 ElField) rs ss is where
   type RecSubsetFCtx (SRec2 ElField) f = f ~ ElField
   rsubset :: forall g. Functor g
@@ -367,20 +430,19 @@ instance (is ~ RImage rs ss, RecApplicative rs, RecApplicative ss,
           -> SRec2 ElField ElField ss
           -> g (SRec2 ElField ElField ss)
   rsubset f big@(SRec2 _) = fmap (srecSetSubset big) (f smallRec)
-    where -- subDict :: Rec (Dic ElField Storable) rs
-          -- subDict = rcast (reifyConstraintRec @_ @ss)
-          smallRec :: SRec2 ElField ElField rs
-          smallRec = -- withRecDic subDict
-                                  (srecGetSubset big)
+    where smallRec :: SRec2 ElField ElField rs
+          smallRec = srecGetSubset big
+          {-# INLINE smallRec #-}
   {-# INLINE rsubset #-}
 
-instance (is ~ RImage rs ss, RecApplicative rs, RecApplicative ss,
-         RecSubset Rec rs ss is,
-         RecAll ElField ss Storable,
-         RecAll ElField rs Storable,
-         AllConstrained (FieldOffset ElField rs) rs,
-         AllConstrained (FieldOffset ElField ss) ss,
-         AllConstrained (FieldOffset ElField ss) rs)
+instance (is ~ RImage rs ss,
+          RecSubset Rec rs ss is,
+          Storable (Rec ElField rs),
+          Storable (Rec ElField ss),
+          RPureConstrained (FieldOffset ElField ss) rs,
+          RPureConstrained (FieldOffset ElField rs) rs,
+          RFoldMap rs, RMap rs, RApply rs)
   => RecSubset SRec rs ss is where
   type RecSubsetFCtx SRec f = f ~ ElField
   rsubset f (SRecNT s) = SRecNT <$> rsubset (fmap getSRecNT . f . SRecNT) s
+  {-# INLINE rsubset #-}
