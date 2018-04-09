@@ -112,7 +112,7 @@ rlensf :: forall l v record g f us. (Functor g, HasField record l us v)
 rlensf _ f = rlens (Proxy :: Proxy (l ::: v)) (rfield f)
 
 -- | Shorthand for a 'FieldRec' with a single field.
-(=:=) :: KnownSymbol s => proxy '(s,a) -> a -> FieldRec '[ '(s,a) ]
+(=:=) :: KnownSymbol s => Label (s :: Symbol) -> a -> FieldRec '[ '(s,a) ]
 (=:=) _ x = Field x :& RNil
 
 -- | A proxy for field types.
