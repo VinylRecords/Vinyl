@@ -150,37 +150,37 @@ main =
          ]
          , bgroup "AFieldRec"
          [ bench "a0" $ nf (rvalf #a0) arec
-         , bench "a4" $ nf (rvalf #a4) arec
-         , bench "a8" $ nf (rvalf #a8) arec
-         , bench "a12" $ nf (rvalf #a12) arec
+         -- , bench "a4" $ nf (rvalf #a4) arec
+         -- , bench "a8" $ nf (rvalf #a8) arec
+         -- , bench "a12" $ nf (rvalf #a12) arec
          , bench "a15"  $ nf (rvalf #a15) arec
          ]
          , bgroup "SFieldRec"
          [ bench "a0" $ nf (rvalf #a0) srec
-         , bench "a4" $ nf (rvalf #a4) srec
-         , bench "a8" $ nf (rvalf #a8) srec
-         , bench "a12" $ nf (rvalf #a12) srec
+         -- , bench "a4" $ nf (rvalf #a4) srec
+         -- , bench "a8" $ nf (rvalf #a8) srec
+         -- , bench "a12" $ nf (rvalf #a12) srec
          , bench "a15"  $ nf (rvalf #a15) srec
          ]
          , bgroup "Haskell Record"
          [ bench "a0" $ nf a0 haskRec
-         , bench "a4" $ nf a4 haskRec
-         , bench "a8" $ nf a8 haskRec
-         , bench "a12" $ nf a12 haskRec
+         -- , bench "a4" $ nf a4 haskRec
+         -- , bench "a8" $ nf a8 haskRec
+         -- , bench "a12" $ nf a12 haskRec
          , bench "a15"  $ nf a15 haskRec
          ]
          , bgroup "Strict Haskell Record"
          [ bench "a0" $ nf sa0 shaskRec
-         , bench "a4" $ nf sa4 shaskRec
-         , bench "a8" $ nf sa8 shaskRec
-         , bench "a12" $ nf sa12 shaskRec
+         -- , bench "a4" $ nf sa4 shaskRec
+         -- , bench "a8" $ nf sa8 shaskRec
+         -- , bench "a12" $ nf sa12 shaskRec
          , bench "a15"  $ nf sa15 shaskRec
          ]
          , bgroup "Unpacked Strict Haskell Record"
          [ bench "a0" $ nf usa0 ushaskRec
-         , bench "a4" $ nf usa4 ushaskRec
-         , bench "a8" $ nf usa8 ushaskRec
-         , bench "a12" $ nf usa12 ushaskRec
+         -- , bench "a4" $ nf usa4 ushaskRec
+         -- , bench "a8" $ nf usa8 ushaskRec
+         -- , bench "a12" $ nf usa12 ushaskRec
          , bench "a15"  $ nf usa15 ushaskRec
          ]
        ]
