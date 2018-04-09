@@ -107,7 +107,8 @@ rlensf' _ f = rlens (Proxy :: Proxy (l ::: v)) f
 
 -- | A lens into the payload value of a 'Rec' field identified by a
 -- 'Label'.
-rlensf :: forall l v record g f us. (Functor g, HasField record l us v)
+rlensf :: forall l v record g us.
+          (Functor g, HasField record l us v, RecElemFCtx record ElField)
        => Label l -> (v -> g v) -> record ElField us -> g (record ElField us)
 rlensf _ f = rlens (Proxy :: Proxy (l ::: v)) (rfield f)
 
