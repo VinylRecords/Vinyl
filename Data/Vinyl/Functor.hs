@@ -7,7 +7,7 @@
 {-# LANGUAGE PolyKinds                  #-}
 {-# LANGUAGE TypeOperators              #-}
 
-module Data.Vinyl.Functor 
+module Data.Vinyl.Functor
   ( -- * Introduction
     -- $introduction
     -- * Data Types
@@ -18,10 +18,10 @@ module Data.Vinyl.Functor
   , (:.)
   , Const(..)
     -- * Discussion
-    
+
     -- ** Example
     -- $example
-    
+
     -- ** Ecosystem
     -- $ecosystem
   ) where
@@ -81,6 +81,9 @@ newtype Const (a :: *) (b :: k)
 
 instance Show a => Show (Const a b) where
   show (Const x) = "(Const "++show x ++")"
+
+instance Eq a => Eq (Const a b) where
+  Const x == Const y = x == y
 
 instance (Functor f, Functor g) => Functor (Compose f g) where
   fmap f (Compose x) = Compose (fmap (fmap f) x)
@@ -159,7 +162,7 @@ r2 :: Maybe (Rec Identity '[Int, Bool, Char])
 >>> r2
 Nothing
 
-    If the fields only exist once an environment is provided, you can 
+    If the fields only exist once an environment is provided, you can
     build the record as follows:
 
 >>> :{
@@ -194,7 +197,7 @@ let safeDiv a b = if b == 0 then Nothing else Just (div a b)
     by "transformers". When GHC 7.10 was released, it was moved
     into "base-4.8". The "Identity" data type provided by that
     module is well recognized across the haskell ecosystem
-    and has typeclass instances for lots of common typeclasses. 
+    and has typeclass instances for lots of common typeclasses.
     The significant difference between it and the copy of
     it provided here is that this one has a different 'Show'
     instance. This is illustrated below:
@@ -215,10 +218,10 @@ Identity "hello"
     "Identity".
 
     The story with "Compose" and "Const" is much more simple.
-    These also exist in "transformers", although "Const" 
-    is named "Constant" there. Prior to the release of 
-    "transformers-0.5", they were not polykinded, making 
-    them unusable for certain universes. However, in 
+    These also exist in "transformers", although "Const"
+    is named "Constant" there. Prior to the release of
+    "transformers-0.5", they were not polykinded, making
+    them unusable for certain universes. However, in
     "transformers-0.5" and forward, they have been made
     polykinded. This means that they are just as usable with 'Rec'
     as the vinyl equivalents but with many more typeclass
