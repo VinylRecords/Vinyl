@@ -33,6 +33,7 @@ library
                      , Data.Vinyl.Functor
                      , Data.Vinyl.Notation
                      , Data.Vinyl.SRec
+                     , Data.Vinyl.Syntax
                      , Data.Vinyl.Tutorial.Overview
   build-depends:       base >=4.7 && <= 5,
                        ghc-prim,

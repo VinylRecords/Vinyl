@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE CPP, DataKinds, FlexibleContexts, GADTs, ScopedTypeVariables,
              TypeOperators #-}
 #if __GLASGOW_HASKELL__ > 800
@@ -9,6 +10,7 @@ import Data.Vinyl
 import Data.Vinyl.Functor (Lift(..), Const(..), Compose(..), (:.))
 import Lens.Micro
 import Test.Hspec
+import Data.Vinyl.Syntax
 
 import qualified CoRecSpec as C
 
@@ -53,4 +55,14 @@ main = hspec $ do
       in rvalf #y (toSRec (rlensf #y %~ isqrt $
            fromSRec (rputf #x (7::Int) (toSRec d4))))
       `shouldBe` 2
+
+  describe "Supports tuple construction" $ do
+    it "Can build ElField records concisely" $
+      fieldRec (#x 5, #y "Hi") `shouldBe` d3
+    it "Can build Recs of Maybe values" $
+      record @Maybe (Just True, Just 'a') `shouldBe` Just True :& Just 'a' :& RNil
+    it "Can build Recs of Const values" $
+      record @(Const String) ( Const "howdy" :: Const String Int
+                             , Const "folks" :: Const String Double)
+      `shouldBe` Const "howdy" :& Const "folks" :& RNil
 #endif

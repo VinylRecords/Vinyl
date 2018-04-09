@@ -1,6 +1,8 @@
 # 0.9.0
 - A new `SRec` type for constant time field access for records with densely packed `Storable` fields. Conversion from `Rec` is accomplished with `toSRec`, while `fromSRec` takes you back to `Rec`. Record updates are fairly slow compared to native Haskell records and even `Rec`, but reading a field is as fast as anything.
 
+- Optional concise record construction syntax. This uses an orphan `IsLabel` instance for all function types, so will conflict with any other library that does the same. Thus it is entirely opt-in: to enable this syntax, you must explicitly `import Data.Vinyl.Syntax`. Once you do so, you can construct a record like so, `fieldRec (#x True, #y 'b')` and have the type inferred as `FieldRec '[ '("x", Bool), '("y", Char) ]`.
+
 - Changed the type of `=:=` again to work directly with `Label`s as this is the most convenient usage.
 
 # 0.8.0
