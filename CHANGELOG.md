@@ -1,7 +1,12 @@
 # 0.9.0
+
 - A new `SRec` type for constant time field access for records with densely packed `Storable` fields. Conversion from `Rec` is accomplished with `toSRec`, while `fromSRec` takes you back to `Rec`. Record updates are fairly slow compared to native Haskell records and even `Rec`, but reading a field is as fast as anything.
 
-- Optional concise record construction syntax. This uses an orphan `IsLabel` instance for all function types, so will conflict with any other library that does the same. Thus it is entirely opt-in: to enable this syntax, you must explicitly `import Data.Vinyl.Syntax`. Once you do so, you can construct a record like so, `fieldRec (#x True, #y 'b')` and have the type inferred as `FieldRec '[ '("x", Bool), '("y", Char) ]`.
+- Concise record construction syntax from tuples. Construct a `FieldRec` with `fieldRec (#x =: True, #y =: 'b')` and have the type inferred as `Rec ElField '[ '("x", Bool), '("y", Char) ]`. Or use `record` to build records of any functor. Thanks to @heptahedron on GitHub for prompting this feature, and @sboosali for thinking through various approaches.
+
+- Optional concise record field lens syntax. This uses an orphan `IsLabel` instance for all function types, so will conflict with any other library that does the same. Thus it is entirely opt-in: to enable this syntax, you must explicitly `import Data.Vinyl.Syntax`. This enables the use of labels as lenses. For example, `myRec & #name %~ map toUpper` to apply `map toUpper` to the `#name` field of the record value `myRec`. This technique is thanks to Tikhon Jelvis who shared it on the Haskell-Cafe mailing list.
+
+- Field lenses can now change the type of a record. Thanks to @heptahedron on GitHub for exploring this feature. Using the above-mentioned features, one might now write something like `myRec & #name %~ length` to produce a record whose `#name` field is the length of the`String` `#name` field of some record value, `myRec`.
 
 - Changed the type of `=:=` again to work directly with `Label`s as this is the most convenient usage.
 
