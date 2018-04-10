@@ -21,6 +21,10 @@
 -- whose lens API is fixed to 'ElField' as the functor. Other
 -- specializations are possible, and the work of those instances can
 -- always be passed along to the 'SRec2' functions.
+--
+-- Note that the lens field accessors for 'SRec' do not support
+-- changing the types of the fields as they do for 'Rec' and
+-- 'ARec'.
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE ConstraintKinds #-}
@@ -262,11 +266,11 @@ mallocAndCopy src n = do
 -- | Set a field.
 sput :: forall (f :: u -> *) (t :: u) (ts :: [u]).
         ( FieldOffset f ts t
-        , RecApplicative ts
+        , Storable (Rec f ts)
         , AllConstrained (FieldOffset f ts) ts)
      => f t -> SRec2 f f ts -> SRec2 f f ts
 sput !x (SRec2 src) = unsafePerformIO $ do
-  let !n = sizeOfRec @u @f @ts @ts
+  let !n = sizeOf (undefined :: Rec f ts) -- sizeOfRec @u @f @ts @ts
   dst <- mallocAndCopy src n
   SRec2 dst <$ pokeField dst x
 {-# INLINE [1] sput #-}
@@ -284,7 +288,7 @@ sput !x (SRec2 src) = unsafePerformIO $ do
 -- | A lens for a field of an 'SRec2'.
 slens :: ( Functor g
          , FieldOffset f ts t
-         , RecApplicative ts
+         , Storable (Rec f ts)
          , AllConstrained (FieldOffset f ts) ts)
       => (f t -> g (f t)) -> SRec2 f f ts -> g (SRec2 f f ts)
 slens f sr = fmap (flip sput sr) (f (sget sr))
@@ -303,29 +307,29 @@ slens f sr = fmap (flip sput sr) (f (sget sr))
 -- functor.
 instance ( i ~ RIndex t ts
          , FieldOffset ElField ts t
-         , RecApplicative ts
+         , Storable (Rec ElField ts)
          , AllConstrained (FieldOffset ElField ts) ts)
-  => RecElem (SRec2 ElField) t ts i where
+  => RecElem (SRec2 ElField) t t ts ts i where
   type RecElemFCtx (SRec2 ElField) f = f ~ ElField
-  rlens _ = slens
-  {-# INLINE rlens #-}
-  rget _ = sget
-  {-# INLINE rget #-}
-  rput = sput
-  {-# INLINE rput #-}
+  rlensC = slens
+  {-# INLINE rlensC #-}
+  rgetC = sget
+  {-# INLINE rgetC #-}
+  rputC = sput
+  {-# INLINE rputC #-}
 
 instance ( i ~ RIndex (t :: (Symbol,*)) (ts :: [(Symbol,*)])
          , FieldOffset ElField ts t
-         , RecApplicative ts
+         , Storable (Rec ElField ts)
          , AllConstrained (FieldOffset ElField ts) ts)
-  => RecElem SRec (t :: (Symbol,*)) (ts :: [(Symbol,*)]) i where
+  => RecElem SRec (t :: (Symbol,*)) t (ts :: [(Symbol,*)]) ts i where
   type RecElemFCtx SRec f = f ~ ElField
-  rlens _ f = fmap SRecNT . slens f . getSRecNT
-  {-# INLINE rlens #-}
-  rget _ = sget . getSRecNT
-  {-# INLINE rget #-}
-  rput x = SRecNT . sput x . getSRecNT
-  {-# INLINE rput #-}
+  rlensC f = fmap SRecNT . slens f . getSRecNT
+  {-# INLINE rlensC #-}
+  rgetC = sget . getSRecNT
+  {-# INLINE rgetC #-}
+  rputC x = SRecNT . sput x . getSRecNT
+  {-# INLINE rputC #-}
 
 -- | Compute the size in bytes needed to represent a 'Rec' without a
 -- 'Storable' instance.

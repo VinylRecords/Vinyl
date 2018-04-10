@@ -82,38 +82,62 @@ _ =: v = Field v
 
 -- | Get a named field from a record.
 rgetf
-  :: forall l f v record us. (HasField record l us v, RecElemFCtx record f)
+  :: forall l f v record us.
+     (HasField record l us us v v, RecElemFCtx record f)
   => Label l -> record f us -> f (l ::: v)
-rgetf _ = rget (Proxy :: Proxy (l ::: v))
+rgetf _ = rget @(l ::: v)
 
 -- | Get the value associated with a named field from a record.
 rvalf
-  :: (HasField record l us v, RecElemFCtx record ElField)
+  :: (HasField record l us us v v, RecElemFCtx record ElField)
   => Label l -> record ElField us -> v
 rvalf x = getField . rgetf x
 
--- | Set a named field. @rputf #foo 23@ sets the field named @#foo@ to
+-- | Set a named field. @rputf' #foo 23@ sets the field named @#foo@ to
 -- @23@.
+rputf' :: forall l v v' record us us'.
+          (HasField record l us us' v v', KnownSymbol l, RecElemFCtx record ElField)
+       => Label l -> v' -> record ElField us -> record ElField us'
+rputf' _ = rput' @(l:::v) . (Field :: v' -> ElField '(l,v'))
+
+-- | Set a named field without changing its type. @rputf #foo 23@ sets
+-- the field named @#foo@ to @23@.
 rputf :: forall l v record us.
-         (HasField record l us v, KnownSymbol l, RecElemFCtx record ElField)
-      => Label l -> v -> record ElField us -> record ElField us
-rputf _ = rput . (Field :: v -> ElField '(l,v))
+          (HasField record l us us v v, KnownSymbol l, RecElemFCtx record ElField)
+       => Label l -> v -> record ElField us -> record ElField us
+rputf _ = rput @(l:::v) . Field
 
 -- | A lens into a 'Rec' identified by a 'Label'.
-rlensf' :: forall l v record g f us.
-           (Functor g, HasField record l us v, RecElemFCtx record f)
+rlensfL' :: forall l v v' record g f us us'.
+             (Functor g, HasField record l us us' v v', RecElemFCtx record f)
+          => Label l
+          -> (f (l ::: v) -> g (f (l ::: v')))
+          -> record f us
+          -> g (record f us')
+rlensfL' _ f = rlens' @(l ::: v) f
+
+-- | A type-preserving lens into a 'Rec' identified by a 'Label'.
+rlensfL :: forall l v record g f us.
+           (Functor g, HasField record l us us v v, RecElemFCtx record f)
         => Label l
         -> (f (l ::: v) -> g (f (l ::: v)))
         -> record f us
         -> g (record f us)
-rlensf' _ f = rlens (Proxy :: Proxy (l ::: v)) f
+rlensfL _ f = rlens' @(l ::: v) f
 
 -- | A lens into the payload value of a 'Rec' field identified by a
 -- 'Label'.
+rlensf' :: forall l v v' record g us us'.
+           (Functor g, HasField record l us us' v v', RecElemFCtx record ElField)
+        => Label l -> (v -> g v') -> record ElField us -> g (record ElField us')
+rlensf' _ f = rlens' @(l ::: v) (rfield f)
+
+-- | A type-preserving lens into the payload value of a 'Rec' field
+-- identified by a 'Label'.
 rlensf :: forall l v record g us.
-          (Functor g, HasField record l us v, RecElemFCtx record ElField)
-       => Label l -> (v -> g v) -> record ElField us -> g (record ElField us)
-rlensf _ f = rlens (Proxy :: Proxy (l ::: v)) (rfield f)
+          (Functor g, HasField record l us us v v, RecElemFCtx record ElField)
+        => Label l -> (v -> g v) -> record ElField us -> g (record ElField us)
+rlensf _ f = rlens @(l ::: v) (rfield f)
 
 -- | Shorthand for a 'FieldRec' with a single field.
 (=:=) :: KnownSymbol s => Label (s :: Symbol) -> a -> FieldRec '[ '(s,a) ]
@@ -143,8 +167,8 @@ type family FieldType l fs where
 
 -- | Constraint that a label is associated with a particular type in a
 -- record.
-type HasField record l fs v =
-  (RecElem record (l ::: v) fs (RIndex (l ::: v) fs), FieldType l fs ~ v)
+type HasField record l fs fs' v v' =
+  (RecElem record (l ::: v) (l ::: v') fs fs' (RIndex (l ::: v) fs), FieldType l fs ~ v, FieldType l fs' ~ v')
 
 -- | Proxy for label type
 data Label (a :: Symbol) = Label

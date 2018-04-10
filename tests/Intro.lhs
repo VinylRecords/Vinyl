@@ -20,11 +20,10 @@ extensions first:
 > {-# LANGUAGE DataKinds, PolyKinds, TypeOperators, TypeFamilies #-}
 > {-# LANGUAGE FlexibleContexts, FlexibleInstances, NoMonomorphismRestriction #-}
 > {-# LANGUAGE GADTs, TypeSynonymInstances, TemplateHaskell, StandaloneDeriving #-}
+> {-# LANGUAGE TypeApplications #-}
 > import Data.Vinyl
 > import Data.Vinyl.Functor
-> import Control.Applicative
 > import Control.Lens hiding (Identity)
-> import Control.Lens.TH
 > import Data.Char
 > import Test.DocTest
 > import Data.Singletons.TH (genSingletons)
@@ -120,20 +119,21 @@ that specific field in the record accordingly.
 > jon' = wakeUp jon
 
 > -- |
-> -- >>> tucker' ^. rlens SSleeping
+> -- >>> :set -XTypeApplications -XDataKinds
+> -- >>> tucker' ^. rlens @Sleeping
 > -- sleeping: False
 > --
-> -- >>> tucker ^. rlens SSleeping
+> -- >>> tucker ^. rlens @Sleeping
 > -- sleeping: True
 > --
-> -- >>> jon' ^. rlens SSleeping
+> -- >>> jon' ^. rlens @Sleeping
 > -- sleeping: False
 
 We can also access the entire lens for a field using the rLens
 function; since lenses are composable, it’s super easy to do deep
 update on a record:
 
-> masterSleeping = rlens SMaster . unAttr . rlens SSleeping
+> masterSleeping = rlens @Master . unAttr . rlens @Sleeping
 > tucker'' = masterSleeping .~ (SSleeping =:: True) $ tucker'
 
 > -- | >>> tucker'' ^. masterSleeping
@@ -205,8 +205,8 @@ We'll give validation a (rather poor) shot.
 
 > validatePerson :: Rec Attr Person -> Maybe (Rec Attr Person)
 > validatePerson p = (\n a -> (SName =:: n) :& (SAge =:: a) :& RNil) <$> vName <*> vAge where
->   vName = validateName $ p ^. rlens SName . unAttr
->   vAge  = validateAge $ p ^. rlens SAge . unAttr
+>   vName = validateName $ p ^. rlens @'Name . unAttr
+>   vAge  = validateAge $ p ^. rlens @'Age . unAttr
 >
 >   validateName str | all isAlpha str = Just str
 >   validateName _ = Nothing
@@ -255,13 +255,14 @@ record:
 > badPersonResult  = vperson <<*>> badPerson
 
 > -- |
-> -- >>> isJust . getCompose $ goodPersonResult ^. rlens SName
+> -- >>> :set -XTypeApplications -XDataKinds
+> -- >>> isJust . getCompose $ goodPersonResult ^. rlens @Name
 > -- True
-> -- >>> isJust . getCompose $ goodPersonResult ^. rlens SAge
+> -- >>> isJust . getCompose $ goodPersonResult ^. rlens @Age
 > -- True
-> -- >>> isJust . getCompose $ badPersonResult ^. rlens SName
+> -- >>> isJust . getCompose $ badPersonResult ^. rlens @Name
 > -- False
-> -- >>> isJust . getCompose $ badPersonResult ^. rlens SAge
+> -- >>> isJust . getCompose $ badPersonResult ^. rlens @Age
 > -- True
 
 
