@@ -1,16 +1,12 @@
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE CPP, DataKinds, FlexibleContexts, GADTs, ScopedTypeVariables,
-             NoMonomorphismRestriction, TypeOperators #-}
-#if __GLASGOW_HASKELL__ > 800
-{-# LANGUAGE OverloadedLabels #-}
-#endif
-
+{-# LANGUAGE DataKinds, FlexibleContexts, GADTs,
+             NoMonomorphismRestriction, OverloadedLabels,
+             ScopedTypeVariables, TypeApplications, TypeOperators #-}
 {-# OPTIONS_GHC -Wall -Wno-type-defaults #-}
 import Data.Vinyl
 import Data.Vinyl.Functor (Lift(..), Const(..), Compose(..), (:.))
 import Lens.Micro
 import Test.Hspec
-import Data.Vinyl.Syntax
+import Data.Vinyl.Syntax ()
 
 import qualified CoRecSpec as C
 
@@ -36,7 +32,6 @@ main = hspec $ do
   C.spec
   describe "Rec is like an Applicative" $ do
     it "Can apply parsing functions" $ d3 `shouldBe` Field 5 :& Field "Hi" :& RNil
-#if __GLASGOW_HASKELL__ > 800
   describe "Fields may be accessed by overloaded labels" $ do
     it "Can get field X" $ rvalf #x d3 `shouldBe` 5
     it "Can get field Y" $ rvalf #y d3 `shouldBe` "Hi"
@@ -45,22 +40,24 @@ main = hspec $ do
     it "Can set field X" $ rvalf #x (rputf #x 7 (toARec d3)) `shouldBe` 7
   describe "Converting between Rec and ARec" $ do
     it "Can go back and forth" $
-      rvalf #y (toARec (rlensf #y %~ (show . length) $
-                            fromARec (rputf #x 7 (toARec d3))))
+      rvalf #y (toARec (#y %~ (show . length) $
+                          fromARec (rputf #x 7 (toARec d3))))
       `shouldBe` "2"
   describe "Converting between Rec and SRec" $ do
     it "Can go back and forth" $
       let d4 = #x =:= 5 <+> #y =:= 4 :: FieldRec '[ '("x",Int), '("y",Int)]
-          isqrt = floor . (sqrt :: Double -> Double) . fromIntegral
-      in rvalf #y (toSRec (rlensf #y %~ isqrt $
+          isqrt = floor . (sqrt :: Double -> Double) . fromIntegral :: Int -> Int
+      in rvalf #y (toSRec (#y %~ isqrt $
            fromSRec (rputf #x 7 (toSRec d4))))
       `shouldBe` 2
 
+  describe "Produces field lenses from overloaded labels" $ do
+    it "Can invert a boolean field" $ do
+      (fieldRec (#x =: True, #y =: 'b') & #x %~ not)
+      `shouldBe` fieldRec (#x =: False, #y =: 'b')
   describe "Supports tuple construction" $ do
-    it "Can build ElField records concisely" $
+    it "Can build ElField records from tuples" $
           fieldRec (#x =: 5, #y =: "Hi") `shouldBe` d3
-    -- it "Can build ElField records with function application syntax" $
-    --   fieldRec (#x 5, #y "Hi") `shouldBe` d3
     it "Can build Recs of Maybe values" $
       record @Maybe (Just True, Just 'a') `shouldBe` Just True :& Just 'a' :& RNil
     it "Can build Recs of Const values" $
@@ -69,7 +66,6 @@ main = hspec $ do
       `shouldBe` Const "howdy" :& Const "folks" :& RNil
   describe "Can change the types of individual fields" $ do
     it "Can set a field with a different type" $
-      rputf' #x 2.1 d3 `shouldBe` fieldRec (#x 2.1, #y "Hi")
+      (#x .~ 2.1) d3 `shouldBe` fieldRec (#x =: 2.1, #y =: "Hi")
     it "Can change a field's type" $
-      (d3 & rlensf' #y %~ length) `shouldBe` fieldRec (#x =: 5, #y =: 2)
-#endif
+      (d3 & #y %~ length) `shouldBe` fieldRec (#x =: 5, #y =: 2)

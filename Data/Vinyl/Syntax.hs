@@ -1,71 +1,44 @@
-{-# LANGUAGE AllowAmbiguousTypes, CPP, DataKinds, FlexibleContexts,
-             FlexibleInstances, MultiParamTypeClasses,
-             PatternSynonyms, PolyKinds, ScopedTypeVariables,
-             TypeApplications, TypeFamilies, TypeFamilyDependencies
-             #-}
+{-# LANGUAGE CPP, FlexibleInstances, InstanceSigs,
+             MultiParamTypeClasses, ScopedTypeVariables,
+             TypeApplications, TypeFamilies, TypeOperators,
+             UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
--- | Concise Vinyl record construction syntax. This module exports an
--- orphan instance to make working with labels simpler. It will
--- conflict with other libraries that provide functional-looking
--- syntax for labels (i.e. placing a label in function application
--- position, as in @#age 23@).
+-- | Concise vinyl record field lens syntax. This module exports an
+-- orphan instance to make working with labels a bit more powerful. It
+-- will conflict with other libraries that provide special syntax for
+-- labels (i.e. placing a label in function application position, as
+-- in @#age 23@, or using a label as a lens).
 --
 -- Example:
--- @fieldRec (#x True, #y 'b') :: FieldRec '[ '("x", Bool), '("y", Char) ]@
+-- @fieldRec (#x =: True, #y =: 'b') :: FieldRec '[ '("x", Bool), '("y", Char) ]@
+-- @fieldRec (#x =: True, #y =: 'b') & #x %~ not@
 module Data.Vinyl.Syntax where
-import Data.Vinyl.Core (Rec(..))
-import Data.Vinyl.Derived (ElField(..))
+import Data.Vinyl.Derived (HasField, ElField(..), (:::), rfield)
+import Data.Vinyl.Lens (RecElemFCtx, rlens')
 import GHC.OverloadedLabels (IsLabel(..))
-import GHC.TypeLits (KnownSymbol)
+-- import GHC.TypeLits (KnownSymbol)
 
-instance forall s a b. (KnownSymbol s, b ~ ElField '(s,a))
-  => IsLabel s (a -> b) where
+-- | Concise record construction syntax. Example: @record (#name "Joe", #age 23)@.
+-- instance forall s a b. (KnownSymbol s, b ~ ElField '(s,a))
+--   => IsLabel s (a -> b) where
+-- #if __GLASGOW_HASKELL__ < 802
+--   fromLabel _ = Field @s @a
+-- #else
+--   fromLabel = Field @s @a
+-- #endif
+
+-- | Concise 'ElField' lenses. Example @myRec & #name %~ map
+-- toUpper@.
+--
+-- Credit to Tikhon Jelvis who shared this technique on the
+-- Haskell-Cafe mailing list on December 23, 2017.
+instance forall s t t' ts ts' f record a' b'.
+  (HasField record s ts ts' t t', Functor f, RecElemFCtx record ElField,
+   a' ~ (t -> f t'), b' ~ (record ElField ts -> f (record ElField ts')))
+  => IsLabel s (a' -> b') where
 #if __GLASGOW_HASKELL__ < 802
-  fromLabel _ = Field @s @a
+  fromLabel _ = rlens' @(s ::: t) . rfield
 #else
-  fromLabel = Field @s @a
+  fromLabel :: (t -> f t') -> (record ElField ts -> f (record ElField ts'))
+  fromLabel = rlens' @(s ::: t) . rfield
 #endif
-
-type family TupleToRecArgs f t = (r :: (u -> *, [u])) | r -> t where
-  TupleToRecArgs f (f a, f b, f c, f d, f e, f z, f g, f h) =
-    '(f, [a,b,c,d,e,z,g,h])
-  TupleToRecArgs f (f a, f b, f c, f d, f e, f z, f g) = '(f, [a,b,c,d,e,z,g])
-  TupleToRecArgs f (f a, f b, f c, f d, f e, f z) = '(f, [a,b,c,d,e,z])
-  TupleToRecArgs f (f a, f b, f c, f d, f e) = '(f, [a,b,c,d,e])
-  TupleToRecArgs f (f a, f b, f c, f d) = '(f, [a,b,c,d])
-  TupleToRecArgs f (f a, f b, f c) = '(f, [a,b,c])
-  TupleToRecArgs f (f a, f b) = '(f, [a,b])
-
-type family UncurriedRec (t :: (u -> *, [u])) = r | r -> t where
-  UncurriedRec '(f, ts) = Rec f ts
-
--- | Build a 'Rec' from a tuple. An example would be building a value
--- of type @Rec f '[a,b]@ from a tuple of values with type @'(f a, f
--- b)@.
-class TupleRec f t where
-  record :: t -> UncurriedRec (TupleToRecArgs f t)
-
-instance TupleRec f (f a, f b) where
-  record (a,b) = a :& b :& RNil
-
-instance TupleRec f (f a, f b, f c) where
-  record (a,b,c) = a :& b :& c :& RNil
-
-instance TupleRec f (f a, f b, f c, f d) where
-  record (a,b,c,d) = a :& b :& c :& d :& RNil
-
-instance TupleRec f (f a, f b, f c, f d, f e) where
-  record (a,b,c,d,e) = a :& b :& c :& d :& e :& RNil
-
-instance TupleRec f (f a, f b, f c, f d, f e, f z) where
-  record (a,b,c,d,e,z) = a :& b :& c :& d :& e :& z :& RNil
-
-instance TupleRec f (f a, f b, f c, f d, f e, f z, f g) where
-  record (a,b,c,d,e,z,g) = a :& b :& c :& d :& e :& z :& g :& RNil
-
-instance TupleRec f (f a, f b, f c, f d, f e, f z, f g, f h) where
-  record (a,b,c,d,e,z,g,h) = a :& b :& c :& d :& e :& z :& g :& h :& RNil
-
--- | Build a 'FieldRec' from a tuple of 'ElField' values.
-fieldRec :: TupleRec ElField t => t -> UncurriedRec (TupleToRecArgs ElField t)
-fieldRec = record @ElField
