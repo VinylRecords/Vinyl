@@ -10,6 +10,7 @@
 
 >>> :set -XDataKinds
 >>> :set -XPolyKinds
+>>> :set -XTypeApplications
 >>> :set -XTypeOperators
 >>> :set -XTypeFamilies
 >>> :set -XFlexibleContexts
@@ -120,20 +121,20 @@ that specific field in the record accordingly.
 >>> let tucker' = wakeUp tucker
 >>> let jon' = wakeUp jon
 
->>> tucker' ^. rlens SSleeping
+>>> tucker' ^. rlens @Sleeping
 sleeping: False
 
->>> tucker ^. rlens SSleeping
+>>> tucker ^. rlens @Sleeping
 sleeping: True
 
->>> jon' ^. rlens SSleeping
+>>> jon' ^. rlens @Sleeping
 sleeping: False
 
 We can also access the entire lens for a field using the rLens
 function; since lenses are composable, it’s super easy to do deep
 update on a record:
 
->>> let masterSleeping = rlens SMaster . unAttr . rlens SSleeping
+>>> let masterSleeping = rlens @Master . unAttr . rlens @Sleeping
 >>> let tucker'' = masterSleeping .~ (SSleeping =:: True) $ tucker'
 
 >>> tucker'' ^. masterSleeping
@@ -210,8 +211,8 @@ let
     validatePerson :: Rec Attr Person -> Maybe (Rec Attr Person)
     validatePerson p = (\n a -> (SName =:: n) :& (SAge =:: a) :& RNil) <$> vName <*> vAge
       where
-      vName = validateName $ p ^. rlens SName . unAttr
-      vAge  = validateAge $ p ^. rlens SAge . unAttr
+      vName = validateName $ p ^. rlens @Name . unAttr
+      vAge  = validateAge $ p ^. rlens @Age . unAttr
       validateName str | all isAlpha str = Just str
       validateName _ = Nothing
       validateAge i | i >= 0 = Just i
@@ -258,16 +259,16 @@ record:
 >>> let goodPersonResult = vperson <<*>> goodPerson
 >>> let badPersonResult  = vperson <<*>> badPerson
 
->>> isJust . getCompose $ goodPersonResult ^. rlens SName
+>>> isJust . getCompose $ goodPersonResult ^. rlens @Name
 True
 
->>> isJust . getCompose $ goodPersonResult ^. rlens SAge
+>>> isJust . getCompose $ goodPersonResult ^. rlens @Age
 True
 
->>> isJust . getCompose $ badPersonResult ^. rlens SName
+>>> isJust . getCompose $ badPersonResult ^. rlens @Name
 False
 
->>> isJust . getCompose $ badPersonResult ^. rlens SAge
+>>> isJust . getCompose $ badPersonResult ^. rlens @Age
 True
 
 So now we have a partial record, and we can still do stuff with its contents.

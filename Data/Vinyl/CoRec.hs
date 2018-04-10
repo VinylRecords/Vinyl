@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE BangPatterns, CPP, ConstraintKinds, DataKinds, EmptyCase,
              FlexibleContexts, FlexibleInstances, GADTs,
              KindSignatures, MultiParamTypeClasses, PolyKinds,
@@ -24,11 +25,11 @@ import Data.Kind (Constraint)
 
 -- | Generalize algebraic sum types.
 data CoRec :: (k -> *) -> [k] -> * where
-  CoRec :: RElem a ts (RIndex a ts) => !(f a) -> CoRec f ts
+  CoRec :: RElem a a ts ts (RIndex a ts) => !(f a) -> CoRec f ts
 
 -- | Apply a function to a 'CoRec' value. The function must accept
 -- /any/ variant.
-foldCoRec :: (forall a. RElem a ts (RIndex a ts) => f a -> b) -> CoRec f ts -> b
+foldCoRec :: (forall a. RElem a a ts ts (RIndex a ts) => f a -> b) -> CoRec f ts -> b
 foldCoRec f (CoRec x) = f x
 
 -- | A Field of a 'Rec' 'Identity' is a 'CoRec' 'Identity'.
@@ -43,7 +44,7 @@ instance forall ts. (AllConstrained Show ts, RecApplicative ts)
   show (CoRec (Identity x)) = "(Col "++show' x++")"
     where shower :: Rec (Op String) ts
           shower = rpureConstrained (Proxy::Proxy Show) (Op show)
-          show' = runOp (rget Proxy shower)
+          show' = runOp (rget shower)
 
 instance forall ts. (RecAll Maybe ts Eq, RecApplicative ts)
   => Eq (CoRec Identity ts) where
@@ -57,8 +58,8 @@ instance forall ts. (RecAll Maybe ts Eq, RecApplicative ts)
 -- | We can inject a a 'CoRec' into a 'Rec' where every field of the
 -- 'Rec' is 'Nothing' except for the one whose type corresponds to the
 -- type of the given 'CoRec' variant.
-coRecToRec :: RecApplicative ts => CoRec f ts -> Rec (Maybe :. f) ts
-coRecToRec (CoRec x) = rput (Compose $ Just x) (rpure (Compose Nothing))
+coRecToRec :: forall f ts. RecApplicative ts => CoRec f ts -> Rec (Maybe :. f) ts
+coRecToRec (CoRec x) = rput (Compose (Just x)) (rpure (Compose Nothing))
 
 -- | Shorthand for applying 'coRecToRec' with common functors.
 coRecToRec' :: RecApplicative ts => CoRec Identity ts -> Rec Maybe ts
@@ -126,8 +127,7 @@ onCoRec :: forall (cs :: [* -> Constraint]) f ts b.
         -> (forall a. AllSatisfied cs a => a -> b)
         -> CoRec f ts -> f b
 onCoRec p f (CoRec x) = fmap meth x
-  where meth = runOp $
-               rget Proxy (reifyDicts p (Op f) :: Rec (Op b) ts)
+  where meth = runOp $ rget (reifyDicts p (Op f) :: Rec (Op b) ts)
 
 -- | Apply a type class method on a 'Field'. The first argument is a
 -- 'Proxy' value for a /list/ of 'Constraint' constructors. For
@@ -153,8 +153,8 @@ reifyDicts _ f = go (rpure Nothing)
 
 -- | Given a proxy of type t and a 'CoRec Identity' that might be a t, try to
 -- convert the CoRec to a t.
-asA             :: (t ∈ ts, RecApplicative ts) => proxy t -> CoRec Identity ts -> Maybe t
-asA p c@(CoRec _) = rget p $ coRecToRec' c
+asA             :: (t ∈ ts, RecApplicative ts) => CoRec Identity ts -> Maybe t
+asA c@(CoRec _) = rget $ coRecToRec' c
 
 -- | Pattern match on a CoRec by specifying handlers for each case. Note that
 -- the order of the Handlers has to match the type level list (t:ts).
@@ -168,8 +168,11 @@ asA p c@(CoRec _) = rget p $ coRecToRec' c
 --    :& RNil
 -- :}
 -- "my Bool is not: True thus it is False"
-match :: CoRec Identity ts -> Handlers ts b -> b
-match (CoRec (Identity t)) hs = case rget Proxy hs of H f -> f t
+match :: forall ts b. CoRec Identity ts -> Handlers ts b -> b
+match (CoRec (Identity t)) hs = aux t
+  where aux :: forall a. RElem a a ts ts (RIndex a ts) => a -> b
+        aux x = case rget @a hs of
+                  H f -> f x
 
 -- | Helper for handling a variant of a 'CoRec': either the function
 -- is applied to the variant or the type of the 'CoRec' is refined to
@@ -202,7 +205,7 @@ match1 h = fmap (fromJust . firstField . rmap (Compose . fmap Identity))
          . coRecToRec'
 
 matchNil :: CoRec f '[] -> r
-matchNil (CoRec x) = case x of
+matchNil (CoRec x) = case x of _ -> error "matchNil: impossible"
 
 -- | Newtype around functions for a to b
 newtype Handler b a = H (a -> b)

@@ -1,11 +1,11 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE CPP, DataKinds, FlexibleContexts, GADTs, ScopedTypeVariables,
-             TypeOperators #-}
+             NoMonomorphismRestriction, TypeOperators #-}
 #if __GLASGOW_HASKELL__ > 800
 {-# LANGUAGE OverloadedLabels #-}
 #endif
 
-{-# OPTIONS_GHC -Wall #-}
+{-# OPTIONS_GHC -Wall -Wno-type-defaults #-}
 import Data.Vinyl
 import Data.Vinyl.Functor (Lift(..), Const(..), Compose(..), (:.))
 import Lens.Micro
@@ -53,16 +53,23 @@ main = hspec $ do
       let d4 = #x =:= 5 <+> #y =:= 4 :: FieldRec '[ '("x",Int), '("y",Int)]
           isqrt = floor . (sqrt :: Double -> Double) . fromIntegral
       in rvalf #y (toSRec (rlensf #y %~ isqrt $
-           fromSRec (rputf #x (7::Int) (toSRec d4))))
+           fromSRec (rputf #x 7 (toSRec d4))))
       `shouldBe` 2
 
   describe "Supports tuple construction" $ do
     it "Can build ElField records concisely" $
-      fieldRec (#x 5, #y "Hi") `shouldBe` d3
+          fieldRec (#x =: 5, #y =: "Hi") `shouldBe` d3
+    -- it "Can build ElField records with function application syntax" $
+    --   fieldRec (#x 5, #y "Hi") `shouldBe` d3
     it "Can build Recs of Maybe values" $
       record @Maybe (Just True, Just 'a') `shouldBe` Just True :& Just 'a' :& RNil
     it "Can build Recs of Const values" $
       record @(Const String) ( Const "howdy" :: Const String Int
                              , Const "folks" :: Const String Double)
       `shouldBe` Const "howdy" :& Const "folks" :& RNil
+  describe "Can change the types of individual fields" $ do
+    it "Can set a field with a different type" $
+      rputf' #x 2.1 d3 `shouldBe` fieldRec (#x 2.1, #y "Hi")
+    it "Can change a field's type" $
+      (d3 & rlensf' #y %~ length) `shouldBe` fieldRec (#x =: 5, #y =: 2)
 #endif

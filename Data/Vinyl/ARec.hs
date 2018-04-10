@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -59,22 +60,39 @@ aget (ARec arr) =
 {-# INLINE aget #-}
 
 -- | Set a field in an 'ARec'.
-aput :: forall t f ts. (NatToInt (RIndex t ts))
-      => f t -> ARec f ts -> ARec f ts
+aput :: forall t t' f ts ts'. (NatToInt (RIndex t ts))
+      => f t' -> ARec f ts -> ARec f ts'
 aput x (ARec arr) = ARec (arr Array.// [(i, unsafeCoerce x)])
   where i = natToInt @(RIndex t ts)
 {-# INLINE aput #-}
 
 -- | Define a lens for a field of an 'ARec'.
-alens :: (Functor g, NatToInt (RIndex t ts))
-      => (f t -> g (f t)) -> ARec f ts -> g (ARec f ts)
-alens f ar = fmap (flip aput ar) (f (aget ar))
+alens :: forall f g t t' ts ts'. (Functor g, NatToInt (RIndex t ts))
+      => (f t -> g (f t')) -> ARec f ts -> g (ARec f ts')
+alens f ar = fmap (flip (aput @t) ar) (f (aget ar))
 {-# INLINE alens #-}
 
-instance (i ~ RIndex t ts, NatToInt (RIndex t ts)) => RecElem ARec t ts i where
-  rlens _ = alens
-  rget _ = aget
-  rput = aput
+-- instance (i ~ RIndex t ts, i ~ RIndex t' ts', NatToInt (RIndex t ts)) => RecElem ARec t t' ts ts' i where
+--   rlens = alens
+--   rget = aget
+--   rput = aput
+
+instance RecElem ARec t t' (t ': ts) (t' ': ts) 'Z where
+  rlensC = alens
+  {-# INLINE rlensC #-}
+  rgetC = aget
+  {-# INLINE rgetC #-}
+  rputC = aput @t
+  {-# INLINE rputC #-}
+
+instance (RIndex t (s ': ts) ~ 'S i, NatToInt i,  RecElem ARec t t' ts ts' i)
+  => RecElem ARec t t' (s ': ts) (s ': ts') ('S i) where
+  rlensC = alens
+  {-# INLINE rlensC #-}
+  rgetC = aget
+  {-# INLINE rgetC #-}
+  rputC = aput @t
+  {-# INLINE rputC #-}
 
 -- | Get a subset of a record's fields.
 arecGetSubset :: forall rs ss f.
