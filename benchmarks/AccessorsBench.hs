@@ -7,6 +7,7 @@ import           Control.Monad (unless)
 import           Criterion.Main
 import Data.Monoid (Endo(..))
 import           Data.Vinyl
+import           Data.Vinyl.Syntax ()
 import Lens.Micro ((%~), (&))
 import           System.Exit (exitFailure)
 
@@ -93,17 +94,17 @@ type SubFields = '[ '("a0", Int), '("a8", Int), '("a15", Int)]
 updateSRec :: SRec ElField Fields -> SRec ElField Fields
 updateSRec = rsubset %~ appEndo aux
   where aux :: Endo (SRec ElField SubFields)
-        aux = Endo (\r -> r & rlensf #a15 %~ (+ 2) & rlensf #a8 %~ (+ 3) & rlensf #a0 %~ (+ 4))
+        aux = Endo (\r -> r & #a15 %~ (+ 2) & #a8 %~ (+ 3) & #a0 %~ (+ 4))
 
 updateARec :: ARec ElField Fields -> ARec ElField Fields
 updateARec = rsubset %~ appEndo aux
   where aux :: Endo (ARec ElField SubFields)
-        aux = Endo (\r -> r & rlensf #a15 %~ (+ 2) & rlensf #a8 %~ (+ 3) & rlensf #a0 %~ (+ 4))
+        aux = Endo (\r -> r & #a15 %~ (+ 2) & #a8 %~ (+ 3) & #a0 %~ (+ 4))
 
 updateRec :: Rec ElField Fields -> Rec ElField Fields
 updateRec = rsubset %~ appEndo aux
   where aux :: Endo (Rec ElField SubFields)
-        aux = Endo (\r -> r & rlensf #a15 %~ (+ 2) & rlensf #a8 %~ (+ 3) & rlensf #a0 %~ (+ 4))
+        aux = Endo (\r -> r & #a15 %~ (+ 2) & #a8 %~ (+ 3) & #a0 %~ (+ 4))
 
 data SubRec = SubRec { suba0 :: Int, suba8 :: Int, suba15 :: Int }
 
