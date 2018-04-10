@@ -429,15 +429,15 @@ instance (is ~ RImage rs ss,
           RFoldMap rs, RMap rs, RApply rs)
   => RecSubset (SRec2 ElField) rs ss is where
   type RecSubsetFCtx (SRec2 ElField) f = f ~ ElField
-  rsubset :: forall g. Functor g
-          => (SRec2 ElField ElField rs -> g (SRec2 ElField ElField rs))
-          -> SRec2 ElField ElField ss
-          -> g (SRec2 ElField ElField ss)
-  rsubset f big@(SRec2 _) = fmap (srecSetSubset big) (f smallRec)
+  rsubsetC :: forall g. Functor g
+           => (SRec2 ElField ElField rs -> g (SRec2 ElField ElField rs))
+           -> SRec2 ElField ElField ss
+           -> g (SRec2 ElField ElField ss)
+  rsubsetC f big@(SRec2 _) = fmap (srecSetSubset big) (f smallRec)
     where smallRec :: SRec2 ElField ElField rs
           smallRec = srecGetSubset big
           {-# INLINE smallRec #-}
-  {-# INLINE rsubset #-}
+  {-# INLINE rsubsetC #-}
 
 instance (is ~ RImage rs ss,
           RecSubset Rec rs ss is,
@@ -448,5 +448,5 @@ instance (is ~ RImage rs ss,
           RFoldMap rs, RMap rs, RApply rs)
   => RecSubset SRec rs ss is where
   type RecSubsetFCtx SRec f = f ~ ElField
-  rsubset f (SRecNT s) = SRecNT <$> rsubset (fmap getSRecNT . f . SRecNT) s
-  {-# INLINE rsubset #-}
+  rsubsetC f (SRecNT s) = SRecNT <$> rsubsetC (fmap getSRecNT . f . SRecNT) s
+  {-# INLINE rsubsetC #-}

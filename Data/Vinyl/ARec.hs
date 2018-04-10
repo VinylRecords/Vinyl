@@ -115,8 +115,8 @@ arecSetSubset (ARec arrBig) (ARec arrSmall) = ARec (arrBig Array.// updates)
 
 instance (is ~ RImage rs ss, IndexWitnesses is, NatToInt (RLength rs))
          => RecSubset ARec rs ss is where
-  rsubset f big = fmap (arecSetSubset big) (f (arecGetSubset big))
-  {-# INLINE rsubset #-}
+  rsubsetC f big = fmap (arecSetSubset big) (f (arecGetSubset big))
+  {-# INLINE rsubsetC #-}
 
 instance (AllConstrained (IndexableField rs) rs,
           RecApplicative rs,

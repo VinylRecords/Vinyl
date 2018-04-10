@@ -17,6 +17,7 @@ module Data.Vinyl.Lens
   , rget, rput, rput', rlens, rlens'
   , RElem
   , RecSubset(..)
+  , rsubset, rcast, rreplace
   , RSubset
   , REquivalent
   , type (∈)
@@ -109,7 +110,7 @@ rget :: forall r rs f record.
 rget = rgetC
 
 -- | The type-changing field setter 'rputC' with the type arguments
--- re-ordered for more convenient usage with @TypeApplicatiosn@.
+-- re-ordered for more convenient usage with @TypeApplications@.
 rput' :: forall r r' rs rs' record f. (RecElem record r r' rs rs' (RIndex r rs), RecElemFCtx record f)
       => f r' -> record f rs -> record f rs'
 rput' = rputC @_ @r @r'
@@ -147,7 +148,7 @@ class is ~ RImage rs ss => RecSubset record (rs :: [k]) (ss :: [k]) is where
   -- | This is a lens into a slice of the larger record. Morally, we have:
   --
   -- > rsubset :: Lens' (Rec f ss) (Rec f rs)
-  rsubset
+  rsubsetC
     :: (Functor g, RecSubsetFCtx record f)
     => (record f rs -> g (record f rs))
     -> record f ss
@@ -155,33 +156,58 @@ class is ~ RImage rs ss => RecSubset record (rs :: [k]) (ss :: [k]) is where
 
   -- | The getter of the 'rsubset' lens is 'rcast', which takes a larger record
   -- to a smaller one by forgetting fields.
-  rcast
+  rcastC
     :: RecSubsetFCtx record f
     => record f ss
     -> record f rs
-  rcast = getConst . rsubset Const
-  {-# INLINE rcast #-}
+  rcastC = getConst . rsubsetC Const
+  {-# INLINE rcastC #-}
 
   -- | The setter of the 'rsubset' lens is 'rreplace', which allows a slice of
   -- a record to be replaced with different values.
-  rreplace
+  rreplaceC
     :: RecSubsetFCtx record f
     => record f rs
     -> record f ss
     -> record f ss
-  rreplace rs = getIdentity . rsubset (\_ -> Identity rs)
-  {-# INLINE rreplace #-}
+  rreplaceC rs = getIdentity . rsubsetC (\_ -> Identity rs)
+  {-# INLINE rreplaceC #-}
+
+-- | A lens into a slice of the larger record. This is 'rsubsetC' with
+-- the type arguments reordered for more convenient usage with
+-- @TypeApplications@.
+rsubset :: forall rs ss f g record is.
+           (RecSubset record (rs :: [k]) (ss :: [k]) is,
+           Functor g, RecSubsetFCtx record f)
+        => (record f rs -> g (record f rs)) -> record f ss -> g (record f ss)
+rsubset = rsubsetC
+
+-- | Takes a larger record to a smaller one by forgetting fields. This
+-- is 'rcastC' with the type arguments reordered for more convenient
+-- usage with @TypeApplications@.
+rcast :: forall rs ss f record is.
+        (RecSubset record rs ss is, RecSubsetFCtx record f)
+      => record f ss -> record f rs
+rcast = rcastC
+
+-- | Allows a slice of a record to be replaced with different
+-- values. This is 'rreplaceC' with the type arguments reordered for
+-- more convenient usage with @TypeApplications@.
+rreplace :: forall rs ss f record is.
+            (RecSubset record rs ss is, RecSubsetFCtx record f)
+         => record f rs -> record f ss -> record f ss
+rreplace = rreplaceC
 
 type RSubset = RecSubset Rec
 
 instance RecSubset Rec '[] ss '[] where
-  rsubset = lens (const RNil) const
+  rsubsetC = lens (const RNil) const
 
 instance (RElem r r ss ss i , RSubset rs ss is) => RecSubset Rec (r ': rs) ss (i ': is) where
-  rsubset = lens (\ss -> rget ss :& rcast ss) set
+  rsubsetC = lens (\ss -> rget ss :& rcastC ss) set
     where
       set :: Rec f ss -> Rec f (r ': rs) -> Rec f ss
-      set ss (r :& rs) = rput r $ rreplace rs ss
+      set ss (r :& rs) = rput r $ rreplaceC rs ss
 
 -- | Two record types are equivalent when they are subtypes of each other.
 type REquivalent rs ss is js = (RSubset rs ss is, RSubset ss rs js)
