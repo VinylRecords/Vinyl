@@ -72,7 +72,7 @@ class i ~ RIndex r rs => RecElem record (r :: k) (r' :: k)
     -> record f rs'
 
 -- | 'RecElem' for classic vinyl 'Rec' types.
-type RElem = RecElem Rec
+type RElem x rs = RecElem Rec x x rs rs
 
 -- This is an internal convenience stolen from the @lens@ library.
 lens
@@ -93,7 +93,7 @@ instance RecElem Rec r r' (r ': rs) (r' ': rs) 'Z where
   rputC y = getIdentity . rlensC @_ @r (\_ -> Identity y)
   {-# INLINE rputC #-}
 
-instance (RIndex r (s ': rs) ~ 'S i, RElem r r' rs rs' i)
+instance (RIndex r (s ': rs) ~ 'S i, RecElem Rec r r' rs rs' i)
   => RecElem Rec r r' (s ': rs) (s ': rs') ('S i) where
   rlensC f (x :& xs) = fmap (x :&) (rlensC f xs)
   {-# INLINE rlensC #-}
@@ -203,7 +203,7 @@ type RSubset = RecSubset Rec
 instance RecSubset Rec '[] ss '[] where
   rsubsetC = lens (const RNil) const
 
-instance (RElem r r ss ss i , RSubset rs ss is) => RecSubset Rec (r ': rs) ss (i ': is) where
+instance (RElem r ss i , RSubset rs ss is) => RecSubset Rec (r ': rs) ss (i ': is) where
   rsubsetC = lens (\ss -> rget ss :& rcastC ss) set
     where
       set :: Rec f ss -> Rec f (r ': rs) -> Rec f ss
@@ -213,7 +213,7 @@ instance (RElem r r ss ss i , RSubset rs ss is) => RecSubset Rec (r ': rs) ss (i
 type REquivalent rs ss is js = (RSubset rs ss is, RSubset ss rs js)
 
 -- | A shorthand for 'RElem' which supplies its index.
-type r ∈ rs = RElem r r rs rs (RIndex r rs)
+type r ∈ rs = RElem r rs (RIndex r rs)
 
 -- | A shorthand for 'RSubset' which supplies its image.
 type rs ⊆ ss = RSubset rs ss (RImage rs ss)
