@@ -25,11 +25,11 @@ import Data.Kind (Constraint)
 
 -- | Generalize algebraic sum types.
 data CoRec :: (k -> *) -> [k] -> * where
-  CoRec :: RElem a a ts ts (RIndex a ts) => !(f a) -> CoRec f ts
+  CoRec :: RElem a ts (RIndex a ts) => !(f a) -> CoRec f ts
 
 -- | Apply a function to a 'CoRec' value. The function must accept
 -- /any/ variant.
-foldCoRec :: (forall a. RElem a a ts ts (RIndex a ts) => f a -> b) -> CoRec f ts -> b
+foldCoRec :: (forall a. RElem a ts (RIndex a ts) => f a -> b) -> CoRec f ts -> b
 foldCoRec f (CoRec x) = f x
 
 -- | A Field of a 'Rec' 'Identity' is a 'CoRec' 'Identity'.
@@ -170,7 +170,7 @@ asA c@(CoRec _) = rget $ coRecToRec' c
 -- "my Bool is not: True thus it is False"
 match :: forall ts b. CoRec Identity ts -> Handlers ts b -> b
 match (CoRec (Identity t)) hs = aux t
-  where aux :: forall a. RElem a a ts ts (RIndex a ts) => a -> b
+  where aux :: forall a. RElem a ts (RIndex a ts) => a -> b
         aux x = case rget @a hs of
                   H f -> f x
 
