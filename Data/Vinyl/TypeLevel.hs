@@ -82,7 +82,7 @@ type family (as :: [k]) ++ (bs :: [k]) :: [k] where
 
 -- | Constraint that all types in a type-level list satisfy a
 -- constraint.
-type family AllConstrained c ts :: Constraint where
+type family AllConstrained (c :: u -> Constraint) (ts :: [u]) :: Constraint where
   AllConstrained c '[] = ()
   AllConstrained c (t ': ts) = (c t, AllConstrained c ts)
 

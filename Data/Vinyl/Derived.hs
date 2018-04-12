@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds  #-}
@@ -16,6 +17,7 @@
 -- | Commonly used 'Rec' instantiations.
 module Data.Vinyl.Derived where
 
+import Data.Semigroup
 import Data.Proxy
 import Data.Vinyl.ARec
 import Data.Vinyl.Core
@@ -26,12 +28,69 @@ import Foreign.Ptr (castPtr)
 import Foreign.Storable
 import GHC.OverloadedLabels
 import GHC.TypeLits
+import GHC.Types (Type)
 
 -- | Alias for Field spec
 type a ::: b = '(a, b)
 
-data ElField (field :: (Symbol, *)) where
+-- | A value with a phantom 'Symbol' label. It is not a
+-- Haskell 'Functor', but it is used in many of the same places a
+-- 'Functor' is used in vinyl.
+data ElField (field :: (Symbol, Type)) where
   Field :: KnownSymbol s => !t -> ElField '(s,t)
+
+deriving instance Eq t => Eq (ElField '(s,t))
+deriving instance Ord t => Ord (ElField '(s,t))
+
+instance (Num t, KnownSymbol s) => Num (ElField '(s,t)) where
+  Field x + Field y = Field (x+y)
+  Field x * Field y = Field (x*y)
+  abs (Field x) = Field (abs x)
+  signum (Field x) = Field (signum x)
+  fromInteger = Field . fromInteger
+  negate (Field x) = Field (negate x)
+
+instance Semigroup t => Semigroup (ElField '(s,t)) where
+  Field x <> Field y = Field (x <> y)
+
+instance (KnownSymbol s, Monoid t) => Monoid (ElField '(s,t)) where
+  mempty = Field mempty
+  mappend (Field x) (Field y) = Field (mappend x y)
+
+instance (Real t, KnownSymbol s) => Real (ElField '(s,t)) where
+  toRational (Field x) = toRational x
+
+instance (Fractional t, KnownSymbol s) => Fractional (ElField '(s,t)) where
+  fromRational = Field . fromRational
+  Field x / Field y = Field (x / y)
+
+instance (Floating t, KnownSymbol s) => Floating (ElField '(s,t)) where
+  pi = Field pi
+  exp (Field x) = Field (exp x)
+  log (Field x) = Field (log x)
+  sin (Field x) = Field (sin x)
+  cos (Field x) = Field (cos x)
+  asin (Field x) = Field (asin x)
+  acos (Field x) = Field (acos x)
+  atan (Field x) = Field (atan x)
+  sinh (Field x) = Field (sinh x)
+  cosh (Field x) = Field (cosh x)
+  asinh (Field x) = Field (asinh x)
+  acosh (Field x) = Field (acosh x)
+  atanh (Field x) = Field (atanh x)
+
+instance (RealFrac t, KnownSymbol s) => RealFrac (ElField '(s,t)) where
+  properFraction (Field x) = fmap Field (properFraction x)
+
+instance (Show t, KnownSymbol s) => Show (ElField '(s,t)) where
+  show (Field x) = symbolVal (Proxy::Proxy s) ++" :-> "++show x
+
+instance forall s t. (KnownSymbol s, Storable t)
+    => Storable (ElField '(s,t)) where
+  sizeOf _ = sizeOf (undefined::t)
+  alignment _ = alignment (undefined::t)
+  peek ptr = Field `fmap` peek (castPtr ptr)
+  poke ptr (Field x) = poke (castPtr ptr) x
 
 -- | A record of named fields.
 type FieldRec = Rec ElField
@@ -46,12 +105,6 @@ type HList = Rec Identity
 -- | Heterogeneous list whose elements are left as-is during list
 -- construction (cf. 'HList').
 type LazyHList = Rec Thunk
-
-deriving instance Eq t => Eq (ElField '(s,t))
-deriving instance Ord t => Ord (ElField '(s,t))
-
-instance Show t => Show (ElField '(s,t)) where
-  show (Field x) = symbolVal (Proxy::Proxy s) ++" :-> "++show x
 
 -- | Get the data payload of an 'ElField'.
 getField :: ElField '(s,t) -> t
@@ -150,13 +203,6 @@ instance Eq (SField a) where _ == _ = True
 instance Ord (SField a) where compare _ _ = EQ
 instance KnownSymbol s => Show (SField '(s,t)) where
   show _ = "SField "++symbolVal (Proxy::Proxy s)
-
-instance forall s t. (KnownSymbol s, Storable t)
-    => Storable (ElField '(s,t)) where
-  sizeOf _ = sizeOf (undefined::t)
-  alignment _ = alignment (undefined::t)
-  peek ptr = Field `fmap` peek (castPtr ptr)
-  poke ptr (Field x) = poke (castPtr ptr) x
 
 type family FieldType l fs where
   FieldType l '[] = TypeError ('Text "Cannot find label "
