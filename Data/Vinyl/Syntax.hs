@@ -13,7 +13,7 @@
 -- @fieldRec (#x =: True, #y =: 'b') :: FieldRec '[ '("x", Bool), '("y", Char) ]@
 -- @fieldRec (#x =: True, #y =: 'b') & #x %~ not@
 module Data.Vinyl.Syntax where
-import Data.Vinyl.Derived (HasField, ElField(..), (:::), rfield)
+import Data.Vinyl.Derived (HasField, ElField, (:::), rfield)
 import Data.Vinyl.Lens (RecElemFCtx, rlens')
 import GHC.OverloadedLabels (IsLabel(..))
 -- import GHC.TypeLits (KnownSymbol)

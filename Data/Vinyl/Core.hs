@@ -20,9 +20,6 @@ import Data.Semigroup
 import Foreign.Ptr (castPtr, plusPtr)
 import Foreign.Storable (Storable(..))
 import Data.Vinyl.Functor
-#if __GLASGOW_HASKELL__ < 710
-import Control.Applicative hiding (Const(..))
-#endif
 import Data.Typeable (Proxy(..))
 import Data.List (intercalate)
 import Data.Vinyl.TypeLevel
