@@ -53,8 +53,8 @@ module Data.Vinyl.Class.Method
   ) where
 
 import Data.Vinyl.Core
-import Data.Vinyl.Derived (FieldRec, ElField(..))
-import Data.Vinyl.Functor ((:.))
+import Data.Vinyl.Derived (FieldRec)
+import Data.Vinyl.Functor ((:.), ElField(..))
 import Data.Vinyl.TypeLevel
 import Data.Monoid
 

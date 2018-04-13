@@ -4,14 +4,18 @@ module Data.Vinyl
   , module Data.Vinyl.ARec
   , module Data.Vinyl.Derived
   , module Data.Vinyl.FromTuple
+  , module Data.Vinyl.Functor
   , module Data.Vinyl.Lens
   , module Data.Vinyl.SRec
+  , module Data.Vinyl.XRec
   ) where
 
 import Data.Vinyl.Core
 import Data.Vinyl.Class.Method (RecMapMethod(..), rmapMethodF, mapFields)
 import Data.Vinyl.ARec (ARec, toARec, fromARec)
 import Data.Vinyl.Derived
-import Data.Vinyl.FromTuple (record, fieldRec)
+import Data.Vinyl.FromTuple (record, fieldRec, ruple, xrec, xrecX, xrecTuple)
+import Data.Vinyl.Functor (ElField(..))
 import Data.Vinyl.Lens
 import Data.Vinyl.SRec (SRec, toSRec, fromSRec)
+import Data.Vinyl.XRec (XRec (..), IsoXRec(..))

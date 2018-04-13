@@ -36,6 +36,7 @@ library
                      , Data.Vinyl.SRec
                      , Data.Vinyl.Syntax
                      , Data.Vinyl.Tutorial.Overview
+                     , Data.Vinyl.XRec
   build-depends:       base >=4.7 && <= 5,
                        ghc-prim,
                        array
