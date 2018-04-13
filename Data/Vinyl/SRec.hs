@@ -63,8 +63,7 @@ module Data.Vinyl.SRec (
 import Data.Monoid (Sum(..))
 import Data.Proxy
 import Data.Vinyl.Core hiding ((<<$>>), (<<*>>))
-import Data.Vinyl.Derived (ElField)
-import Data.Vinyl.Functor (Lift(..), Compose(..), type (:.))
+import Data.Vinyl.Functor (Lift(..), Compose(..), type (:.), ElField)
 import Data.Vinyl.Lens (RecElem(..), RecSubset(..), type (⊆), RecElemFCtx)
 import Data.Vinyl.TypeLevel (RImage, RIndex, Nat(..), RecAll, AllConstrained)
 import Foreign.Marshal.Utils (copyBytes)
