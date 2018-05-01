@@ -28,6 +28,7 @@ module Data.Vinyl.Class.Method
     RecMapMethod(..)
   , rmapMethodF
   , mapFields
+  , RecPointed(..)
     -- * Support for 'RecMapMethod'
   , FieldTyper, ApplyFieldTyper, PayloadType
     -- * Eq Functions
@@ -137,7 +138,7 @@ type family ApplyFieldTyper (f :: FieldTyper) (a :: k) :: * where
   ApplyFieldTyper 'FieldId a = a
   ApplyFieldTyper 'FieldSnd '(s, b) = b
 
--- | A mapping of key record contexts into the 'FieldTyper' function
+-- | A mapping of record contexts into the 'FieldTyper' function
 -- space. We explicitly match on 'ElField' to pick out the payload
 -- type, and 'Compose' to pick out the inner-most context. All other
 -- type constructor contexts are understood to not perform any
@@ -151,10 +152,24 @@ type family FieldPayload (f :: u -> *) :: FieldTyper where
 type family PayloadType f (a :: u) :: * where
   PayloadType f a = ApplyFieldTyper (FieldPayload f) a
 
+-- | Generate a record from fields derived from type class
+-- instances.
+class RecPointed c (f :: u -> *) (ts :: [u]) where
+  rpointMethod :: (forall (a :: u). c (f a) => f a) -> Rec f ts
+
+instance RecPointed c f '[] where
+  rpointMethod _ = RNil
+  {-# INLINE rpointMethod #-}
+
+instance (c (f t), RecPointed c f ts)
+  => RecPointed c f (t ': ts) where
+  rpointMethod f = f :& rpointMethod @c f
+  {-# INLINE rpointMethod #-}
+
 -- | Apply a typeclass method to each field of a 'Rec'.
 class RecMapMethod c (f :: u -> *) (ts :: [u]) where
-  rmapMethod :: (forall a. c (PayloadType f a)
-             => f a -> g a) -> Rec f ts -> Rec g ts
+  rmapMethod :: (forall a. c (PayloadType f a) => f a -> g a)
+             -> Rec f ts -> Rec g ts
 
 instance RecMapMethod c f '[] where
   rmapMethod _ RNil = RNil

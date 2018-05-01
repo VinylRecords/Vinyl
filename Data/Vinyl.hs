@@ -11,7 +11,8 @@ module Data.Vinyl
   ) where
 
 import Data.Vinyl.Core
-import Data.Vinyl.Class.Method (RecMapMethod(..), rmapMethodF, mapFields)
+import Data.Vinyl.Class.Method (RecMapMethod(..), RecPointed(..))
+import Data.Vinyl.Class.Method (rmapMethodF, mapFields)
 import Data.Vinyl.ARec (ARec, toARec, fromARec)
 import Data.Vinyl.Derived
 import Data.Vinyl.FromTuple (record, fieldRec, ruple, xrec, xrecX, xrecTuple)
