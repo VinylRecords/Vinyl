@@ -1,3 +1,4 @@
+{-# LANGUAGE PatternSynonyms #-}
 module Data.Vinyl
   ( module Data.Vinyl.Core
   , module Data.Vinyl.Class.Method
@@ -19,4 +20,5 @@ import Data.Vinyl.FromTuple (record, fieldRec, ruple, xrec, xrecX, xrecTuple)
 import Data.Vinyl.Functor (ElField(..))
 import Data.Vinyl.Lens
 import Data.Vinyl.SRec (SRec, toSRec, fromSRec)
-import Data.Vinyl.XRec (XRec (..), IsoXRec(..))
+import Data.Vinyl.XRec (XRec, pattern (::&), pattern XRNil, IsoXRec(..))
+import Data.Vinyl.XRec (xrmap, xrapply, rmapX, XRMap, XRApply)
