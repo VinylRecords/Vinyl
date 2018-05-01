@@ -161,6 +161,9 @@ instance (Applicative f, Applicative g) => Applicative (Compose f g) where
   pure x = Compose (pure (pure x))
   Compose f <*> Compose x = Compose ((<*>) <$> f <*> x)
 
+instance Show (f (g a)) => Show (Compose f g a) where
+  show (Compose x) = show x
+
 instance Applicative Identity where
   pure = Identity
   Identity f <*> Identity x = Identity (f x)
