@@ -225,8 +225,11 @@ instance RecAll f rs Show => Show (Rec f rs) where
       $ reifyConstraint (Proxy :: Proxy Show) xs
 
 instance Semigroup (Rec f '[]) where
-instance (Monoid (f r), Monoid (Rec f rs))
+  RNil <> RNil = RNil
+
+instance (Semigroup (f r), Semigroup (Rec f rs))
   => Semigroup (Rec f (r ': rs)) where
+  (x :& xs) <> (y :& ys) = (x <> y) :& (xs <> ys)
 
 instance Monoid (Rec f '[]) where
   mempty = RNil
