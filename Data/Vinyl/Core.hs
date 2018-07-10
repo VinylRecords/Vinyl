@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# LANGUAGE BangPatterns          #-}
 {-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE CPP                   #-}
@@ -9,10 +10,25 @@
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
+-- | Core vinyl definitions. The 'Rec' data type is defined here, but
+-- also of interest are definitions commonly used functions like
+-- 'rmap', 'rapply', and 'rtraverse'.
+--
+-- The definitions in this module are written in terms of type classes
+-- so that the definitions may be specialized to each record type at
+-- which they are used. This usually helps with runtime performance,
+-- but can slow down compilation time. If you are experiencing poor
+-- compile times, you may wish to try the semantically equivalent
+-- definitions in the "Data.Vinyl.Recursive" module: they should
+-- produce the same results given the same inputs as functions defined
+-- in this module, but they will not be specialized to your record
+-- type. Instead, they treat the record as a list of fields, so will
+-- have performance linear in the size of the record.
 module Data.Vinyl.Core where
 
 import Data.Monoid (Monoid)
@@ -20,7 +36,6 @@ import Data.Semigroup
 import Foreign.Ptr (castPtr, plusPtr)
 import Foreign.Storable (Storable(..))
 import Data.Vinyl.Functor
-import Data.Typeable (Proxy(..))
 import Data.List (intercalate)
 import Data.Vinyl.TypeLevel
 import Data.Type.Equality (TestEquality (..), (:~:) (..))
@@ -73,17 +88,21 @@ rappend (x :& xs) ys = x :& (xs `rappend` ys)
 -- | 'Rec' @_ rs@ with labels in kind @u@ gives rise to a functor @Hask^u ->
 -- Hask@; that is, a natural transformation between two interpretation functors
 -- @f,g@ may be used to transport a value from 'Rec' @f rs@ to 'Rec' @g rs@.
-rmap
-  :: (forall x. f x -> g x)
-  -> Rec f rs
-  -> Rec g rs
-rmap _ RNil = RNil
-rmap η (x :& xs) = η x :& (η `rmap` xs)
-{-# INLINE rmap #-}
+class RMap rs where
+  rmap :: (forall x. f x -> g x) -> Rec f rs -> Rec g rs
+
+instance RMap '[] where
+  rmap _ RNil = RNil
+  {-# INLINE rmap #-}
+
+instance RMap xs => RMap (x ': xs) where
+  rmap f (x :& xs) = f x :& rmap f xs
+  {-# INLINE rmap #-}
 
 -- | A shorthand for 'rmap'.
 (<<$>>)
-  :: (forall x. f x -> g x)
+  :: RMap rs
+  => (forall x. f x -> g x)
   -> Rec f rs
   -> Rec g rs
 (<<$>>) = rmap
@@ -91,7 +110,8 @@ rmap η (x :& xs) = η x :& (η `rmap` xs)
 
 -- | An inverted shorthand for 'rmap'.
 (<<&>>)
-  :: Rec f rs
+  :: RMap rs
+  => Rec f rs
   -> (forall x. f x -> g x)
   -> Rec g rs
 xs <<&>> f = rmap f xs
@@ -99,17 +119,23 @@ xs <<&>> f = rmap f xs
 
 -- | A record of components @f r -> g r@ may be applied to a record of @f@ to
 -- get a record of @g@.
-rapply
-  :: Rec (Lift (->) f g) rs
-  -> Rec f rs
-  -> Rec g rs
-rapply RNil RNil = RNil
-rapply (f :& fs) (x :& xs) = getLift f x :& (fs `rapply` xs)
-{-# INLINE rapply #-}
+class RApply rs where
+  rapply :: Rec (Lift (->) f g) rs
+         -> Rec f rs
+         -> Rec g rs
+
+instance RApply '[] where
+  rapply _ RNil = RNil
+  {-# INLINE rapply #-}
+
+instance RApply xs => RApply (x ': xs) where
+  rapply (f :& fs) (x :& xs) = getLift f x :& (fs `rapply` xs)
+  {-# INLINE rapply #-}
 
 -- | A shorthand for 'rapply'.
 (<<*>>)
-  :: Rec (Lift (->) f g) rs
+  :: RApply rs
+  => Rec (Lift (->) f g) rs
   -> Rec f rs
   -> Rec g rs
 (<<*>>) = rapply
@@ -144,34 +170,50 @@ rtraverse f (x :& xs) = (:&) <$> f x <*> rtraverse f xs
 -- have a natural transformation from the product of @'Rec' f@ and @'Rec' g@ to
 -- @'Rec' h@. You can also think about this operation as zipping two records
 -- with the same element types but different interpretations.
-rzipWith
-  :: (forall x  .     f x  ->     g x  ->     h x)
-  -> (forall xs . Rec f xs -> Rec g xs -> Rec h xs)
-rzipWith m = \r -> case r of
-  RNil        -> \RNil        -> RNil
-  (fa :& fas) -> \(ga :& gas) -> m fa ga :& rzipWith m fas gas
+class RZipWith xs where
+  rzipWith :: (forall x  .     f x  ->     g x  ->     h x)
+           -> Rec f xs -> Rec g xs -> Rec h xs
+
+instance RZipWith '[] where
+  rzipWith _ RNil RNil = RNil
+  {-# INLINE rzipWith #-}
+
+instance RZipWith xs => RZipWith (x ': xs) where
+  rzipWith m (fa :& fas) (ga :& gas) = m fa ga :& rzipWith m fas gas
+  {-# INLINE rzipWith #-}
 
 -- | Map each element of a record to a monoid and combine the results.
-rfoldMap :: forall f m rs.
-     Monoid m
-  => (forall x. f x -> m)
-  -> Rec f rs
-  -> m
-rfoldMap f = go mempty
-  where
-  go :: forall ss. m -> Rec f ss -> m
-  go !m record = case record of
-    RNil -> m
-    r :& rs -> go (mappend m (f r)) rs
-  {-# INLINABLE go #-}
+class RFoldMap rs where
+  rfoldMapAux :: Monoid m
+              => (forall x. f x -> m)
+              -> m
+              -> Rec f rs
+              -> m
+
+instance RFoldMap '[] where
+  rfoldMapAux _ m RNil = m
+  {-# INLINE rfoldMapAux #-}
+
+instance RFoldMap xs => RFoldMap (x ': xs) where
+  rfoldMapAux f m (r :& rs) = rfoldMapAux f (mappend m (f r)) rs
+  {-# INLINE rfoldMapAux #-}
+
+rfoldMap :: forall rs m f. (Monoid m, RFoldMap rs)
+         => (forall x. f x -> m) -> Rec f rs -> m
+rfoldMap f = rfoldMapAux f mempty
 {-# INLINE rfoldMap #-}
 
 -- | A record with uniform fields may be turned into a list.
-recordToList
-  :: Rec (Const a) rs
-  -> [a]
-recordToList RNil = []
-recordToList (x :& xs) = getConst x : recordToList xs
+class RecordToList rs where
+  recordToList :: Rec (Const a) rs -> [a]
+
+instance RecordToList '[] where
+  recordToList RNil = []
+  {-# INLINE recordToList #-}
+
+instance RecordToList xs => RecordToList (x ': xs) where
+  recordToList (x :& xs) = getConst x : recordToList xs
+  {-# INLINE recordToList #-}
 
 -- | Wrap up a value with a capability given by its type
 data Dict c a where
@@ -185,44 +227,57 @@ data Dict c a where
 -- Surely given @∀x:u.φ(x)@ we should be able to recover @x:u ⊢ φ(x)@! Sadly,
 -- the constraint solver is not quite smart enough to realize this and we must
 -- make it patently obvious by reifying the constraint pointwise with proof.
-reifyConstraint
-  :: RecAll f rs c
-  => proxy c
-  -> Rec f rs
-  -> Rec (Dict c :. f) rs
-reifyConstraint prx rec =
-  case rec of
-    RNil -> RNil
-    (x :& xs) -> Compose (Dict x) :& reifyConstraint prx xs
+class ReifyConstraint c f rs where
+  reifyConstraint
+    :: Rec f rs
+    -> Rec (Dict c :. f) rs
+
+instance ReifyConstraint c f '[] where
+  reifyConstraint RNil = RNil
+  {-# INLINE reifyConstraint #-}
+
+instance (c (f x), ReifyConstraint c f xs)
+  => ReifyConstraint c f (x ': xs) where
+  reifyConstraint (x :& xs) = Compose (Dict x) :& reifyConstraint xs
+  {-# INLINE reifyConstraint #-}
 
 -- | Build a record whose elements are derived solely from a
 -- constraint satisfied by each.
-rpureConstrained :: forall c (f :: u -> *) proxy ts.
-                    (AllConstrained c ts, RecApplicative ts)
-                 => proxy c -> (forall a. c a => f a) -> Rec f ts
-rpureConstrained _ f = go (rpure Proxy)
-  where go :: AllConstrained c ts' => Rec Proxy ts' -> Rec f ts'
-        go RNil = RNil
-        go (_ :& xs) = f :& go xs
+class RPureConstrained c ts where
+  rpureConstrained :: (forall a. c a => f a) -> Rec f ts
+
+instance RPureConstrained c '[] where
+  rpureConstrained _ = RNil
+  {-# INLINE rpureConstrained #-}
+
+instance (c x, RPureConstrained c xs) => RPureConstrained c (x ': xs) where
+  rpureConstrained f = f :& rpureConstrained @c @xs f
+  {-# INLINE rpureConstrained #-}
 
 -- | Build a record whose elements are derived solely from a
 -- list of constraint constructors satisfied by each.
-rpureConstraints :: forall cs (f :: * -> *) proxy ts. (AllAllSat cs ts, RecApplicative ts)
-                 => proxy cs -> (forall a. AllSatisfied cs a => f a) -> Rec f ts
-rpureConstraints _ f = go (rpure Nothing)
-  where go :: AllAllSat cs ts' => Rec Maybe ts' -> Rec f ts'
-        go RNil = RNil
-        go (_ :& xs) = f :& go xs
+class RPureConstraints cs ts where
+  rpureConstraints :: (forall a. AllSatisfied cs a => f a) -> Rec f ts
+
+instance RPureConstraints cs '[] where
+  rpureConstraints _ = RNil
+  {-# INLINE rpureConstraints #-}
+
+instance (AllSatisfied cs t, RPureConstraints cs ts)
+  => RPureConstraints cs (t ': ts) where
+  rpureConstraints f = f :& rpureConstraints @cs @ts f
+  {-# INLINE rpureConstraints #-}
 
 -- | Records may be shown insofar as their points may be shown.
 -- 'reifyConstraint' is used to great effect here.
-instance RecAll f rs Show => Show (Rec f rs) where
+instance (RMap rs, ReifyConstraint Show f rs, RecordToList rs)
+  => Show (Rec f rs) where
   show xs =
     (\str -> "{" <> str <> "}")
       . intercalate ", "
       . recordToList
       . rmap (\(Compose (Dict x)) -> Const $ show x)
-      $ reifyConstraint (Proxy :: Proxy Show) xs
+      $ reifyConstraint @Show xs
 
 instance Semigroup (Rec f '[]) where
   RNil <> RNil = RNil
@@ -255,7 +310,8 @@ instance Storable (Rec f '[]) where
   peek _      = return RNil
   poke _ RNil = return ()
 
-instance (Storable (f r), Storable (Rec f rs)) => Storable (Rec f (r ': rs)) where
+instance (Storable (f r), Storable (Rec f rs))
+  => Storable (Rec f (r ': rs)) where
   sizeOf _ = sizeOf (undefined :: f r) + sizeOf (undefined :: Rec f rs)
   {-# INLINE sizeOf #-}
   alignment _ =  alignment (undefined :: f r)

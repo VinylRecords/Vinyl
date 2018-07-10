@@ -10,6 +10,8 @@
 
 - Changed the type of `=:=` again to work directly with `Label`s as this is the most convenient usage.
 
+- Definitions in `Data.Vinyl.Core` are now consistently in terms of type classes. This permits inlining and specialization to a user's record types. In the case where the record type is known, call sites do not change. But for functions polymorphic in the record's fields, a constraint will be required. If those constraints are a nuisance, or compile times increase beyond comfort, users should use definitions from the `Data.Vinyl.Recursive` that are written in a recursive style (as in previous versions of the `vinyl` package), treating the record as a list of fields.
+
 # 0.8.0
 
 - Overhaul of `FieldRec`: records with named fields. We now take advantage of the `-XOverloadedLabels` extension to support referring to record fields by names such a `#myField`.

@@ -20,7 +20,7 @@ import Data.Vinyl.ARec
 import Data.Vinyl.Core
 import Data.Vinyl.Functor
 import Data.Vinyl.Lens
-import Data.Vinyl.TypeLevel (Fst, Snd, AllConstrained, RIndex)
+import Data.Vinyl.TypeLevel (Fst, Snd, RIndex)
 import GHC.OverloadedLabels
 import GHC.TypeLits
 
@@ -169,18 +169,18 @@ instance KnownSymbol l => KnownField (l ::: v) where
 
 -- | Shorthand for working with records of fields as in 'rmapf' and
 -- 'rpuref'.
-type AllFields fs = (AllConstrained KnownField fs, RecApplicative fs)
+type AllFields fs = (RPureConstrained KnownField fs, RecApplicative fs, RApply fs)
 
 -- | Map a function between functors across a 'Rec' taking advantage
 -- of knowledge that each element is an 'ElField'.
 rmapf :: AllFields fs
       => (forall a. KnownField a => f a -> g a)
       -> Rec f fs -> Rec g fs
-rmapf f = (rpureConstrained (Proxy :: Proxy KnownField) (Lift f) <<*>>)
+rmapf f = (rpureConstrained @KnownField (Lift f) <<*>>)
 
 -- | Construct a 'Rec' with 'ElField' elements.
 rpuref :: AllFields fs => (forall a. KnownField a => f a) -> Rec f fs
-rpuref f = rpureConstrained (Proxy :: Proxy KnownField) f
+rpuref f = rpureConstrained @KnownField f
 
 -- | Operator synonym for 'rmapf'.
 (<<$$>>)

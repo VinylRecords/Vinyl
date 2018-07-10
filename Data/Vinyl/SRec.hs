@@ -1,9 +1,9 @@
--- | 'Storable' records offer a very efficient flat, packed
--- representation in memory. In particular, field access is constant
--- time (i.e. it doesn't depend on where in the record the field is)
--- and as fast as possible, but updating fields may not be as
--- efficient. The requirement is that all fields of a record have
--- 'Storable' instances.
+-- | 'Storable' records offer an efficient flat, packed representation
+-- in memory. In particular, field access is constant time (i.e. it
+-- doesn't depend on where in the record the field is) and as fast as
+-- possible, but updating fields may not be as efficient. The
+-- requirement is that all fields of a record have 'Storable'
+-- instances.
 --
 -- The implementation leaks into the usual vinyl lens API: the
 -- requirement of 'Storable' instances necessitates specialization on
@@ -56,18 +56,15 @@ module Data.Vinyl.SRec (
   , srecGetSubset, srecSetSubset
   -- * Internals
   , toSRec2, fromSRec2, SRec2(..)
-  , sizeOfRec
   , FieldOffset, FieldOffsetAux(..), StorableAt(..)
   , peekField, pokeField
 ) where
-import Data.Monoid (Sum(..))
-import Data.Proxy
-import Data.Vinyl.Core hiding ((<<$>>), (<<*>>))
+import Data.Coerce (coerce)
+import Data.Vinyl.Core
 import Data.Vinyl.Functor (Lift(..), Compose(..), type (:.), ElField)
 import Data.Vinyl.Lens (RecElem(..), RecSubset(..), type (⊆), RecElemFCtx)
 import Data.Vinyl.TypeLevel (RImage, RIndex, Nat(..), RecAll, AllConstrained)
 import Foreign.Marshal.Utils (copyBytes)
--- import Foreign.ForeignPtr (withForeignPtr, mallocForeignPtr, ForeignPtr, mallocForeignPtrBytes)
 import Foreign.Ptr (Ptr)
 import Foreign.Storable (Storable(..))
 import System.IO.Unsafe (unsafePerformIO, unsafeDupablePerformIO)
@@ -111,48 +108,6 @@ mallocForeignPtrBytes :: Int -> IO (ForeignPtr a)
 mallocForeignPtrBytes = fmap ForeignPtr . newBytes
 {-# INLINE mallocForeignPtrBytes #-}
 
--- * Inlinable rpureConstrained, rfoldMap, rmap, and rapply
-
-class RPureConstrained c ts where
-  rpureConstrainedC :: (forall a. c a => f a) -> Rec f ts
-
-instance RPureConstrained c '[] where rpureConstrainedC _ = RNil
-
-instance (RPureConstrained c ts, c t) => RPureConstrained c (t : ts) where
-  rpureConstrainedC f = f :& rpureConstrainedC @c f
-
-class RFoldMap ts where
-  rfoldMapC :: Monoid m => (forall x. f x -> m) -> Rec f xs -> m
-
-instance RFoldMap '[] where rfoldMapC _ RNil = mempty
-
-instance RFoldMap ts => RFoldMap (t : ts) where
-  rfoldMapC f (x :& xs) = mappend (f x) (rfoldMapC @ts f xs)
-
-class RMap ts where
-  rmapC :: (forall x. f x -> g x) -> Rec f xs -> Rec g xs
-
-instance RMap '[] where rmapC _ RNil = RNil
-
-instance RMap ts => RMap (t : ts) where
-  rmapC f (x :& xs) = f x :& rmapC @ts f xs
-
-(<<$>>) :: forall xs f g. RMap xs => (forall x. f x -> g x) -> Rec f xs -> Rec g xs
-(<<$>>) = rmapC @xs
-
-(<<*>>) :: RApply ts => Rec (Lift (->) f g) ts -> Rec f ts -> Rec g ts
-(<<*>>) = rapplyC
-
-infixl 8 <<$>>
-infixl 8 <<*>>
-
-class RApply ts where
-  rapplyC :: Rec (Lift (->) f g) ts -> Rec f ts -> Rec g ts
-
-instance RApply '[] where rapplyC RNil RNil = RNil
-instance RApply ts => RApply (t : ts) where
-  rapplyC (f :& fs) (x :& xs) = getLift f x :& rapplyC fs xs
-
 -- * The SRec types
 
 -- | A 'Storable'-backed 'Rec'. Each field of such a value has
@@ -160,11 +115,12 @@ instance RApply ts => RApply (t : ts) where
 -- and very fast field access. The @2@ suffix is due to apparently
 -- taking /two/ functor arguments, but the first type parameter is
 -- phantom and exists so that we can write multiple instances of
--- 'RecElem' and 'RecSubset' for different functors. It will typically
--- be identical to the second argument. We currently provide instances
--- for the 'ElField' functor; if you wish to use it at a different
--- type, consider using 'sget', 'sput', and 'slens' which work with
--- any functor given that the necessary 'Storable' instances exist.
+-- 'RecElem' and 'RecSubset' for different functors. The first functor
+-- argument will typically be identical to the second argument. We
+-- currently provide instances for the 'ElField' functor; if you wish
+-- to use it at a different type, consider using 'sget', 'sput', and
+-- 'slens' which work with any functor given that the necessary
+-- 'Storable' instances exist.
 newtype SRec2 (g :: k -> *) (f :: k -> *) (ts :: [k]) =
   SRec2 (ForeignPtr (Rec f ts))
 
@@ -269,17 +225,17 @@ sput :: forall (f :: u -> *) (t :: u) (ts :: [u]).
         , AllConstrained (FieldOffset f ts) ts)
      => f t -> SRec2 f f ts -> SRec2 f f ts
 sput !x (SRec2 src) = unsafePerformIO $ do
-  let !n = sizeOf (undefined :: Rec f ts) -- sizeOfRec @u @f @ts @ts
+  let !n = sizeOf (undefined :: Rec f ts)
   dst <- mallocAndCopy src n
   SRec2 dst <$ pokeField dst x
 {-# INLINE [1] sput #-}
 
--- pokeFieldUnsafe :: forall f t ts. FieldOffset f ts t
---                 => f t -> SRec2 f f ts -> SRec2 f f ts
--- pokeFieldUnsafe x y@(SRec2 ptr) = unsafeDupablePerformIO (y <$ pokeField ptr x)
--- {-# INLINE [1] pokeFieldUnsafe #-}
+pokeFieldUnsafe :: forall f t ts. FieldOffset f ts t
+                => f t -> SRec2 f f ts -> SRec2 f f ts
+pokeFieldUnsafe x y@(SRec2 ptr) = unsafeDupablePerformIO (y <$ pokeField ptr x)
+{-# INLINE [1] pokeFieldUnsafe #-}
 
-{- RULES
+{-# RULES
 "sput" forall x y z. sput x (sput y z) = pokeFieldUnsafe x (sput y z)
 "sputUnsafe" forall x y z. sput x (pokeFieldUnsafe y z) = pokeFieldUnsafe x (pokeFieldUnsafe y z)
   #-}
@@ -317,35 +273,25 @@ instance ( i ~ RIndex t ts
   rputC = sput
   {-# INLINE rputC #-}
 
+
+coerceSRec1to2 :: SRec f ts -> SRec2 f f ts
+coerceSRec1to2 = coerce
+
+coerceSRec2to1 :: SRec2 f f ts -> SRec f ts
+coerceSRec2to1 = coerce
+
 instance ( i ~ RIndex (t :: (Symbol,*)) (ts :: [(Symbol,*)])
          , FieldOffset ElField ts t
          , Storable (Rec ElField ts)
          , AllConstrained (FieldOffset ElField ts) ts)
   => RecElem SRec (t :: (Symbol,*)) t (ts :: [(Symbol,*)]) ts i where
   type RecElemFCtx SRec f = f ~ ElField
-  rlensC f = fmap SRecNT . slens f . getSRecNT
+  rlensC f = fmap coerceSRec2to1 . slens f . coerceSRec1to2
   {-# INLINE rlensC #-}
-  rgetC = sget . getSRecNT
+  rgetC = sget . coerceSRec1to2
   {-# INLINE rgetC #-}
-  rputC x = SRecNT . sput x . getSRecNT
+  rputC x = coerceSRec2to1 . sput x . coerceSRec1to2
   {-# INLINE rputC #-}
-
--- | Compute the size in bytes needed to represent a 'Rec' without a
--- 'Storable' instance.
-sizeOfRec :: forall (f :: u -> *) (ss :: [u]) (rs :: [u]).
-             (AllConstrained (FieldOffset f ss) rs, RecApplicative rs)
-          => Int
-sizeOfRec = (getSum . rfoldMap go)
-              (rpureConstrained prox mkField :: Rec (StorableAt f) rs)
-  where prox = Proxy :: Proxy (FieldOffset f ss)
-        {-# INLINE prox #-}
-        mkField :: forall (t :: u). FieldOffset f ss t => StorableAt f t
-        mkField = fieldOffset @f @ss 0
-        {-# INLINE mkField #-}
-        go :: forall t. StorableAt f t -> Sum Int
-        go (StorableAt _) = Sum (sizeOf (undefined :: f t))
-        {-# INLINE go #-}
-{-# INLINE sizeOfRec #-}
 
 -- | Get a subset of a record's fields.
 srecGetSubset :: forall (ss :: [u]) (rs :: [u]) (f :: u -> *).
@@ -357,16 +303,15 @@ srecGetSubset :: forall (ss :: [u]) (rs :: [u]) (f :: u -> *).
 srecGetSubset (SRec2 ptr) = unsafeDupablePerformIO $ do
   dst <- mallocForeignPtrBytes (sizeOf (undefined :: Rec f rs))
   SRec2 dst <$ (withForeignPtr dst $ \dst' ->
-                 rfoldMapC @rs unTagIO
-                           (Lift . peekNPoke <<$>> peekers <<*>> pokers dst'))
+                 rfoldMap @rs unTagIO (peekSmallPokeBig dst'))
   where peekers :: Rec (IO :. f) rs
-        peekers = rpureConstrainedC @(FieldOffset f ss) mkPeeker
+        peekers = rpureConstrained @(FieldOffset f ss) mkPeeker
         {-# INLINE peekers #-}
         mkPeeker :: FieldOffset f ss t => (IO :. f) t
         mkPeeker = Compose (peekField ptr)
         {-# INLINE mkPeeker #-}
         pokers :: Ptr (Rec f rs) -> Rec (Poker f) rs
-        pokers dst = rpureConstrainedC @(FieldOffset f rs) (mkPoker dst)
+        pokers dst = rpureConstrained @(FieldOffset f rs) (mkPoker dst)
         {-# INLINE pokers #-}
         mkPoker :: forall t. Ptr (Rec f rs) -> FieldOffset f rs t => Poker f t
         mkPoker dst = case fieldOffset @f @rs @t 0 of
@@ -375,6 +320,8 @@ srecGetSubset (SRec2 ptr) = unsafeDupablePerformIO $ do
         peekNPoke :: (IO :. f) t -> Poker f t -> TaggedIO t
         peekNPoke (Compose m) (Lift f) = TaggedIO (m >>= unTagIO . f)
         {-# INLINE peekNPoke #-}
+        peekSmallPokeBig :: Ptr (Rec f rs) -> Rec TaggedIO rs
+        peekSmallPokeBig dst' = Lift . peekNPoke <<$>> peekers <<*>> pokers dst'
 {-# INLINE srecGetSubset #-}
 
 -- | Phantom tagged 'IO ()' value. Used to work with vinyl's 'Lift'
@@ -399,16 +346,16 @@ srecSetSubset (SRec2 srcBig) (SRec2 srcSmall) = unsafeDupablePerformIO $ do
     withForeignPtr dst $ \dst' ->
       copyBytes dst' srcBig' n
   SRec2 dst <$ (withForeignPtr dst $ \dst' ->
-                 rfoldMapC @rs unTagIO
+                 rfoldMap @rs unTagIO
                            (Lift . peekNPoke <<$>> peekers <<*>> pokers dst'))
   where peekers :: Rec (IO :. f) rs
-        peekers = rpureConstrainedC @(FieldOffset f rs) mkPeeker
+        peekers = rpureConstrained @(FieldOffset f rs) mkPeeker
         {-# INLINE peekers #-}
         mkPeeker :: FieldOffset f rs t => (IO :. f) t
         mkPeeker = Compose (peekField srcSmall)
 
         pokers :: Ptr (Rec f ss) -> Rec (Poker f) rs
-        pokers dst = rpureConstrainedC @(FieldOffset f ss) (mkPoker dst)
+        pokers dst = rpureConstrained @(FieldOffset f ss) (mkPoker dst)
         {-# INLINE pokers #-}
         mkPoker :: forall t. FieldOffset f ss t => Ptr (Rec f ss) -> Poker f t
         mkPoker dst = case fieldOffset @f @ss @t 0 of

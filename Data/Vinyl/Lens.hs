@@ -32,10 +32,10 @@ import Data.Vinyl.Core
 import Data.Vinyl.Functor
 import Data.Vinyl.TypeLevel
 
--- | The presence of a field in a record is witnessed by a lens into its value.
--- The third parameter to 'RElem', @i@, is there to help the constraint solver
--- realize that this is a decidable predicate with respect to the judgemental
--- equality in @k@.
+-- | The presence of a field in a record is witnessed by a lens into
+-- its value.  The fifth parameter to 'RecElem', @i@, is there to help
+-- the constraint solver realize that this is a decidable predicate
+-- with respect to the judgemental equality in @k@.
 class i ~ RIndex r rs => RecElem record (r :: k) (r' :: k)
                                         (rs :: [k]) (rs' :: [k])
                                         (i :: Nat) | r r' rs i -> rs' where

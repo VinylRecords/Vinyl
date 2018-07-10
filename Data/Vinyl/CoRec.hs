@@ -39,21 +39,22 @@ type Field = CoRec Identity
 -- reverse order.
 newtype Op b a = Op { runOp :: a -> b }
 
-instance forall ts. (AllConstrained Show ts, RecApplicative ts)
+instance forall ts. (RPureConstrained Show ts, RecApplicative ts)
   => Show (CoRec Identity ts) where
   show (CoRec (Identity x)) = "(Col "++show' x++")"
     where shower :: Rec (Op String) ts
-          shower = rpureConstrained (Proxy::Proxy Show) (Op show)
+          shower = rpureConstrained @Show (Op show)
           show' = runOp (rget shower)
 
-instance forall ts. (RecAll Maybe ts Eq, RecApplicative ts)
+instance forall ts. (RecApplicative ts, RecordToList ts,
+                     RZipWith ts, ReifyConstraint Eq Maybe ts, RMap ts)
   => Eq (CoRec Identity ts) where
   crA == crB = and . recordToList
              $ rzipWith f (toRec crA) (coRecToRec' crB)
     where
       f :: forall a. (Dict Eq :. Maybe) a -> Maybe a -> Const Bool a
       f (Compose (Dict a)) b = Const $ a == b
-      toRec = reifyConstraint (Proxy :: Proxy Eq) . coRecToRec'
+      toRec = reifyConstraint @Eq . coRecToRec'
 
 -- | We can inject a a 'CoRec' into a 'Rec' where every field of the
 -- 'Rec' is 'Nothing' except for the one whose type corresponds to the
@@ -62,7 +63,8 @@ coRecToRec :: forall f ts. RecApplicative ts => CoRec f ts -> Rec (Maybe :. f) t
 coRecToRec (CoRec x) = rput (Compose (Just x)) (rpure (Compose Nothing))
 
 -- | Shorthand for applying 'coRecToRec' with common functors.
-coRecToRec' :: RecApplicative ts => CoRec Identity ts -> Rec Maybe ts
+coRecToRec' :: (RecApplicative ts, RMap ts)
+            => CoRec Identity ts -> Rec Maybe ts
 coRecToRec' = rmap (fmap getIdentity . getCompose) . coRecToRec
 
 -- | Fold a field selection function over a 'Rec'.
@@ -153,7 +155,8 @@ reifyDicts _ f = go (rpure Nothing)
 
 -- | Given a proxy of type t and a 'CoRec Identity' that might be a t, try to
 -- convert the CoRec to a t.
-asA             :: (t ∈ ts, RecApplicative ts) => CoRec Identity ts -> Maybe t
+asA             :: (t ∈ ts, RecApplicative ts, RMap ts)
+                => CoRec Identity ts -> Maybe t
 asA c@(CoRec _) = rget $ coRecToRec' c
 
 -- | Pattern match on a CoRec by specifying handlers for each case. Note that
@@ -196,6 +199,7 @@ instance (Match1 t ts i, RIndex t (s ': ts) ~ 'S i,
 -- of the would-be handler
 match1 :: (Match1 t ts (RIndex t ts),
            RecApplicative ts,
+           RMap ts, RMap (RDelete t ts),
            FoldRec (RDelete t ts) (RDelete t ts))
        => Handler r t
        -> CoRec Identity ts

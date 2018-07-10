@@ -22,7 +22,6 @@ import Data.Vinyl.TypeLevel
 
 import qualified Data.Array as Array
 import qualified Data.Array.Base as BArray
-import Data.Proxy
 import GHC.Exts (Any)
 import Unsafe.Coerce
 
@@ -46,9 +45,9 @@ instance (NatToInt (RIndex t ts)) => IndexableField ts t where
 
 -- | Convert an 'ARec' into a 'Rec'.
 fromARec :: forall f ts.
-            (RecApplicative ts, AllConstrained (IndexableField ts) ts)
+            (RecApplicative ts, RPureConstrained (IndexableField ts) ts)
          => ARec f ts -> Rec f ts
-fromARec (ARec arr) = rpureConstrained (Proxy :: Proxy (IndexableField ts)) aux
+fromARec (ARec arr) = rpureConstrained @(IndexableField ts) aux
   where aux :: forall t. NatToInt (RIndex t ts) => f t
         aux = unsafeCoerce (arr Array.! natToInt @(RIndex t ts))
 {-# INLINE fromARec #-}
@@ -118,17 +117,17 @@ instance (is ~ RImage rs ss, IndexWitnesses is, NatToInt (RLength rs))
   rsubsetC f big = fmap (arecSetSubset big) (f (arecGetSubset big))
   {-# INLINE rsubsetC #-}
 
-instance (AllConstrained (IndexableField rs) rs,
+instance (RPureConstrained (IndexableField rs) rs,
           RecApplicative rs,
           Show (Rec f rs)) => Show (ARec f rs) where
   show = show . fromARec
 
-instance (AllConstrained (IndexableField rs) rs,
+instance (RPureConstrained (IndexableField rs) rs,
           RecApplicative rs,
           Eq (Rec f rs)) => Eq (ARec f rs) where
   x == y = fromARec x == fromARec y
 
-instance (AllConstrained (IndexableField rs) rs,
+instance (RPureConstrained (IndexableField rs) rs,
           RecApplicative rs,
           Ord (Rec f rs)) => Ord (ARec f rs) where
   compare x y = compare (fromARec x) (fromARec y)
