@@ -41,7 +41,8 @@ library
                        ghc-prim,
                        array
   default-language:    Haskell2010
-  ghc-options: -Wall
+  ghc-options:         -Wall
+  other-extensions:    TypeApplications
 
 benchmark storable
   type:             exitcode-stdio-1.0
