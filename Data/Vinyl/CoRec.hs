@@ -59,7 +59,8 @@ instance forall ts. (RecApplicative ts, RecordToList ts,
 -- | We can inject a a 'CoRec' into a 'Rec' where every field of the
 -- 'Rec' is 'Nothing' except for the one whose type corresponds to the
 -- type of the given 'CoRec' variant.
-coRecToRec :: forall f ts. RecApplicative ts => CoRec f ts -> Rec (Maybe :. f) ts
+coRecToRec :: forall f ts. RecApplicative ts
+           => CoRec f ts -> Rec (Maybe :. f) ts
 coRecToRec (CoRec x) = rput (Compose (Just x)) (rpure (Compose Nothing))
 
 -- | Shorthand for applying 'coRecToRec' with common functors.
@@ -153,8 +154,8 @@ reifyDicts _ f = go (rpure Nothing)
 
 -- * Extracting values from a CoRec/Pattern matching on a CoRec
 
--- | Given a proxy of type t and a 'CoRec Identity' that might be a t, try to
--- convert the CoRec to a t.
+-- | If a 'CoRec' is a variant of the requested type, return 'Just'
+-- that value; otherwise return 'Nothing'.
 asA             :: (t ∈ ts, RecApplicative ts, RMap ts)
                 => CoRec Identity ts -> Maybe t
 asA c@(CoRec _) = rget $ coRecToRec' c
