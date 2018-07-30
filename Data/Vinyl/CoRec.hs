@@ -160,6 +160,11 @@ asA             :: (t ∈ ts, RecApplicative ts, RMap ts)
                 => CoRec Identity ts -> Maybe t
 asA c@(CoRec _) = rget $ coRecToRec' c
 
+-- | Like 'asA', but for any interpretation functor.
+asA' :: (t ∈ ts, RecApplicative ts, RMap ts)
+     => CoRec f ts -> (Maybe :. f) t
+asA' c@(CoRec _) = rget $ coRecToRec c
+
 -- | Pattern match on a CoRec by specifying handlers for each case. Note that
 -- the order of the Handlers has to match the type level list (t:ts).
 --
