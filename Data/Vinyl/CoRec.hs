@@ -224,3 +224,18 @@ newtype Handler b a = H (a -> b)
 -- ts. All functions produce a value of type 'b'. Hence, 'Handlers ts b' would
 -- represent something like the type-level list: [t -> b | t \in ts ]
 type Handlers ts b = Rec (Handler b) ts
+
+-- | A 'CoRec' is either the first possible variant indicated by its
+-- type, or a 'CoRec' that must be one of the remaining types.
+restrictCoRec :: forall t ts f. (RecApplicative ts, FoldRec ts ts)
+              => CoRec f (t ': ts) -> Either (f t) (CoRec f ts)
+restrictCoRec = go . coRecToRec
+  where go :: Rec (Maybe :. f) (t ': ts) -> Either (f t) (CoRec f ts)
+        go (Compose Nothing :& xs) = Right (fromJust (firstField xs))
+        go (Compose (Just x) :& _) = Left x
+
+-- | A 'CoRec' whose possible types are @ts@ may be used at a type of
+-- 'CoRec' whose possible types are @t:ts@.
+weakenCoRec :: (RecApplicative ts, FoldRec (t ': ts) (t ': ts))
+            => CoRec f ts -> CoRec f (t ': ts)
+weakenCoRec = fromJust . firstField . (Compose Nothing :&) . coRecToRec
