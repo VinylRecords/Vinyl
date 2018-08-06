@@ -33,6 +33,7 @@ library
                      , Data.Vinyl.TypeLevel
                      , Data.Vinyl.Functor
                      , Data.Vinyl.Notation
+                     , Data.Vinyl.Recursive
                      , Data.Vinyl.SRec
                      , Data.Vinyl.Syntax
                      , Data.Vinyl.Tutorial.Overview
