@@ -32,7 +32,9 @@
 module Data.Vinyl.Core where
 
 import Data.Monoid (Monoid)
+#if __GLASGOW_HASKELL__ < 804
 import Data.Semigroup
+#endif
 import Foreign.Ptr (castPtr, plusPtr)
 import Foreign.Storable (Storable(..))
 import Data.Vinyl.Functor

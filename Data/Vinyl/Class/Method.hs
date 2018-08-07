@@ -1,18 +1,19 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE BangPatterns          #-}
+{-# LANGUAGE CPP                   #-}
+{-# LANGUAGE ConstraintKinds       #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTs                 #-}
-{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE BangPatterns          #-}
-{-# LANGUAGE ConstraintKinds       #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 {-| This module uses 'RecAll' to extend common typeclass methods to records.
     Generally, it is preferable to use the original typeclass methods to these
@@ -57,7 +58,9 @@ import Data.Vinyl.Core
 import Data.Vinyl.Derived (FieldRec)
 import Data.Vinyl.Functor ((:.), ElField(..))
 import Data.Vinyl.TypeLevel
+#if __GLASGOW_HASKELL__ < 804
 import Data.Monoid
+#endif
 
 recEq :: RecAll f rs Eq => Rec f rs -> Rec f rs -> Bool
 recEq RNil RNil = True
