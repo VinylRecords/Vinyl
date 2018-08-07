@@ -21,6 +21,7 @@ extensions first:
 > {-# LANGUAGE FlexibleContexts, FlexibleInstances, NoMonomorphismRestriction #-}
 > {-# LANGUAGE GADTs, TypeSynonymInstances, TemplateHaskell, StandaloneDeriving #-}
 > {-# LANGUAGE TypeApplications #-}
+> module Intro where
 > import Data.Vinyl
 > import Data.Vinyl.Functor
 > import Control.Lens hiding (Identity)
