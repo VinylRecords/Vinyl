@@ -178,6 +178,32 @@ rmapf :: AllFields fs
       -> Rec f fs -> Rec g fs
 rmapf f = (rpureConstrained @KnownField (Lift f) <<*>>)
 
+-- | Remove the first component (e.g. the label) from a type-level
+-- list of pairs.
+type family Unlabeled ts where
+  Unlabeled '[] = '[]
+  Unlabeled ('(s,x) ': xs) = x ': Unlabeled xs
+
+-- | Facilities for removing and replacing the type-level label, or
+-- column name, part of a record.
+class StripFieldNames ts where
+  stripNames :: Rec ElField ts -> Rec Identity (Unlabeled ts)
+  stripNames' :: Functor f => Rec (f :. ElField) ts -> Rec f (Unlabeled ts)
+  withNames :: Rec Identity (Unlabeled ts) -> Rec ElField ts
+  withNames' :: Functor f => Rec f (Unlabeled ts) -> Rec (f :. ElField) ts
+
+instance StripFieldNames '[] where
+  stripNames RNil = RNil
+  stripNames' RNil = RNil
+  withNames RNil = RNil
+  withNames' RNil = RNil
+
+instance (KnownSymbol s, StripFieldNames ts) => StripFieldNames ('(s,t) ': ts) where
+  stripNames (Field x :& xs) = pure x :& stripNames xs
+  stripNames' (Compose x :& xs) = fmap getField x :& stripNames' xs
+  withNames (Identity x :& xs) = Field x :& withNames xs
+  withNames' (x :& xs) = Compose (fmap Field x) :& withNames' xs
+
 -- | Construct a 'Rec' with 'ElField' elements.
 rpuref :: AllFields fs => (forall a. KnownField a => f a) -> Rec f fs
 rpuref f = rpureConstrained @KnownField f
