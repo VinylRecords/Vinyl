@@ -1,3 +1,7 @@
+# 0.9.2
+
+- Add `runcurryX` for applying an uncurried function to a `Rec` passing through the `XRec` machinery to strip out syntactic noise.
+
 # 0.9.0
 
 - A new `SRec` type for constant time field access for records with densely packed `Storable` fields. Conversion from `Rec` is accomplished with `toSRec`, while `fromSRec` takes you back to `Rec`. Record updates are fairly slow compared to native Haskell records and even `Rec`, but reading a field is as fast as anything.
