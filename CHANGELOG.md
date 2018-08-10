@@ -1,3 +1,9 @@
+# 0.10.0
+
+- Changed the types of `Data.Vinyl.CoRec.onCoRec` and `Data.Vinyl.CoRec.onField`. This was pushing through the changes to drop the use of `Proxy` arguments, relying instead on `TypeApplications`. Also added `onCoRec1` and `onField` to work with functions relying on a single type class.
+
+- Faster `asA` and `asA'`. These implementations utilize `unsafeCoerce` in their implementations after we have performed a runtime check that proves (to us) that the types match up. The old implementations are still available as `asASafe` and `asA'Safe`. While both implementations can run in constant time if the compiler optimizes everything successfully, the faster variants are a bit more than 3x faster in a trivial benchmark.
+
 # 0.9.2
 
 - Add `runcurryX` for applying an uncurried function to a `Rec` passing through the `XRec` machinery to strip out syntactic noise.

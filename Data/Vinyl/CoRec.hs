@@ -1,8 +1,8 @@
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE BangPatterns, CPP, ConstraintKinds, DataKinds, EmptyCase,
-             FlexibleContexts, FlexibleInstances, GADTs,
-             KindSignatures, MultiParamTypeClasses, PolyKinds,
-             RankNTypes, ScopedTypeVariables, TypeOperators,
+{-# LANGUAGE AllowAmbiguousTypes, BangPatterns, CPP, ConstraintKinds,
+             DataKinds, EmptyCase, FlexibleContexts,
+             FlexibleInstances, GADTs, KindSignatures,
+             MultiParamTypeClasses, PolyKinds, RankNTypes,
+             ScopedTypeVariables, TypeApplications, TypeOperators,
              UndecidableInstances #-}
 -- | Co-records: open sum types.
 --
@@ -13,15 +13,11 @@
 -- @C@. The type @CoRec '[A,B,C]@ corresponds to this sum type.
 module Data.Vinyl.CoRec where
 import Data.Maybe(fromJust)
-import Data.Proxy
-import Data.Vinyl
+import Data.Vinyl.Core
+import Data.Vinyl.Lens (RElem, rget, rput, type (∈))
 import Data.Vinyl.Functor (Compose(..), (:.), Identity(..), Const(..))
 import Data.Vinyl.TypeLevel
-#if __GLASGOW_HASKELL__ < 800
-import GHC.Prim (Constraint)
-#else
-import Data.Kind (Constraint)
-#endif
+import Unsafe.Coerce (unsafeCoerce)
 
 -- | Generalize algebraic sum types.
 data CoRec :: (k -> *) -> [k] -> * where
@@ -41,10 +37,7 @@ newtype Op b a = Op { runOp :: a -> b }
 
 instance forall ts. (RPureConstrained Show ts, RecApplicative ts)
   => Show (CoRec Identity ts) where
-  show (CoRec (Identity x)) = "(Col "++show' x++")"
-    where shower :: Rec (Op String) ts
-          shower = rpureConstrained @Show (Op show)
-          show' = runOp (rget shower)
+  show x = "(Col " ++ onField1 @Show show x++")"
 
 instance forall ts. (RecApplicative ts, RecordToList ts,
                      RZipWith ts, ReifyConstraint Eq Maybe ts, RMap ts)
@@ -120,50 +113,80 @@ lastField v@(x :& _) = coRecTraverse getCompose $ foldRec aux (CoRec x) v
         aux _ c@(CoRec (Compose (Just _))) = c
         aux c _ = c
 
--- | Apply a type class method on a 'CoRec'. The first argument is a
--- 'Proxy' value for a /list/ of 'Constraint' constructors. For
--- example, @onCoRec [pr|Num,Ord|] (> 20) r@. If only one constraint
--- is needed, use the @pr1@ quasiquoter.
-onCoRec :: forall (cs :: [* -> Constraint]) f ts b.
-           (AllAllSat cs ts, Functor f, RecApplicative ts)
-        => Proxy cs
-        -> (forall a. AllSatisfied cs a => a -> b)
+-- | Apply methods from multiple type classes to a 'CoRec'. For
+-- example, @onCoRec \@'[Num,Ord] (> 20) r@.
+onCoRec :: forall cs f ts b. (Functor f, RPureConstraints cs ts)
+        => (forall a. AllSatisfied cs a => a -> b)
         -> CoRec f ts -> f b
-onCoRec p f (CoRec x) = fmap meth x
-  where meth = runOp $ rget (reifyDicts p (Op f) :: Rec (Op b) ts)
+onCoRec f (CoRec x) = fmap meth x
+  where meth = runOp $ rget (rpureConstraints @cs @ts (Op f))
+{-# INLINE onCoRec #-}
 
--- | Apply a type class method on a 'Field'. The first argument is a
--- 'Proxy' value for a /list/ of 'Constraint' constructors. For
--- example, @onCoRec [pr|Num,Ord|] (> 20) r@. If only one constraint
--- is needed, use the @pr1@ quasiquoter.
-onField :: forall cs ts b.
-           (AllAllSat cs ts, RecApplicative ts)
-        => Proxy cs
-        -> (forall a. AllSatisfied cs a => a -> b)
+-- | Apply methods from a type class to a 'CoRec'. Intended for use
+-- with @TypeApplications@, e.g. @onCoRec1 \@Show show r@
+onCoRec1 :: forall c f ts b. (Functor f, RPureConstrained c ts)
+         => (forall a. c a => a -> b)
+         -> CoRec f ts -> f b
+onCoRec1 f (CoRec x) = fmap meth x
+  where meth = runOp $ rget (rpureConstrained @c @ts (Op f))
+{-# INLINE onCoRec1 #-}
+
+-- | Apply methods from multiple type classes to a 'Field'. For
+-- example, @onField \@'[Num,Ord] (> 20) r@.
+onField :: forall cs ts b. (RPureConstraints cs ts)
+        => (forall a. AllSatisfied cs a => a -> b)
         -> Field ts -> b
-onField p f x = getIdentity (onCoRec p f x)
+onField f x = getIdentity (onCoRec @cs f x)
+{-# INLINE onField #-}
 
--- | Build a record whose elements are derived solely from a
--- list of constraint constructors satisfied by each.
-reifyDicts :: forall cs f proxy (ts :: [*]). (AllAllSat cs ts, RecApplicative ts)
-           => proxy cs -> (forall a. AllSatisfied cs a => f a) -> Rec f ts
-reifyDicts _ f = go (rpure Nothing)
-  where go :: AllAllSat cs ts' => Rec Maybe ts' -> Rec f ts'
-        go RNil = RNil
-        go (_ :& xs) = f :& go xs
+-- | Apply a type class method to a 'Field'. Intended for use with
+-- @TypeApplications@, e.g. @onField1 \@Show show r@.
+onField1 :: forall c ts b. (RPureConstrained c ts)
+         => (forall a. c a => a -> b)
+         -> Field ts -> b
+onField1 f x = getIdentity (onCoRec1 @c f x)
+{-# INLINE onField1 #-}
 
 -- * Extracting values from a CoRec/Pattern matching on a CoRec
 
+-- | Compute a runtime 'Int' index identifying the position of the
+-- variant held by a @CoRec f ts@ in the type-level list @ts@.
+variantIndexOf :: forall f ts. CoRec f ts -> Int
+variantIndexOf (CoRec x) = aux x
+  where aux :: forall a. NatToInt (RIndex a ts) => f a -> Int
+        aux _ = natToInt @(RIndex a ts)
+{-# INLINE variantIndexOf #-}
+
+-- [NOTE: asA] We want to say that if @NatToInt (RIndex a ts) ~
+-- NatToInt (RIndex b ts)@ then @a ~ b@ by relying on an injectivity
+-- property of 'RIndex'. However, we are checking the variant index of
+-- the argument at runtime, so we do not statically know that
+-- extracting the variant at a particular type is safe at compile
+-- time.
+
 -- | If a 'CoRec' is a variant of the requested type, return 'Just'
 -- that value; otherwise return 'Nothing'.
-asA             :: (t ∈ ts, RecApplicative ts, RMap ts)
-                => CoRec Identity ts -> Maybe t
-asA c@(CoRec _) = rget $ coRecToRec' c
+asA :: NatToInt (RIndex t ts) => CoRec Identity ts -> Maybe t
+asA = fmap getIdentity . asA'
+{-# INLINE asA #-}
 
 -- | Like 'asA', but for any interpretation functor.
-asA' :: (t ∈ ts, RecApplicative ts, RMap ts)
-     => CoRec f ts -> (Maybe :. f) t
-asA' c@(CoRec _) = rget $ coRecToRec c
+asA' :: forall t ts f. (NatToInt (RIndex t ts))
+     => CoRec f ts -> Maybe (f t)
+asA' f@(CoRec x)
+  | variantIndexOf f == natToInt @(RIndex t ts) = Just (unsafeCoerce x)
+  | otherwise = Nothing
+{-# INLINE asA' #-}
+
+-- | Like 'asA', but implemented more safely and typically slower.
+asASafe :: (t ∈ ts, RecApplicative ts, RMap ts)
+        => CoRec Identity ts -> Maybe t
+asASafe c@(CoRec _) = rget $ coRecToRec' c
+
+-- | Like 'asASafe', but for any interpretation functor.
+asA'Safe :: (t ∈ ts, RecApplicative ts, RMap ts)
+         => CoRec f ts -> (Maybe :. f) t
+asA'Safe c@(CoRec _) = rget $ coRecToRec c
 
 -- | Pattern match on a CoRec by specifying handlers for each case. Note that
 -- the order of the Handlers has to match the type level list (t:ts).

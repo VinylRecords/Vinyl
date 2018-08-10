@@ -63,7 +63,7 @@ import Data.Coerce (coerce)
 import Data.Vinyl.Core
 import Data.Vinyl.Functor (Lift(..), Compose(..), type (:.), ElField)
 import Data.Vinyl.Lens (RecElem(..), RecSubset(..), type (⊆), RecElemFCtx)
-import Data.Vinyl.TypeLevel (RImage, RIndex, Nat(..), RecAll, AllConstrained)
+import Data.Vinyl.TypeLevel (NatToInt, RImage, RIndex, Nat(..), RecAll, AllConstrained)
 import Foreign.Marshal.Utils (copyBytes)
 import Foreign.Ptr (Ptr)
 import Foreign.Storable (Storable(..))
@@ -261,6 +261,7 @@ slens f sr = fmap (flip sput sr) (f (sget sr))
 -- | Field accessors for 'SRec2' specialized to 'ElField' as the
 -- functor.
 instance ( i ~ RIndex t ts
+         , NatToInt i
          , FieldOffset ElField ts t
          , Storable (Rec ElField ts)
          , AllConstrained (FieldOffset ElField ts) ts)
@@ -281,6 +282,7 @@ coerceSRec2to1 :: SRec2 f f ts -> SRec f ts
 coerceSRec2to1 = coerce
 
 instance ( i ~ RIndex (t :: (Symbol,*)) (ts :: [(Symbol,*)])
+         , NatToInt i
          , FieldOffset ElField ts t
          , Storable (Rec ElField ts)
          , AllConstrained (FieldOffset ElField ts) ts)
