@@ -37,7 +37,7 @@ newtype Op b a = Op { runOp :: a -> b }
 
 instance forall ts. (RPureConstrained Show ts, RecApplicative ts)
   => Show (CoRec Identity ts) where
-  show x = "(Col " ++ onField1 @Show show x++")"
+  show x = "(Col " ++ onField @Show show x++")"
 
 instance forall ts. (RecApplicative ts, RecordToList ts,
                      RZipWith ts, ReifyConstraint Eq Maybe ts, RMap ts)
@@ -132,39 +132,22 @@ lastField v@(x :& _) = coRecTraverse getCompose $ foldRec aux (CoRec x) v
         aux _ c@(CoRec (Compose (Just _))) = c
         aux c _ = c
 
--- | Apply methods from multiple type classes to a 'CoRec'. For
--- example, @onCoRec \@'[Num,Ord] (> 20) r@.
-onCoRec :: forall cs f ts b. (Functor f, RPureConstraints cs ts)
-        => (forall a. AllSatisfied cs a => a -> b)
-        -> CoRec f ts -> f b
-onCoRec f (CoRec x) = fmap meth x
-  where meth = runOp $ rget (rpureConstraints @cs @ts (Op f))
+-- | Apply methods from a type class to a 'CoRec'. Intended for use
+-- with @TypeApplications@, e.g. @onCoRec \@Show show r@
+onCoRec :: forall c f ts b g. (RPureConstrained c ts)
+        => (forall a. (a ∈ ts, c a) => f a -> g b)
+        -> CoRec f ts -> g b
+onCoRec f (CoRec x) = case getDict @c @ts x of
+                        DictOnly -> f x
 {-# INLINE onCoRec #-}
 
--- | Apply methods from a type class to a 'CoRec'. Intended for use
--- with @TypeApplications@, e.g. @onCoRec1 \@Show show r@
-onCoRec1 :: forall c f ts b. (Functor f, RPureConstrained c ts)
-         => (forall a. c a => a -> b)
-         -> CoRec f ts -> f b
-onCoRec1 f (CoRec x) = fmap meth x
-  where meth = runOp $ rget (rpureConstrained @c @ts (Op f))
-{-# INLINE onCoRec1 #-}
-
--- | Apply methods from multiple type classes to a 'Field'. For
--- example, @onField \@'[Num,Ord] (> 20) r@.
-onField :: forall cs ts b. (RPureConstraints cs ts)
-        => (forall a. AllSatisfied cs a => a -> b)
-        -> Field ts -> b
-onField f x = getIdentity (onCoRec @cs f x)
-{-# INLINE onField #-}
-
 -- | Apply a type class method to a 'Field'. Intended for use with
--- @TypeApplications@, e.g. @onField1 \@Show show r@.
-onField1 :: forall c ts b. (RPureConstrained c ts)
-         => (forall a. c a => a -> b)
-         -> Field ts -> b
-onField1 f x = getIdentity (onCoRec1 @c f x)
-{-# INLINE onField1 #-}
+-- @TypeApplications@, e.g. @onField \@Show show r@.
+onField :: forall c ts b. (RPureConstrained c ts)
+        => (forall a. (a ∈ ts, c a) => a -> b)
+        -> Field ts -> b
+onField f x = getIdentity (onCoRec @c (fmap f) x)
+{-# INLINE onField #-}
 
 -- * Extracting values from a CoRec/Pattern matching on a CoRec
 
