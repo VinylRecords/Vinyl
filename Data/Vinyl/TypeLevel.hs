@@ -87,9 +87,9 @@ type family AllConstrained (c :: u -> Constraint) (ts :: [u]) :: Constraint wher
 
 -- | Constraint that each Constraint in a type-level list is satisfied
 -- by a particular type.
-type family AllSatisfied cs t :: Constraint where
-  AllSatisfied '[] t = ()
-  AllSatisfied (c ': cs) t = (c t, AllSatisfied cs t)
+class AllSatisfied cs t where
+instance AllSatisfied '[] t where
+instance (c t, AllSatisfied cs t) => AllSatisfied (c ': cs) t where
 
 -- | Constraint that all types in a type-level list satisfy each
 -- constraint from a list of constraints.
