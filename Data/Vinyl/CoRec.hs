@@ -77,6 +77,25 @@ instance (t ∈ ss, FoldRec ss ts) => FoldRec ss (t ': ts) where
 coRecMap :: (forall x. f x -> g x) -> CoRec f ts -> CoRec g ts
 coRecMap nt (CoRec x) = CoRec (nt x)
 
+-- | Capture a type class instance dictionary
+data DictOnly c a where
+  DictOnly :: c a => DictOnly c a
+
+-- | Get a 'DictOnly' from an 'RPureConstrained' instance.
+getDict :: forall c ts a proxy. (a ∈ ts, RPureConstrained c ts)
+        => proxy a -> DictOnly c a
+getDict _ = rget @a (rpureConstrained @c @ts DictOnly)
+
+-- | Like 'coRecMap', but the function mapped over the 'CoRec' can
+-- have a constraint.
+coRecMapC :: forall c ts f g.
+             (RPureConstrained c ts)
+          => (forall x. (x ∈ ts, c x) => f x -> g x)
+          -> CoRec f ts
+          -> CoRec g ts
+coRecMapC nt (CoRec x) = case getDict @c @ts x of
+                           DictOnly -> CoRec (nt x)
+
 -- | This can be used to pull effects out of a 'CoRec'.
 coRecTraverse :: Functor h
               => (forall x. f x -> h (g x)) -> CoRec f ts -> h (CoRec g ts)
