@@ -42,6 +42,7 @@ import Data.List (intercalate)
 import Data.Vinyl.TypeLevel
 import Data.Type.Equality (TestEquality (..), (:~:) (..))
 import Data.Type.Coercion (TestCoercion (..), Coercion (..))
+import GHC.Generics
 
 -- | A record is parameterized by a universe @u@, an interpretation @f@ and a
 -- list of rows @rs@.  The labels or indices of the record are given by
@@ -324,3 +325,30 @@ instance (Storable (f r), Storable (Rec f rs))
   {-# INLINE peek #-}
   poke ptr (!x :& xs) = poke (castPtr ptr) x >> poke (ptr `plusPtr` sizeOf (undefined :: f r)) xs
   {-# INLINE poke #-}
+
+instance Generic (Rec f '[]) where
+  type Rep (Rec f '[]) =
+    C1 ('MetaCons "RNil" 'PrefixI 'False)
+       (S1 ('MetaSel 'Nothing
+          'NoSourceUnpackedness
+          'NoSourceStrictness
+          'DecidedLazy) U1)
+  from RNil = M1 (M1 U1)
+  to (M1 (M1 U1)) = RNil
+
+instance (Generic (Rec f rs)) => Generic (Rec f (r ': rs)) where
+  type Rep (Rec f (r ': rs)) =
+    C1 ('MetaCons ":&" ('InfixI 'RightAssociative 7) 'False)
+    (S1 ('MetaSel 'Nothing
+         'NoSourceUnpackedness
+         'SourceStrict
+         'DecidedStrict)
+       (Rec0 (f r))
+      :*:
+      S1 ('MetaSel 'Nothing
+           'NoSourceUnpackedness
+           'NoSourceStrictness
+           'DecidedLazy)
+         (Rep (Rec f rs)))
+  from (x :& xs) = M1 (M1 (K1 x) :*: M1 (from xs))
+  to (M1 (M1 (K1 x) :*: M1 xs)) = x :& to xs
