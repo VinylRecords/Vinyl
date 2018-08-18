@@ -42,6 +42,7 @@ import Data.List (intercalate)
 import Data.Vinyl.TypeLevel
 import Data.Type.Equality (TestEquality (..), (:~:) (..))
 import Data.Type.Coercion (TestCoercion (..), Coercion (..))
+import GHC.Generics
 
 -- | A record is parameterized by a universe @u@, an interpretation @f@ and a
 -- list of rows @rs@.  The labels or indices of the record are given by
@@ -324,3 +325,14 @@ instance (Storable (f r), Storable (Rec f rs))
   {-# INLINE peek #-}
   poke ptr (!x :& xs) = poke (castPtr ptr) x >> poke (ptr `plusPtr` sizeOf (undefined :: f r)) xs
   {-# INLINE poke #-}
+
+instance Generic (Rec f '[]) where
+  type Rep (Rec f '[]) = U1
+  from RNil = U1
+  to U1 = RNil
+
+instance (Generic (Rec f rs), Rep (Rec f rs) ~ K1 R (Rec f rs))
+  => Generic (Rec f (r ': rs)) where
+  type Rep (Rec f (r ': rs)) = Rec0 (f r) :*: Rec0 (Rec f rs)
+  from (x :& xs) = K1 x :*: from xs
+  to (K1 x :*: xs) = x :& to xs
