@@ -29,6 +29,7 @@ module Data.Vinyl.Class.Method
     RecMapMethod(..)
   , rmapMethodF
   , mapFields
+  , RecMapMethod1(..)
   , RecPointed(..)
     -- * Support for 'RecMapMethod'
   , FieldTyper, ApplyFieldTyper, PayloadType
@@ -169,19 +170,36 @@ instance (c (f t), RecPointed c f ts)
   rpointMethod f = f :& rpointMethod @c f
   {-# INLINE rpointMethod #-}
 
--- | Apply a typeclass method to each field of a 'Rec'.
+-- | Apply a typeclass method to each field of a 'Rec' where the class
+-- constrains the index of the field, but not its interpretation
+-- functor.
 class RecMapMethod c (f :: u -> *) (ts :: [u]) where
   rmapMethod :: (forall a. c (PayloadType f a) => f a -> g a)
              -> Rec f ts -> Rec g ts
+
+-- | Apply a typeclass method to each field of a 'Rec' where the class
+-- constrains the field when considered as a value interpreted by the
+-- record's interpretation functor.
+class RecMapMethod1 c (f :: u -> *) (ts :: [u])where
+  rmapMethod1 :: (forall a. c (f a) => f a -> g a)
+              -> Rec f ts -> Rec g ts
 
 instance RecMapMethod c f '[] where
   rmapMethod _ RNil = RNil
   {-# INLINE rmapMethod #-}
 
+instance RecMapMethod1 c f '[] where
+  rmapMethod1 _ RNil = RNil
+  {-# INLINE rmapMethod1 #-}
+
 instance (c (PayloadType f t), RecMapMethod c f ts)
   => RecMapMethod c f (t ': ts) where
   rmapMethod f (x :& xs) = f x :& rmapMethod @c f xs
   {-# INLINE rmapMethod #-}
+
+instance (c (f t), RecMapMethod1 c f ts) => RecMapMethod1 c f (t ': ts) where
+  rmapMethod1 f (x :& xs) = f x :& rmapMethod1 @c f xs
+  {-# INLINE rmapMethod1 #-}
 
 -- | Apply a typeclass method to each field of a @Rec f ts@ using the
 -- 'Functor' instance for @f@ to lift the function into the
