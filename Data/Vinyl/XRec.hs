@@ -168,6 +168,7 @@ instance IsoHKD (Either a) b where
 instance IsoHKD Maybe a where
 instance IsoHKD First a where
 instance IsoHKD Last a where
+instance IsoHKD ((,) a) b where
 
 -- | Work with values of type 'Sum' @a@ as if they were of type @a@.
 instance IsoHKD Sum a where
