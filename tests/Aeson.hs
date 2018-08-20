@@ -1,8 +1,11 @@
-{-# LANGUAGE DataKinds, FlexibleContexts, FlexibleInstances, GADTs,
-             OverloadedStrings, PolyKinds, ScopedTypeVariables,
+{-# LANGUAGE CPP, DataKinds, FlexibleContexts, FlexibleInstances,
+             GADTs, OverloadedStrings, PolyKinds, ScopedTypeVariables,
              TypeApplications, TypeOperators #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 import Control.Monad.State.Strict
+#if __GLASGOW_HASKELL__ < 804
+import Data.Semigroup ((<>))
+#endif
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Vinyl
