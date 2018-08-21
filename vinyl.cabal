@@ -97,7 +97,8 @@ test-suite aeson
   type:             exitcode-stdio-1.0
   hs-source-dirs:   tests
   main-is:          Aeson.hs
-  build-depends:    base >= 4.7 && <= 5, hspec, aeson, text, mtl, vinyl
+  build-depends:    base >= 4.7 && <= 5, hspec, aeson, text, mtl, vinyl,
+                    unordered-containers
   default-language: Haskell2010
 
 test-suite spec
