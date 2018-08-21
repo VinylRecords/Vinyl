@@ -98,7 +98,7 @@ test-suite aeson
   hs-source-dirs:   tests
   main-is:          Aeson.hs
   build-depends:    base >= 4.7 && <= 5, hspec, aeson, text, mtl, vinyl,
-                    unordered-containers
+                    vector, unordered-containers, lens, lens-aeson
   default-language: Haskell2010
 
 test-suite spec

@@ -1,8 +1,9 @@
-{-# LANGUAGE CPP, DataKinds, FlexibleContexts, FlexibleInstances,
-             GADTs, OverloadedStrings, PolyKinds, ScopedTypeVariables,
-             TypeApplications, TypeOperators, ViewPatterns #-}
+{-# LANGUAGE CPP, DataKinds, DeriveGeneric, FlexibleContexts,
+             FlexibleInstances, GADTs, OverloadedStrings, PolyKinds,
+             ScopedTypeVariables, TypeApplications, TypeOperators,
+             ViewPatterns #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
--- | Demonstrate encoding a 'Rec' to JSON. Two approaches are shown:
+-- | Demonstrate encoding a 'Rec' to JSON. Three approaches are shown:
 -- the first utilizes 'ToJSON' instances for the record's
 -- interpretation type constructor applied to each of its fields. This
 -- has the advantage of being concise by virtue of re-using a lot of
@@ -19,7 +20,20 @@
 --
 -- The second approach uses a bit of @aeson@ internals to instead
 -- serialize each 'Rec' field as a key-value pair with no additional
--- decoration. This should be faster as well as more tightly typed.
+-- decoration. This should be faster as well as more tightly typed
+-- since we do not need to undo any 'Value' wrapping of the individual
+-- record fields.
+--
+-- The third approach uses aeson's built-in functions for working with
+-- 'Generic'. This requires some post-processing to address precisely
+-- the above problem: the function based on 'Generic' ends up
+-- producing a self-contained 'Value' for each field of the
+-- record. Specifically, each field becomes an 'Array' that is either
+-- empty or contains an 'Object' with a single field as well as
+-- another, nested, 'Array' for the rest of the record. We include
+-- here a function to flatten that recursive structure into the
+-- 'Object' shape we want.
+import Control.Lens (view, deep)
 import Control.Monad.State.Strict
 import qualified Data.HashMap.Strict as H
 #if __GLASGOW_HASKELL__ < 804
@@ -27,11 +41,14 @@ import Data.Semigroup ((<>))
 #endif
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Vector as V
 import Data.Vinyl
 import Data.Vinyl.Class.Method (RecMapMethod1(..))
 import Data.Vinyl.Functor (Compose(..), (:.), Identity(..), Const(..))
 import Data.Aeson
 import Data.Aeson.Encoding.Internal (wrapObject, pair)
+import Data.Aeson.Lens (_Object)
+import GHC.Generics (Generic, Rep)
 import GHC.TypeLits (KnownSymbol)
 import Test.Hspec
 
@@ -110,15 +127,47 @@ r2JSON = object [ "field1" .= (23 :: Int)
                 , "field2" .= True
                 , "field3" .= ("You spin me right round" :: Text) ]
 
+-- | A type with its own JSON Object encoding
+data MyType = MyType { bike :: Bool, skateboard :: Bool } deriving Generic
+instance ToJSON MyType
+
+r3 :: Rec ElField '[ "age" ::: Int
+                   , "iscool" ::: Bool
+                   , "yearbook" ::: Text
+                   , "hobbies" ::: MyType ]
+r3 = xrec (23, True, "You spin me right round", MyType True True)
+
+r3JSON :: Value
+r3JSON = object [ "age" .= (23 :: Int)
+                , "iscool" .= True
+                , "yearbook" .= ("You spin me right round" :: Text)
+                , "hobbies" .= object ["bike" .= True, "skateboard" .= True] ]
+
 main :: IO ()
 main = hspec $ do
-  describe "Encode Rec to JSON" $ do
+  describe "Simple Rec to JSON" $ do
     it "Named fields" $
       toJSON r1 `shouldBe` r1JSON
     it "Anonymous fields" $
       toJSON (nameFields r2) `shouldBe` r2JSON
+    it "Nested objects" $
+      toJSON r3 `shouldBe` r3JSON
+  describe "Type-safe Rec to JSON" $ do
+    it "Named fields" $
+      recToJSON r1 `shouldBe` r1JSON
+    it "Anonymous fields" $
+      recToJSON (nameFields r2) `shouldBe` r2JSON
+    it "Nested objects" $
+      recToJSON r3 `shouldBe` r3JSON
+  describe "Via Generics" $ do
+    it "Named fields" $
+      grecToJSON r1 `shouldBe` r1JSON
+    it "Anonymous fields" $
+      grecToJSON (nameFields r2) `shouldBe` r2JSON
+    it "Nested objects" $
+      grecToJSON r3 `shouldBe` r3JSON
 
--- * More type safe, possibly more efficient
+-- * More type safe and efficient
 
 -- | Produce a JSON key-value pair from a Haskell value. This is what
 -- we want from each field of our records. The simple encoding above
@@ -152,3 +201,37 @@ recToJSON :: (RFoldMap rs, RecMapMethod1 ToJSONField f rs)
 recToJSON = object
           . rfoldMap ((:[]) . getConst)
           . rmapMethod1 @ToJSONField (Const . toJSONField)
+
+-- * Generically
+
+-- | If a 'Value' is a nested 'Array' of 'Object's, extract the
+-- collection of key-value pairs from the entire recursive structure.
+allAesonFields :: Value -> Maybe (H.HashMap Text Value)
+allAesonFields (Array arr) =
+  case V.toList arr of
+    [] -> Just mempty
+    [Object field, objTail] -> fmap (field <>) (allAesonFields objTail)
+    _ -> Nothing
+allAesonFields _ = Nothing
+
+-- | Try un-nesting a recursive 'Array' of fields. That is, if a
+-- 'Value' is laid out as @Array [Object [(key1,value1)], Array
+-- [Object [(key2, value2)], ...]]@ we extract all the key-value
+-- pairs, @[(key1,value1), (key2, value2), ...]@.
+unnestFields :: Value -> Value
+unnestFields v = maybe v Object (allAesonFields v)
+
+-- | A lens implementation of something a bit looser than
+-- 'unnestFields'.
+allFields :: Value -> H.HashMap Text Value
+allFields = view (deep _Object)
+
+-- | The generic 'ToJSON' instance is not quite right since we use the
+-- record's interpretation type constructor to define serialization,
+-- resulting in each record field being treated as a self-contained
+-- JSON object. What we want is for each record field to become a
+-- named field of a single JSON object, so we must post-process the
+-- result of the function defined on 'Generic'.
+grecToJSON :: (Generic (Rec f rs), GToJSON Zero (Rep (Rec f rs)))
+           => Rec f rs -> Value
+grecToJSON = Object . allFields . genericToJSON defaultOptions
