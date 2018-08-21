@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE DeriveFoldable             #-}
 {-# LANGUAGE DeriveFunctor              #-}
+{-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE DeriveTraversable          #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GADTs                      #-}
@@ -9,6 +10,7 @@
 {-# LANGUAGE PolyKinds                  #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE StandaloneDeriving         #-}
+{-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeOperators              #-}
 
 module Data.Vinyl.Functor
@@ -37,6 +39,7 @@ import Data.Semigroup
 #endif
 import Foreign.Ptr (castPtr)
 import Foreign.Storable
+import GHC.Generics
 import GHC.TypeLits
 import GHC.Types (Type)
 
@@ -57,6 +60,7 @@ newtype Identity a
              , Storable
              , Eq
              , Ord
+             , Generic
              )
 
 -- | Used this instead of 'Identity' to make a record
@@ -73,7 +77,7 @@ newtype Lift (op :: l -> l' -> *) (f :: k -> l) (g :: k -> l') (x :: k)
 
 newtype Compose (f :: l -> *) (g :: k -> l) (x :: k)
   = Compose { getCompose :: f (g x) }
-    deriving (Storable)
+    deriving (Storable, Generic)
 
 type f :. g = Compose f g
 infixr 9 :.
@@ -84,6 +88,7 @@ newtype Const (a :: *) (b :: k)
              , Foldable
              , Traversable
              , Storable
+             , Generic
              )
 
 -- | A value with a phantom 'Symbol' label. It is not a
@@ -94,6 +99,11 @@ data ElField (field :: (Symbol, Type)) where
 
 deriving instance Eq t => Eq (ElField '(s,t))
 deriving instance Ord t => Ord (ElField '(s,t))
+
+instance KnownSymbol s => Generic (ElField '(s,a)) where
+  type Rep (ElField '(s,a)) = C1 ('MetaCons s 'PrefixI 'False) (Rec0 a)
+  from (Field x) = M1 (K1 x)
+  to (M1 (K1 x)) = Field x
 
 instance (Num t, KnownSymbol s) => Num (ElField '(s,t)) where
   Field x + Field y = Field (x+y)
