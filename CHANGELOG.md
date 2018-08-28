@@ -4,6 +4,10 @@
 
 - Faster `asA` and `asA'`. These implementations utilize `unsafeCoerce` in their implementations after we have performed a runtime check that proves (to us) that the types match up. The old implementations are still available as `asASafe` and `asA'Safe`. While both implementations can run in constant time if the compiler optimizes everything successfully, the faster variants are a bit more than 3x faster in a trivial benchmark.
 
+- Add a `Generic` instance for `Rec` and common functors.
+
+- Add a variety of `ToJSON` implementations as a test case. One or all of these should probably exist as a separate package to avoid `vinyl` depending on `aeson`, but their content may be of interest.
+
 # 0.9.2
 
 - Add `runcurryX` for applying an uncurried function to a `Rec` passing through the `XRec` machinery to strip out syntactic noise.
