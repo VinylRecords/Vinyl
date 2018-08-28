@@ -180,16 +180,6 @@ asA' f@(CoRec x)
   | otherwise = Nothing
 {-# INLINE asA' #-}
 
--- | Like 'asA', but implemented more safely and typically slower.
-asASafe :: (t ∈ ts, RecApplicative ts, RMap ts)
-        => CoRec Identity ts -> Maybe t
-asASafe c@(CoRec _) = rget $ coRecToRec' c
-
--- | Like 'asASafe', but for any interpretation functor.
-asA'Safe :: (t ∈ ts, RecApplicative ts, RMap ts)
-         => CoRec f ts -> (Maybe :. f) t
-asA'Safe c@(CoRec _) = rget $ coRecToRec c
-
 -- | Pattern match on a CoRec by specifying handlers for each case. Note that
 -- the order of the Handlers has to match the type level list (t:ts).
 --
@@ -254,13 +244,33 @@ type Handlers ts b = Rec (Handler b) ts
 -- type, or a 'CoRec' that must be one of the remaining types.
 restrictCoRec :: forall t ts f. (RecApplicative ts, FoldRec ts ts)
               => CoRec f (t ': ts) -> Either (f t) (CoRec f ts)
-restrictCoRec = go . coRecToRec
-  where go :: Rec (Maybe :. f) (t ': ts) -> Either (f t) (CoRec f ts)
-        go (Compose Nothing :& xs) = Right (fromJust (firstField xs))
-        go (Compose (Just x) :& _) = Left x
+restrictCoRec r = maybe (Right (unsafeCoerce r)) Left (asA' @t r)
+{-# INLINE restrictCoRec #-}
 
 -- | A 'CoRec' whose possible types are @ts@ may be used at a type of
 -- 'CoRec' whose possible types are @t:ts@.
 weakenCoRec :: (RecApplicative ts, FoldRec (t ': ts) (t ': ts))
             => CoRec f ts -> CoRec f (t ': ts)
 weakenCoRec = fromJust . firstField . (Compose Nothing :&) . coRecToRec
+
+-- * Safe Variants
+
+-- | A 'CoRec' is either the first possible variant indicated by its
+-- type, or a 'CoRec' that must be one of the remaining types. The
+-- safety is related to that of 'asASafe'.
+restrictCoRecSafe :: forall t ts f. (RecApplicative ts, FoldRec ts ts)
+                  => CoRec f (t ': ts) -> Either (f t) (CoRec f ts)
+restrictCoRecSafe = go . coRecToRec
+  where go :: Rec (Maybe :. f) (t ': ts) -> Either (f t) (CoRec f ts)
+        go (Compose Nothing :& xs) = Right (fromJust (firstField xs))
+        go (Compose (Just x) :& _) = Left x
+
+-- | Like 'asA', but implemented more safely and typically slower.
+asASafe :: (t ∈ ts, RecApplicative ts, RMap ts)
+        => CoRec Identity ts -> Maybe t
+asASafe c@(CoRec _) = rget $ coRecToRec' c
+
+-- | Like 'asASafe', but for any interpretation functor.
+asA'Safe :: (t ∈ ts, RecApplicative ts, RMap ts)
+         => CoRec f ts -> (Maybe :. f) t
+asA'Safe c@(CoRec _) = rget $ coRecToRec c
