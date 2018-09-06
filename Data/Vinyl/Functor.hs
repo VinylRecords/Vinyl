@@ -21,7 +21,7 @@ module Data.Vinyl.Functor
   , Thunk(..)
   , Lift(..)
   , ElField(..)
-  , Compose(..)
+  , Compose(..), onCompose
   , (:.)
   , Const(..)
     -- * Discussion
@@ -78,6 +78,12 @@ newtype Lift (op :: l -> l' -> *) (f :: k -> l) (g :: k -> l') (x :: k)
 newtype Compose (f :: l -> *) (g :: k -> l) (x :: k)
   = Compose { getCompose :: f (g x) }
     deriving (Storable, Generic)
+
+-- | Apply a function to a value whose type is the application of the
+-- 'Compose' type constructor. This works under the 'Compose' newtype
+-- wrapper.
+onCompose :: (f (g a) -> h (k a)) -> (f :. g) a -> (h :. k) a
+onCompose f = Compose . f . getCompose
 
 type f :. g = Compose f g
 infixr 9 :.
