@@ -40,7 +40,7 @@ instance forall ts. (RPureConstrained Show ts, RecApplicative ts)
   show x = "(Col " ++ onField @Show show x++")"
 
 instance forall ts. (RecApplicative ts, RecordToList ts,
-                     RZipWith ts, ReifyConstraint Eq Maybe ts, RMap ts)
+                     RApply ts, ReifyConstraint Eq Maybe ts, RMap ts)
   => Eq (CoRec Identity ts) where
   crA == crB = and . recordToList
              $ rzipWith f (toRec crA) (coRecToRec' crB)

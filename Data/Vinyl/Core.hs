@@ -173,17 +173,9 @@ rtraverse f (x :& xs) = (:&) <$> f x <*> rtraverse f xs
 -- have a natural transformation from the product of @'Rec' f@ and @'Rec' g@ to
 -- @'Rec' h@. You can also think about this operation as zipping two records
 -- with the same element types but different interpretations.
-class RZipWith xs where
-  rzipWith :: (forall x  .     f x  ->     g x  ->     h x)
-           -> Rec f xs -> Rec g xs -> Rec h xs
-
-instance RZipWith '[] where
-  rzipWith _ RNil RNil = RNil
-  {-# INLINE rzipWith #-}
-
-instance RZipWith xs => RZipWith (x ': xs) where
-  rzipWith m (fa :& fas) (ga :& gas) = m fa ga :& rzipWith m fas gas
-  {-# INLINE rzipWith #-}
+rzipWith :: (RMap xs, RApply xs)
+         => (forall x. f x -> g x -> h x) -> Rec f xs -> Rec g xs -> Rec h xs
+rzipWith f = rapply . rmap (Lift . f)
 
 -- | Map each element of a record to a monoid and combine the results.
 class RFoldMap rs where
