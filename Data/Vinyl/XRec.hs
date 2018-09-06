@@ -29,6 +29,8 @@
 module Data.Vinyl.XRec where
 import Data.Vinyl.Core (Rec(..))
 import Data.Vinyl.Functor
+import Data.Vinyl.Lens (RecElem, RecElemFCtx, rgetC)
+import Data.Vinyl.TypeLevel (RIndex)
 import Data.Monoid
 import GHC.TypeLits (KnownSymbol)
 
@@ -181,3 +183,19 @@ instance IsoHKD Product a where
   type HKD Product a = a
   unHKD = Product
   toHKD (Product x) = x
+
+-- | Record field getter that pipes the field value through 'HKD' to
+-- eliminate redundant newtype wrappings. Usage will typically involve
+-- a visible type application to the field type. The definition is
+-- similar to, @getHKD = toHKD . rget@.
+rgetX :: forall a record f rs.
+         (RecElem record a a rs rs (RIndex a rs),
+          RecElemFCtx record f,
+          IsoHKD f a)
+      => record f rs -> HKD f a
+rgetX = toHKD . rgetAux @a
+  where rgetAux :: forall r.
+                   (RecElem record r r rs rs (RIndex r rs),
+                    RecElemFCtx record f)
+                => record f rs -> f r
+        rgetAux = rgetC
