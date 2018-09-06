@@ -15,6 +15,8 @@
 module Data.Vinyl.FromTuple where
 import Data.Vinyl.Core (Rec(..))
 import Data.Vinyl.Functor (ElField)
+import Data.Vinyl.Lens (RecSubset, RecSubsetFCtx, rcast)
+import Data.Vinyl.TypeLevel (RImage, Snd)
 import Data.Vinyl.XRec (XRec, pattern (::&), pattern XRNil, IsoXRec(..), HKD)
 import GHC.TypeLits (TypeError, ErrorMessage(Text))
 
@@ -134,3 +136,16 @@ instance TupleRec f (f a, f b, f c, f d, f e, f z, f g, f h) where
 -- | Build a 'FieldRec' from a tuple of 'ElField' values.
 fieldRec :: TupleRec ElField t => t -> UncurriedRec (TupleToRecArgs ElField t)
 fieldRec = record @ElField
+
+-- | Build a 'FieldRec' from a tuple and 'rcast' it to another record
+-- type that is a subset of the constructed record. This is useful for
+-- re-ordering fields. For example, @namedArgs (#name =: "joe", #age
+-- =: 23)@ can supply arguments for a function expecting a record of
+-- arguments with its fields in the opposite order.
+namedArgs :: (TupleRec ElField t,
+              ss ~ Snd (TupleToRecArgs ElField t),
+               RecSubset Rec rs (Snd (TupleToRecArgs ElField t)) (RImage rs ss),
+               UncurriedRec (TupleToRecArgs ElField t) ~ Rec ElField ss,
+               RecSubsetFCtx Rec ElField)
+          => t -> Rec ElField rs
+namedArgs = rcast . fieldRec

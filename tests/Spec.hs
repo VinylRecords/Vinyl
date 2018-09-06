@@ -9,6 +9,7 @@ import Test.Hspec
 import Data.Vinyl.Syntax ()
 
 import qualified CoRecSpec as C
+import qualified XRecSpec as X
 
 -- d1 :: FieldRec '[ '("X",String), '("Y", String) ]
 -- d1 = Field @"X" "5" :& Field @"Y" "Hi" :& RNil
@@ -30,6 +31,7 @@ d3 = rmap (\(Compose f) -> Lift (f . getConst)) d2' <<*>> d1'
 main :: IO ()
 main = hspec $ do
   C.spec
+  X.spec
   describe "Rec is like an Applicative" $ do
     it "Can apply parsing functions" $ d3 `shouldBe` Field 5 :& Field "Hi" :& RNil
   describe "Fields may be accessed by overloaded labels" $ do
