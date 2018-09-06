@@ -33,6 +33,7 @@ type family TupleToRecArgs f t = (r :: (u -> *, [u])) | r -> t where
   TupleToRecArgs f (f a, f b, f c, f d) = '(f, [a,b,c,d])
   TupleToRecArgs f (f a, f b, f c) = '(f, [a,b,c])
   TupleToRecArgs f (f a, f b) = '(f, [a,b])
+  TupleToRecArgs f () = '(f , '[])
 
 -- | Apply the 'Rec' type constructor to a type-level tuple of its
 -- arguments.
@@ -85,6 +86,7 @@ instance TupleXRec f '[a,b,c,d,e,z,g,h] where
   xrecX (a, b, c, d, e, z, g, h) = a ::& b ::& c ::& d ::& e ::& z ::& g ::& h ::& XRNil
 
 type family ListToHKDTuple (f :: u -> *) (ts :: [u]) :: * where
+  ListToHKDTuple f '[] = HKD f ()
   ListToHKDTuple f '[a,b] = (HKD f a, HKD f b)
   ListToHKDTuple f '[a,b,c] = (HKD f  a, HKD f b, HKD f c)
   ListToHKDTuple f '[a,b,c,d] = (HKD f a, HKD f b, HKD f c, HKD f d)
@@ -111,6 +113,9 @@ xrec = fromXRec . xrecX
 -- b)@.
 class TupleRec f t where
   record :: t -> UncurriedRec (TupleToRecArgs f t)
+
+instance TupleRec f () where
+  record () = RNil
 
 instance TupleRec f (f a, f b) where
   record (a,b) = a :& b :& RNil
