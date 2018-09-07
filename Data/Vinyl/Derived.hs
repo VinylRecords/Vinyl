@@ -55,6 +55,12 @@ fieldMap :: (a -> b) -> ElField '(s,a) -> ElField '(s,b)
 fieldMap f (Field x) = Field (f x)
 {-# INLINE fieldMap #-}
 
+-- | Something in the spirit of 'traverse' for 'ElField' whose kind
+-- fights the standard library.
+traverseField :: (KnownSymbol s, Functor f)
+              => (a -> b) -> f (ElField '(s,a)) -> ElField '(s, f b)
+traverseField f t = Field (fmap (f . getField)  t)
+
 -- | Lens for an 'ElField''s data payload.
 rfield :: Functor f => (a -> f b) -> ElField '(s,a) -> f (ElField '(s,b))
 rfield f (Field x) = fmap Field (f x)
