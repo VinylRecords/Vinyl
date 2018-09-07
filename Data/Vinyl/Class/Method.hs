@@ -31,6 +31,8 @@ module Data.Vinyl.Class.Method
   , mapFields
   , RecMapMethod1(..)
   , RecPointed(..)
+  , rtraverseInMethod
+  , rsequenceInFields
     -- * Support for 'RecMapMethod'
   , FieldTyper, ApplyFieldTyper, PayloadType
     -- * Eq Functions
@@ -54,10 +56,10 @@ module Data.Vinyl.Class.Method
     -- * Example
     -- $example
   ) where
-
+import Data.Functor.Product (Product(Pair))
 import Data.Vinyl.Core
-import Data.Vinyl.Derived (FieldRec)
-import Data.Vinyl.Functor ((:.), ElField(..))
+import Data.Vinyl.Derived (KnownField, AllFields, FieldRec, traverseField)
+import Data.Vinyl.Functor ((:.), getCompose, ElField(..))
 import Data.Vinyl.TypeLevel
 #if __GLASGOW_HASKELL__ < 804
 import Data.Monoid
@@ -218,6 +220,28 @@ mapFields f = rmapMethod @c g
   where g :: c (PayloadType ElField t) => ElField t -> ElField t
         g (Field x) = Field (f x)
 {-# INLINE mapFields #-}
+
+-- | Like 'rtraverseIn', but the function between functors may be
+-- constrained.
+rtraverseInMethod :: forall c h f g rs.
+                     (RMap rs, RPureConstrained c rs, RApply rs)
+                  => (forall a. c a => f a -> g (ApplyToField h a))
+                  -> Rec f rs
+                  -> Rec g (MapTyCon h rs)
+rtraverseInMethod f = rtraverseIn @h (withPairedDict @c f)
+                    . rzipWith Pair (rpureConstrained @c aux)
+  where aux :: c b => DictOnly c b
+        aux = DictOnly
+
+-- Note: rtraverseInMethod is written with that `aux` helper in order
+-- to work around compatibility with GHC < 8.4. Write it more
+-- naturally as `DictOnly @c` does not work with older compilers.
+
+-- | Push an outer layer of interpretation functor into each named field.
+rsequenceInFields :: forall f rs. (Functor f, AllFields rs, RMap rs)
+                  => Rec (f :. ElField) rs -> Rec ElField (MapTyCon f rs)
+rsequenceInFields = rtraverseInMethod @KnownField (traverseField id . getCompose)
+
 
 {- $example
     This module provides variants of typeclass methods that have
