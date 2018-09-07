@@ -79,6 +79,13 @@ newtype Compose (f :: l -> *) (g :: k -> l) (x :: k)
   = Compose { getCompose :: f (g x) }
     deriving (Storable, Generic)
 
+instance Semigroup (f (g a)) => Semigroup (Compose f g a) where
+  Compose x <> Compose y = Compose (x <> y)
+
+instance Monoid (f (g a)) => Monoid (Compose f g a) where
+  mempty = Compose mempty
+  mappend (Compose x) (Compose y) = Compose (mappend x y)
+
 -- | Apply a function to a value whose type is the application of the
 -- 'Compose' type constructor. This works under the 'Compose' newtype
 -- wrapper.
