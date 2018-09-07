@@ -18,6 +18,7 @@ module Data.Vinyl.Lens
   , RElem
   , RecSubset(..)
   , rsubset, rcast, rreplace
+  , rdowncast
   , RSubset
   , REquivalent
   , type (∈)
@@ -198,6 +199,13 @@ rreplace :: forall rs ss f record is.
             (RecSubset record rs ss is, RecSubsetFCtx record f)
          => record f rs -> record f ss -> record f ss
 rreplace = rreplaceC
+
+-- | Takes a smaller record to a larger one, a /downcast/, by layering a
+-- 'Maybe' interpretation that lets us use 'Nothing' for the fields
+-- not present in the smaller record.
+rdowncast :: (RecApplicative ss, RMap rs, rs ⊆ ss)
+              => Rec f rs -> Rec (Maybe :. f) ss
+rdowncast = flip rreplace (rpure (Compose Nothing)) . rmap (Compose . Just)
 
 type RSubset = RecSubset Rec
 
