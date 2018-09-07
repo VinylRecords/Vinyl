@@ -1,13 +1,13 @@
-{-# LANGUAGE DataKinds, OverloadedLabels, TypeApplications,
-             TypeOperators, ViewPatterns #-}
+{-# LANGUAGE DataKinds, FlexibleContexts, OverloadedLabels,
+             TypeApplications, TypeOperators, ViewPatterns #-}
 module XRecSpec (spec) where
-import Data.Vinyl (Rec, FieldRec, ElField, (:::), (=:))
-import Data.Vinyl.FromTuple (namedArgs, ruple, xrec)
+import Data.Vinyl
+import Data.Vinyl.FromTuple (namedArgs, ruple, xrec, fieldRec, withDefaults)
 import Data.Vinyl.Functor ((:.))
 import Data.Vinyl.XRec (rgetX)
 import Test.Hspec (SpecWith, describe, it, shouldBe)
 
--- | A function that takes named parameters
+-- | A function that takes named parameters.
 foo :: FieldRec '["name" ::: String, "age" ::: Int] -> Int
 foo (ruple -> (name, age)) = length name + age
 

@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes    #-}
+{-# LANGUAGE CPP                    #-}
 {-# LANGUAGE DataKinds              #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
@@ -13,9 +14,13 @@
 -- example record construction using 'ElField' for named fields:
 -- @fieldRec (#x =: True, #y =: 'b') :: FieldRec '[ '("x", Bool), '("y", Char) ]@
 module Data.Vinyl.FromTuple where
-import Data.Vinyl.Core (Rec(..))
-import Data.Vinyl.Functor (ElField)
-import Data.Vinyl.Lens (RecSubset, RecSubsetFCtx, rcast)
+import Data.Monoid (First(..))
+#if __GLASGOW_HASKELL__ < 804
+import Data.Semigroup (Semigroup(..))
+#endif
+import Data.Vinyl.Core (RApply, RMap, RecApplicative, rcombine, rmap, rtraverse, Rec(..))
+import Data.Vinyl.Functor (onCompose, Compose(..), getCompose, ElField)
+import Data.Vinyl.Lens (RecSubset, RecSubsetFCtx, rcast, rdowncast, type (⊆))
 import Data.Vinyl.TypeLevel (RImage, Snd)
 import Data.Vinyl.XRec (XRec, pattern (::&), pattern XRNil, IsoXRec(..), HKD)
 import GHC.TypeLits (TypeError, ErrorMessage(Text))
@@ -149,8 +154,18 @@ fieldRec = record @ElField
 -- arguments with its fields in the opposite order.
 namedArgs :: (TupleRec ElField t,
               ss ~ Snd (TupleToRecArgs ElField t),
-               RecSubset Rec rs (Snd (TupleToRecArgs ElField t)) (RImage rs ss),
-               UncurriedRec (TupleToRecArgs ElField t) ~ Rec ElField ss,
-               RecSubsetFCtx Rec ElField)
+              RecSubset Rec rs (Snd (TupleToRecArgs ElField t)) (RImage rs ss),
+              UncurriedRec (TupleToRecArgs ElField t) ~ Rec ElField ss,
+              RecSubsetFCtx Rec ElField)
           => t -> Rec ElField rs
 namedArgs = rcast . fieldRec
+
+-- | Override a record with fields from a possibly narrower record. A
+-- typical use is to supply default values as the first argument, and
+-- overrides for those defaults as the second.
+withDefaults :: (RMap rs, RApply rs, ss ⊆ rs, RMap ss, RecApplicative rs)
+             => Rec f rs -> Rec f ss -> Rec f rs
+withDefaults defs = fin . rtraverse getCompose . flip rfirst defs' . rdowncast
+  where fin = maybe (error "Impossible: withDefaults failed") id
+        defs' = rmap (Compose . Just) defs
+        rfirst = rcombine (<>) (onCompose First) (onCompose getFirst)
