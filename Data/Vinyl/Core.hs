@@ -90,6 +90,23 @@ rappend (x :& xs) ys = x :& (xs `rappend` ys)
   -> Rec f (as ++ bs)
 (<+>) = rappend
 
+-- | Combine two records by combining their fields using the given
+-- function. The first argument is a binary operation for combining
+-- two values (e.g. '(<>)'), the second argument takes a record field
+-- into the type equipped with the desired operation, the third
+-- argument takes the combined value back to a result type.
+rcombine :: (RMap rs, RApply rs)
+         => (forall a. m a -> m a -> m a)
+         -> (forall a. f a -> m a)
+         -> (forall a. m a -> g a)
+         -> Rec f rs
+         -> Rec f rs
+         -> Rec g rs
+rcombine smash toM fromM x y =
+  rmap fromM (rapply (rmap (Lift . smash) x') y')
+  where x' = rmap toM x
+        y' = rmap toM y
+
 -- | 'Rec' @_ rs@ with labels in kind @u@ gives rise to a functor @Hask^u ->
 -- Hask@; that is, a natural transformation between two interpretation functors
 -- @f,g@ may be used to transport a value from 'Rec' @f rs@ to 'Rec' @g rs@.
