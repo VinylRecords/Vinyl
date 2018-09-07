@@ -33,16 +33,18 @@ module Data.Vinyl.Core where
 
 import Data.Monoid (Monoid)
 #if __GLASGOW_HASKELL__ < 804
-import Data.Semigroup
+import Data.Semigroup (Semigroup(..))
 #endif
 import Foreign.Ptr (castPtr, plusPtr)
 import Foreign.Storable (Storable(..))
-import Data.Vinyl.Functor
+import Data.Functor.Product (Product(Pair))
 import Data.List (intercalate)
+import Data.Vinyl.Functor
 import Data.Vinyl.TypeLevel
 import Data.Type.Equality (TestEquality (..), (:~:) (..))
 import Data.Type.Coercion (TestCoercion (..), Coercion (..))
 import GHC.Generics
+import GHC.Types (Constraint, Type)
 
 -- | A record is parameterized by a universe @u@, an interpretation @f@ and a
 -- list of rows @rs@.  The labels or indices of the record are given by
@@ -244,6 +246,18 @@ class RPureConstrained c ts where
 instance RPureConstrained c '[] where
   rpureConstrained _ = RNil
   {-# INLINE rpureConstrained #-}
+
+-- | Capture a type class instance dictionary. See
+-- 'Data.Vinyl.Lens.getDict' for a way to obtain a 'DictOnly' value
+-- from an 'RPureConstrained' constraint.
+data DictOnly (c :: k -> Constraint) a where
+  DictOnly :: forall c a. c a => DictOnly c a
+
+-- | A useful technique is to use 'rmap (Pair (DictOnly @MyClass))' on
+-- a 'Rec' to pair each field with a type class dictionary for
+-- @MyClass@. This helper can then be used to eliminate the original.
+withPairedDict :: (c a => f a -> r) -> Product (DictOnly c) f a -> r
+withPairedDict f (Pair DictOnly x) = f x
 
 instance (c x, RPureConstrained c xs) => RPureConstrained c (x ': xs) where
   rpureConstrained f = f :& rpureConstrained @c @xs f

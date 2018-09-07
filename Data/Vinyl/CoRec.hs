@@ -77,10 +77,6 @@ instance (t ∈ ss, FoldRec ss ts) => FoldRec ss (t ': ts) where
 coRecMap :: (forall x. f x -> g x) -> CoRec f ts -> CoRec g ts
 coRecMap nt (CoRec x) = CoRec (nt x)
 
--- | Capture a type class instance dictionary
-data DictOnly c a where
-  DictOnly :: c a => DictOnly c a
-
 -- | Get a 'DictOnly' from an 'RPureConstrained' instance.
 getDict :: forall c ts a proxy. (a ∈ ts, RPureConstrained c ts)
         => proxy a -> DictOnly c a
