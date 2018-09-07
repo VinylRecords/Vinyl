@@ -171,6 +171,27 @@ rtraverse _ RNil      = pure RNil
 rtraverse f (x :& xs) = (:&) <$> f x <*> rtraverse f xs
 {-# INLINABLE rtraverse #-}
 
+-- | While 'rtraverse' pulls the interpretation functor out of the
+-- record, 'rtraverseIn' pushes the interpretation functor in to each
+-- field type. This is particularly useful when you wish to discharge
+-- that interpretation on a per-field basis. For instance, rather than
+-- a @Rec IO '[a,b]@, you may wish to have a @Rec Identity '[IO a, IO
+-- b]@ so that you can evaluate a single field to obtain a value of
+-- type @Rec Identity '[a, IO b]@.
+rtraverseIn :: forall h f g rs.
+               (forall a. f a -> g (ApplyToField h a))
+            -> Rec f rs
+            -> Rec g (MapTyCon h rs)
+rtraverseIn _ RNil = RNil
+rtraverseIn f (x :& xs) = f x :& rtraverseIn f xs
+{-# INLINABLE rtraverseIn #-}
+
+-- | Push an outer layer of interpretation functor into each field.
+rsequenceIn :: forall f g (rs :: [Type]). (Traversable f, Applicative g)
+            => Rec (f :. g) rs -> Rec g (MapTyCon f rs)
+rsequenceIn = rtraverseIn @f (sequenceA . getCompose)
+{-# INLINABLE rsequenceIn #-}
+
 -- | Given a natural transformation from the product of @f@ and @g@ to @h@, we
 -- have a natural transformation from the product of @'Rec' f@ and @'Rec' g@ to
 -- @'Rec' h@. You can also think about this operation as zipping two records
