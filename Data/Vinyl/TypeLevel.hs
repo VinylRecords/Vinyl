@@ -9,11 +9,13 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE TypeOperators         #-}
 
 module Data.Vinyl.TypeLevel where
 
 import GHC.Exts
+import GHC.Types (Type)
 
 -- | A mere approximation of the natural numbers. And their image as lifted by
 -- @-XDataKinds@ corresponds to the actual natural numbers.
@@ -100,3 +102,16 @@ instance (c t, AllSatisfied cs t) => AllSatisfied (c ': cs) t where
 type family AllAllSat cs ts :: Constraint where
   AllAllSat cs '[] = ()
   AllAllSat cs (t ': ts) = (AllSatisfied cs t, AllAllSat cs ts)
+
+-- | Apply a type constructor to a record index. Record indexes are
+-- either 'Type' or @('Symbol', 'Type')@. In the latter case, the type
+-- constructor is applied to the second component of the tuple.
+type family ApplyToField (t :: Type -> Type) (a :: k1) = (r :: k1) | r -> t a where
+  ApplyToField t '(s,x) = '(s, t x)
+  ApplyToField t x = t x
+
+-- | Apply a type constructor to each element of a type level list
+-- using 'ApplyOn'.
+type family MapTyCon t xs = r | r -> xs where
+  MapTyCon t '[] = '[]
+  MapTyCon t (x ': xs) = ApplyToField t x ': MapTyCon t xs
