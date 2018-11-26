@@ -1,5 +1,5 @@
 {-# LANGUAGE CPP, DataKinds, FlexibleContexts,
-             ScopedTypeVariables, TypeOperators #-}
+             ScopedTypeVariables, TypeApplications, TypeOperators #-}
 {-# OPTIONS_GHC -fdefer-type-errors #-}
 module CoRecSpec (spec) where
 import Control.Monad ((>=>))
@@ -31,9 +31,9 @@ spec = do
   describe "CoRecs" $ do
     let x = CoRec (pure True) :: Field '[Int,Bool,()]
     it "Can be cast successfully" $
-      asA (Proxy :: Proxy Bool) x `shouldBe` Just True
+      asA @Bool x `shouldBe` Just True
     it "Can fail to cast" $
-      asA (Proxy :: Proxy Int) x `shouldBe` Nothing
+      asA @Int x `shouldBe` Nothing
     it "Can be handled all at once" $
       match x (H (\y -> "Int")
                :& H (\y -> "Bool")

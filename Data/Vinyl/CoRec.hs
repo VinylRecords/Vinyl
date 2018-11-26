@@ -1,7 +1,8 @@
-{-# LANGUAGE BangPatterns, CPP, ConstraintKinds, DataKinds, EmptyCase,
-             FlexibleContexts, FlexibleInstances, GADTs,
-             KindSignatures, MultiParamTypeClasses, PolyKinds,
-             RankNTypes, ScopedTypeVariables, TypeOperators,
+{-# LANGUAGE AllowAmbiguousTypes, BangPatterns, CPP, ConstraintKinds,
+             DataKinds, EmptyCase, FlexibleContexts,
+             FlexibleInstances, GADTs, KindSignatures,
+             MultiParamTypeClasses, PolyKinds, RankNTypes,
+             ScopedTypeVariables, TypeApplications, TypeOperators,
              UndecidableInstances #-}
 -- | Co-records: open sum types.
 --
@@ -12,15 +13,11 @@
 -- @C@. The type @CoRec '[A,B,C]@ corresponds to this sum type.
 module Data.Vinyl.CoRec where
 import Data.Maybe(fromJust)
-import Data.Proxy
-import Data.Vinyl
+import Data.Vinyl.Core
+import Data.Vinyl.Lens (RElem, rget, rput, type (∈))
 import Data.Vinyl.Functor (Compose(..), (:.), Identity(..), Const(..))
 import Data.Vinyl.TypeLevel
-#if __GLASGOW_HASKELL__ < 800
-import GHC.Prim (Constraint)
-#else
-import Data.Kind (Constraint)
-#endif
+import Unsafe.Coerce (unsafeCoerce)
 
 -- | Generalize algebraic sum types.
 data CoRec :: (k -> *) -> [k] -> * where
@@ -38,30 +35,30 @@ type Field = CoRec Identity
 -- reverse order.
 newtype Op b a = Op { runOp :: a -> b }
 
-instance forall ts. (AllConstrained Show ts, RecApplicative ts)
+instance forall ts. (RPureConstrained Show ts, RecApplicative ts)
   => Show (CoRec Identity ts) where
-  show (CoRec (Identity x)) = "(Col "++show' x++")"
-    where shower :: Rec (Op String) ts
-          shower = rpureConstrained (Proxy::Proxy Show) (Op show)
-          show' = runOp (rget Proxy shower)
+  show x = "(Col " ++ onField @Show show x++")"
 
-instance forall ts. (RecAll Maybe ts Eq, RecApplicative ts)
+instance forall ts. (RecApplicative ts, RecordToList ts,
+                     RApply ts, ReifyConstraint Eq Maybe ts, RMap ts)
   => Eq (CoRec Identity ts) where
   crA == crB = and . recordToList
              $ rzipWith f (toRec crA) (coRecToRec' crB)
     where
       f :: forall a. (Dict Eq :. Maybe) a -> Maybe a -> Const Bool a
       f (Compose (Dict a)) b = Const $ a == b
-      toRec = reifyConstraint (Proxy :: Proxy Eq) . coRecToRec'
+      toRec = reifyConstraint @Eq . coRecToRec'
 
 -- | We can inject a a 'CoRec' into a 'Rec' where every field of the
 -- 'Rec' is 'Nothing' except for the one whose type corresponds to the
 -- type of the given 'CoRec' variant.
-coRecToRec :: RecApplicative ts => CoRec f ts -> Rec (Maybe :. f) ts
-coRecToRec (CoRec x) = rput (Compose $ Just x) (rpure (Compose Nothing))
+coRecToRec :: forall f ts. RecApplicative ts
+           => CoRec f ts -> Rec (Maybe :. f) ts
+coRecToRec (CoRec x) = rput (Compose (Just x)) (rpure (Compose Nothing))
 
 -- | Shorthand for applying 'coRecToRec' with common functors.
-coRecToRec' :: RecApplicative ts => CoRec Identity ts -> Rec Maybe ts
+coRecToRec' :: (RecApplicative ts, RMap ts)
+            => CoRec Identity ts -> Rec Maybe ts
 coRecToRec' = rmap (fmap getIdentity . getCompose) . coRecToRec
 
 -- | Fold a field selection function over a 'Rec'.
@@ -79,6 +76,21 @@ instance (t ∈ ss, FoldRec ss ts) => FoldRec ss (t ': ts) where
 -- | Apply a natural transformation to a variant.
 coRecMap :: (forall x. f x -> g x) -> CoRec f ts -> CoRec g ts
 coRecMap nt (CoRec x) = CoRec (nt x)
+
+-- | Get a 'DictOnly' from an 'RPureConstrained' instance.
+getDict :: forall c ts a proxy. (a ∈ ts, RPureConstrained c ts)
+        => proxy a -> DictOnly c a
+getDict _ = rget @a (rpureConstrained @c @ts DictOnly)
+
+-- | Like 'coRecMap', but the function mapped over the 'CoRec' can
+-- have a constraint.
+coRecMapC :: forall c ts f g.
+             (RPureConstrained c ts)
+          => (forall x. (x ∈ ts, c x) => f x -> g x)
+          -> CoRec f ts
+          -> CoRec g ts
+coRecMapC nt (CoRec x) = case getDict @c @ts x of
+                           DictOnly -> CoRec (nt x)
 
 -- | This can be used to pull effects out of a 'CoRec'.
 coRecTraverse :: Functor h
@@ -116,45 +128,53 @@ lastField v@(x :& _) = coRecTraverse getCompose $ foldRec aux (CoRec x) v
         aux _ c@(CoRec (Compose (Just _))) = c
         aux c _ = c
 
--- | Apply a type class method on a 'CoRec'. The first argument is a
--- 'Proxy' value for a /list/ of 'Constraint' constructors. For
--- example, @onCoRec [pr|Num,Ord|] (> 20) r@. If only one constraint
--- is needed, use the @pr1@ quasiquoter.
-onCoRec :: forall (cs :: [* -> Constraint]) f ts b.
-           (AllAllSat cs ts, Functor f, RecApplicative ts)
-        => Proxy cs
-        -> (forall a. AllSatisfied cs a => a -> b)
-        -> CoRec f ts -> f b
-onCoRec p f (CoRec x) = fmap meth x
-  where meth = runOp $
-               rget Proxy (reifyDicts p (Op f) :: Rec (Op b) ts)
+-- | Apply methods from a type class to a 'CoRec'. Intended for use
+-- with @TypeApplications@, e.g. @onCoRec \@Show show r@
+onCoRec :: forall c f ts b g. (RPureConstrained c ts)
+        => (forall a. (a ∈ ts, c a) => f a -> g b)
+        -> CoRec f ts -> g b
+onCoRec f (CoRec x) = case getDict @c @ts x of
+                        DictOnly -> f x
+{-# INLINE onCoRec #-}
 
--- | Apply a type class method on a 'Field'. The first argument is a
--- 'Proxy' value for a /list/ of 'Constraint' constructors. For
--- example, @onCoRec [pr|Num,Ord|] (> 20) r@. If only one constraint
--- is needed, use the @pr1@ quasiquoter.
-onField :: forall cs ts b.
-           (AllAllSat cs ts, RecApplicative ts)
-        => Proxy cs
-        -> (forall a. AllSatisfied cs a => a -> b)
+-- | Apply a type class method to a 'Field'. Intended for use with
+-- @TypeApplications@, e.g. @onField \@Show show r@.
+onField :: forall c ts b. (RPureConstrained c ts)
+        => (forall a. (a ∈ ts, c a) => a -> b)
         -> Field ts -> b
-onField p f x = getIdentity (onCoRec p f x)
-
--- | Build a record whose elements are derived solely from a
--- list of constraint constructors satisfied by each.
-reifyDicts :: forall cs f proxy (ts :: [*]). (AllAllSat cs ts, RecApplicative ts)
-           => proxy cs -> (forall a. AllSatisfied cs a => f a) -> Rec f ts
-reifyDicts _ f = go (rpure Nothing)
-  where go :: AllAllSat cs ts' => Rec Maybe ts' -> Rec f ts'
-        go RNil = RNil
-        go (_ :& xs) = f :& go xs
+onField f x = getIdentity (onCoRec @c (fmap f) x)
+{-# INLINE onField #-}
 
 -- * Extracting values from a CoRec/Pattern matching on a CoRec
 
--- | Given a proxy of type t and a 'CoRec Identity' that might be a t, try to
--- convert the CoRec to a t.
-asA             :: (t ∈ ts, RecApplicative ts) => proxy t -> CoRec Identity ts -> Maybe t
-asA p c@(CoRec _) = rget p $ coRecToRec' c
+-- | Compute a runtime 'Int' index identifying the position of the
+-- variant held by a @CoRec f ts@ in the type-level list @ts@.
+variantIndexOf :: forall f ts. CoRec f ts -> Int
+variantIndexOf (CoRec x) = aux x
+  where aux :: forall a. NatToInt (RIndex a ts) => f a -> Int
+        aux _ = natToInt @(RIndex a ts)
+{-# INLINE variantIndexOf #-}
+
+-- [NOTE: asA] We want to say that if @NatToInt (RIndex a ts) ~
+-- NatToInt (RIndex b ts)@ then @a ~ b@ by relying on an injectivity
+-- property of 'RIndex'. However, we are checking the variant index of
+-- the argument at runtime, so we do not statically know that
+-- extracting the variant at a particular type is safe at compile
+-- time.
+
+-- | If a 'CoRec' is a variant of the requested type, return 'Just'
+-- that value; otherwise return 'Nothing'.
+asA :: NatToInt (RIndex t ts) => CoRec Identity ts -> Maybe t
+asA = fmap getIdentity . asA'
+{-# INLINE asA #-}
+
+-- | Like 'asA', but for any interpretation functor.
+asA' :: forall t ts f. (NatToInt (RIndex t ts))
+     => CoRec f ts -> Maybe (f t)
+asA' f@(CoRec x)
+  | variantIndexOf f == natToInt @(RIndex t ts) = Just (unsafeCoerce x)
+  | otherwise = Nothing
+{-# INLINE asA' #-}
 
 -- | Pattern match on a CoRec by specifying handlers for each case. Note that
 -- the order of the Handlers has to match the type level list (t:ts).
@@ -168,8 +188,11 @@ asA p c@(CoRec _) = rget p $ coRecToRec' c
 --    :& RNil
 -- :}
 -- "my Bool is not: True thus it is False"
-match :: CoRec Identity ts -> Handlers ts b -> b
-match (CoRec (Identity t)) hs = case rget Proxy hs of H f -> f t
+match :: forall ts b. CoRec Identity ts -> Handlers ts b -> b
+match (CoRec (Identity t)) hs = aux t
+  where aux :: forall a. RElem a ts (RIndex a ts) => a -> b
+        aux x = case rget @a hs of
+                  H f -> f x
 
 -- | Helper for handling a variant of a 'CoRec': either the function
 -- is applied to the variant or the type of the 'CoRec' is refined to
@@ -193,6 +216,7 @@ instance (Match1 t ts i, RIndex t (s ': ts) ~ 'S i,
 -- of the would-be handler
 match1 :: (Match1 t ts (RIndex t ts),
            RecApplicative ts,
+           RMap ts, RMap (RDelete t ts),
            FoldRec (RDelete t ts) (RDelete t ts))
        => Handler r t
        -> CoRec Identity ts
@@ -202,7 +226,7 @@ match1 h = fmap (fromJust . firstField . rmap (Compose . fmap Identity))
          . coRecToRec'
 
 matchNil :: CoRec f '[] -> r
-matchNil (CoRec x) = case x of
+matchNil (CoRec x) = case x of _ -> error "matchNil: impossible"
 
 -- | Newtype around functions for a to b
 newtype Handler b a = H (a -> b)
@@ -211,3 +235,38 @@ newtype Handler b a = H (a -> b)
 -- ts. All functions produce a value of type 'b'. Hence, 'Handlers ts b' would
 -- represent something like the type-level list: [t -> b | t \in ts ]
 type Handlers ts b = Rec (Handler b) ts
+
+-- | A 'CoRec' is either the first possible variant indicated by its
+-- type, or a 'CoRec' that must be one of the remaining types.
+restrictCoRec :: forall t ts f. (RecApplicative ts, FoldRec ts ts)
+              => CoRec f (t ': ts) -> Either (f t) (CoRec f ts)
+restrictCoRec r = maybe (Right (unsafeCoerce r)) Left (asA' @t r)
+{-# INLINE restrictCoRec #-}
+
+-- | A 'CoRec' whose possible types are @ts@ may be used at a type of
+-- 'CoRec' whose possible types are @t:ts@.
+weakenCoRec :: (RecApplicative ts, FoldRec (t ': ts) (t ': ts))
+            => CoRec f ts -> CoRec f (t ': ts)
+weakenCoRec = fromJust . firstField . (Compose Nothing :&) . coRecToRec
+
+-- * Safe Variants
+
+-- | A 'CoRec' is either the first possible variant indicated by its
+-- type, or a 'CoRec' that must be one of the remaining types. The
+-- safety is related to that of 'asASafe'.
+restrictCoRecSafe :: forall t ts f. (RecApplicative ts, FoldRec ts ts)
+                  => CoRec f (t ': ts) -> Either (f t) (CoRec f ts)
+restrictCoRecSafe = go . coRecToRec
+  where go :: Rec (Maybe :. f) (t ': ts) -> Either (f t) (CoRec f ts)
+        go (Compose Nothing :& xs) = Right (fromJust (firstField xs))
+        go (Compose (Just x) :& _) = Left x
+
+-- | Like 'asA', but implemented more safely and typically slower.
+asASafe :: (t ∈ ts, RecApplicative ts, RMap ts)
+        => CoRec Identity ts -> Maybe t
+asASafe c@(CoRec _) = rget $ coRecToRec' c
+
+-- | Like 'asASafe', but for any interpretation functor.
+asA'Safe :: (t ∈ ts, RecApplicative ts, RMap ts)
+         => CoRec f ts -> (Maybe :. f) t
+asA'Safe c@(CoRec _) = rget $ coRecToRec c

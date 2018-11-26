@@ -1,37 +1,47 @@
 {-# LANGUAGE CPP                        #-}
+{-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE DeriveFoldable             #-}
 {-# LANGUAGE DeriveFunctor              #-}
+{-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE DeriveTraversable          #-}
 {-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE PolyKinds                  #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE StandaloneDeriving         #-}
+{-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeOperators              #-}
 
-module Data.Vinyl.Functor 
+module Data.Vinyl.Functor
   ( -- * Introduction
     -- $introduction
     -- * Data Types
     Identity(..)
   , Thunk(..)
   , Lift(..)
-  , Compose(..)
+  , ElField(..)
+  , Compose(..), onCompose
   , (:.)
   , Const(..)
     -- * Discussion
-    
+
     -- ** Example
     -- $example
-    
+
     -- ** Ecosystem
     -- $ecosystem
   ) where
 
-#if __GLASGOW_HASKELL__ < 710
-import Control.Applicative hiding (Const)
-import Data.Foldable
-import Data.Traversable
+import Data.Proxy
+#if __GLASGOW_HASKELL__ < 804
+import Data.Semigroup
 #endif
+import Foreign.Ptr (castPtr)
 import Foreign.Storable
+import GHC.Generics
+import GHC.TypeLits
+import GHC.Types (Type)
 
 {- $introduction
     This module provides functors and functor compositions
@@ -50,6 +60,7 @@ newtype Identity a
              , Storable
              , Eq
              , Ord
+             , Generic
              )
 
 -- | Used this instead of 'Identity' to make a record
@@ -66,7 +77,20 @@ newtype Lift (op :: l -> l' -> *) (f :: k -> l) (g :: k -> l') (x :: k)
 
 newtype Compose (f :: l -> *) (g :: k -> l) (x :: k)
   = Compose { getCompose :: f (g x) }
-    deriving (Storable)
+    deriving (Storable, Generic)
+
+instance Semigroup (f (g a)) => Semigroup (Compose f g a) where
+  Compose x <> Compose y = Compose (x <> y)
+
+instance Monoid (f (g a)) => Monoid (Compose f g a) where
+  mempty = Compose mempty
+  mappend (Compose x) (Compose y) = Compose (mappend x y)
+
+-- | Apply a function to a value whose type is the application of the
+-- 'Compose' type constructor. This works under the 'Compose' newtype
+-- wrapper.
+onCompose :: (f (g a) -> h (k a)) -> (f :. g) a -> (h :. k) a
+onCompose f = Compose . f . getCompose
 
 type f :. g = Compose f g
 infixr 9 :.
@@ -77,10 +101,77 @@ newtype Const (a :: *) (b :: k)
              , Foldable
              , Traversable
              , Storable
+             , Generic
              )
 
+-- | A value with a phantom 'Symbol' label. It is not a
+-- Haskell 'Functor', but it is used in many of the same places a
+-- 'Functor' is used in vinyl.
+data ElField (field :: (Symbol, Type)) where
+  Field :: KnownSymbol s => !t -> ElField '(s,t)
+
+deriving instance Eq t => Eq (ElField '(s,t))
+deriving instance Ord t => Ord (ElField '(s,t))
+
+instance KnownSymbol s => Generic (ElField '(s,a)) where
+  type Rep (ElField '(s,a)) = C1 ('MetaCons s 'PrefixI 'False) (Rec0 a)
+  from (Field x) = M1 (K1 x)
+  to (M1 (K1 x)) = Field x
+
+instance (Num t, KnownSymbol s) => Num (ElField '(s,t)) where
+  Field x + Field y = Field (x+y)
+  Field x * Field y = Field (x*y)
+  abs (Field x) = Field (abs x)
+  signum (Field x) = Field (signum x)
+  fromInteger = Field . fromInteger
+  negate (Field x) = Field (negate x)
+
+instance Semigroup t => Semigroup (ElField '(s,t)) where
+  Field x <> Field y = Field (x <> y)
+
+instance (KnownSymbol s, Monoid t) => Monoid (ElField '(s,t)) where
+  mempty = Field mempty
+  mappend (Field x) (Field y) = Field (mappend x y)
+
+instance (Real t, KnownSymbol s) => Real (ElField '(s,t)) where
+  toRational (Field x) = toRational x
+
+instance (Fractional t, KnownSymbol s) => Fractional (ElField '(s,t)) where
+  fromRational = Field . fromRational
+  Field x / Field y = Field (x / y)
+
+instance (Floating t, KnownSymbol s) => Floating (ElField '(s,t)) where
+  pi = Field pi
+  exp (Field x) = Field (exp x)
+  log (Field x) = Field (log x)
+  sin (Field x) = Field (sin x)
+  cos (Field x) = Field (cos x)
+  asin (Field x) = Field (asin x)
+  acos (Field x) = Field (acos x)
+  atan (Field x) = Field (atan x)
+  sinh (Field x) = Field (sinh x)
+  cosh (Field x) = Field (cosh x)
+  asinh (Field x) = Field (asinh x)
+  acosh (Field x) = Field (acosh x)
+  atanh (Field x) = Field (atanh x)
+
+instance (RealFrac t, KnownSymbol s) => RealFrac (ElField '(s,t)) where
+  properFraction (Field x) = fmap Field (properFraction x)
+
+instance (Show t, KnownSymbol s) => Show (ElField '(s,t)) where
+  show (Field x) = symbolVal (Proxy::Proxy s) ++" :-> "++show x
+
+instance forall s t. (KnownSymbol s, Storable t)
+    => Storable (ElField '(s,t)) where
+  sizeOf _ = sizeOf (undefined::t)
+  alignment _ = alignment (undefined::t)
+  peek ptr = Field `fmap` peek (castPtr ptr)
+  poke ptr (Field x) = poke (castPtr ptr) x
 instance Show a => Show (Const a b) where
   show (Const x) = "(Const "++show x ++")"
+
+instance Eq a => Eq (Const a b) where
+  Const x == Const y = x == y
 
 instance (Functor f, Functor g) => Functor (Compose f g) where
   fmap f (Compose x) = Compose (fmap (fmap f) x)
@@ -94,6 +185,9 @@ instance (Traversable f, Traversable g) => Traversable (Compose f g) where
 instance (Applicative f, Applicative g) => Applicative (Compose f g) where
   pure x = Compose (pure (pure x))
   Compose f <*> Compose x = Compose ((<*>) <$> f <*> x)
+
+instance Show (f (g a)) => Show (Compose f g a) where
+  show (Compose x) = show x
 
 instance Applicative Identity where
   pure = Identity
@@ -159,7 +253,7 @@ r2 :: Maybe (Rec Identity '[Int, Bool, Char])
 >>> r2
 Nothing
 
-    If the fields only exist once an environment is provided, you can 
+    If the fields only exist once an environment is provided, you can
     build the record as follows:
 
 >>> :{
@@ -194,7 +288,7 @@ let safeDiv a b = if b == 0 then Nothing else Just (div a b)
     by "transformers". When GHC 7.10 was released, it was moved
     into "base-4.8". The "Identity" data type provided by that
     module is well recognized across the haskell ecosystem
-    and has typeclass instances for lots of common typeclasses. 
+    and has typeclass instances for lots of common typeclasses.
     The significant difference between it and the copy of
     it provided here is that this one has a different 'Show'
     instance. This is illustrated below:
@@ -215,10 +309,10 @@ Identity "hello"
     "Identity".
 
     The story with "Compose" and "Const" is much more simple.
-    These also exist in "transformers", although "Const" 
-    is named "Constant" there. Prior to the release of 
-    "transformers-0.5", they were not polykinded, making 
-    them unusable for certain universes. However, in 
+    These also exist in "transformers", although "Const"
+    is named "Constant" there. Prior to the release of
+    "transformers-0.5", they were not polykinded, making
+    them unusable for certain universes. However, in
     "transformers-0.5" and forward, they have been made
     polykinded. This means that they are just as usable with 'Rec'
     as the vinyl equivalents but with many more typeclass

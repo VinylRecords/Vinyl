@@ -1,12 +1,22 @@
+{-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE BangPatterns          #-}
+{-# LANGUAGE CPP                   #-}
+{-# LANGUAGE ConstraintKinds       #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTs                 #-}
-{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE BangPatterns          #-}
-{-# LANGUAGE ConstraintKinds       #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 {-| This module uses 'RecAll' to extend common typeclass methods to records.
-    Generally, it is preferable to use the original typeclass methods to these 
+    Generally, it is preferable to use the original typeclass methods to these
     variants. For example, in most places where 'recCompare' could be used,
     you could use 'compare' instead. They are useful in scenarios
     that involve working on unknown subsets of a record's fields
@@ -14,10 +24,20 @@
     is given at the bottom of this page.
 -}
 
-module Data.Vinyl.Class.Method 
-  ( -- * Eq Functions
-    recEq
-    -- * Ord Functions
+module Data.Vinyl.Class.Method
+  ( -- * Mapping methods over records
+    RecMapMethod(..)
+  , rmapMethodF
+  , mapFields
+  , RecMapMethod1(..)
+  , RecPointed(..)
+  , rtraverseInMethod
+  , rsequenceInFields
+    -- * Support for 'RecMapMethod'
+  , FieldTyper, ApplyFieldTyper, PayloadType
+    -- * Eq Functions
+  ,  recEq
+     -- * Ord Functions
   , recCompare
     -- * Monoid Functions
   , recMempty
@@ -36,10 +56,14 @@ module Data.Vinyl.Class.Method
     -- * Example
     -- $example
   ) where
-
+import Data.Functor.Product (Product(Pair))
 import Data.Vinyl.Core
+import Data.Vinyl.Derived (KnownField, AllFields, FieldRec, traverseField)
+import Data.Vinyl.Functor ((:.), getCompose, ElField(..))
 import Data.Vinyl.TypeLevel
+#if __GLASGOW_HASKELL__ < 804
 import Data.Monoid
+#endif
 
 recEq :: RecAll f rs Eq => Rec f rs -> Rec f rs -> Bool
 recEq RNil RNil = True
@@ -49,12 +73,12 @@ recCompare :: RecAll f rs Ord => Rec f rs -> Rec f rs -> Ordering
 recCompare RNil RNil = EQ
 recCompare (a :& as) (b :& bs) = compare a b <> recCompare as bs
 
--- | This function differs from the original 'mempty' in that 
+-- | This function differs from the original 'mempty' in that
 --   it takes an argument. In some cases, you will already
---   have a record of the type you are interested in, and 
+--   have a record of the type you are interested in, and
 --   that can be passed an the argument. In other situations
 --   where this is not the case, you may need the
---   interpretation function of the argument record to be 
+--   interpretation function of the argument record to be
 --   @Const ()@ or @Proxy@ so the you can generate the
 --   argument with 'rpure'.
 recMempty :: RecAll f rs Monoid => Rec proxy rs -> Rec f rs
@@ -85,15 +109,15 @@ recMultiply (a :& as) (b :& bs) = (a * b) :& recSubtract as bs
 
 recAbs :: RecAll f rs Num => Rec f rs -> Rec f rs
 recAbs RNil = RNil
-recAbs (a :& as) = abs a :& recAbs as 
+recAbs (a :& as) = abs a :& recAbs as
 
 recSignum :: RecAll f rs Num => Rec f rs -> Rec f rs
 recSignum RNil = RNil
-recSignum (a :& as) = signum a :& recAbs as 
+recSignum (a :& as) = signum a :& recAbs as
 
 recNegate :: RecAll f rs Num => Rec f rs -> Rec f rs
 recNegate RNil = RNil
-recNegate (a :& as) = negate a :& recAbs as 
+recNegate (a :& as) = negate a :& recAbs as
 
 -- | This function differs from the original 'minBound'.
 --   See 'recMempty'.
@@ -107,9 +131,121 @@ recMaxBound :: RecAll f rs Bounded => Rec proxy rs -> Rec f rs
 recMaxBound RNil = RNil
 recMaxBound (_ :& rs) = maxBound :& recMaxBound rs
 
+-- | When we wish to apply a typeclass method to each field of a
+-- 'Rec', we typically care about typeclass instances of the record
+-- field types irrespective of the record's functor context. To expose
+-- the field types themselves, we utilize a constraint built from a
+-- defunctionalized type family in the 'rmapMethod' method. The
+-- symbols of the function space are defined by this data type.
+data FieldTyper = FieldId | FieldSnd
+
+-- | The interpretation function of the 'FieldTyper' symbols.
+type family ApplyFieldTyper (f :: FieldTyper) (a :: k) :: * where
+  ApplyFieldTyper 'FieldId a = a
+  ApplyFieldTyper 'FieldSnd '(s, b) = b
+
+-- | A mapping of record contexts into the 'FieldTyper' function
+-- space. We explicitly match on 'ElField' to pick out the payload
+-- type, and 'Compose' to pick out the inner-most context. All other
+-- type constructor contexts are understood to not perform any
+-- computation on their arguments.
+type family FieldPayload (f :: u -> *) :: FieldTyper where
+  FieldPayload ElField = 'FieldSnd
+  FieldPayload (f :. g) = FieldPayload g
+  FieldPayload f = 'FieldId
+
+-- | Shorthand for combining 'ApplyFieldTyper' and 'FieldPayload'.
+type family PayloadType f (a :: u) :: * where
+  PayloadType f a = ApplyFieldTyper (FieldPayload f) a
+
+-- | Generate a record from fields derived from type class
+-- instances.
+class RecPointed c (f :: u -> *) (ts :: [u]) where
+  rpointMethod :: (forall (a :: u). c (f a) => f a) -> Rec f ts
+
+instance RecPointed c f '[] where
+  rpointMethod _ = RNil
+  {-# INLINE rpointMethod #-}
+
+instance (c (f t), RecPointed c f ts)
+  => RecPointed c f (t ': ts) where
+  rpointMethod f = f :& rpointMethod @c f
+  {-# INLINE rpointMethod #-}
+
+-- | Apply a typeclass method to each field of a 'Rec' where the class
+-- constrains the index of the field, but not its interpretation
+-- functor.
+class RecMapMethod c (f :: u -> *) (ts :: [u]) where
+  rmapMethod :: (forall a. c (PayloadType f a) => f a -> g a)
+             -> Rec f ts -> Rec g ts
+
+-- | Apply a typeclass method to each field of a 'Rec' where the class
+-- constrains the field when considered as a value interpreted by the
+-- record's interpretation functor.
+class RecMapMethod1 c (f :: u -> *) (ts :: [u])where
+  rmapMethod1 :: (forall a. c (f a) => f a -> g a)
+              -> Rec f ts -> Rec g ts
+
+instance RecMapMethod c f '[] where
+  rmapMethod _ RNil = RNil
+  {-# INLINE rmapMethod #-}
+
+instance RecMapMethod1 c f '[] where
+  rmapMethod1 _ RNil = RNil
+  {-# INLINE rmapMethod1 #-}
+
+instance (c (PayloadType f t), RecMapMethod c f ts)
+  => RecMapMethod c f (t ': ts) where
+  rmapMethod f (x :& xs) = f x :& rmapMethod @c f xs
+  {-# INLINE rmapMethod #-}
+
+instance (c (f t), RecMapMethod1 c f ts) => RecMapMethod1 c f (t ': ts) where
+  rmapMethod1 f (x :& xs) = f x :& rmapMethod1 @c f xs
+  {-# INLINE rmapMethod1 #-}
+
+-- | Apply a typeclass method to each field of a @Rec f ts@ using the
+-- 'Functor' instance for @f@ to lift the function into the
+-- functor. This is a commonly-used specialization of 'rmapMethod'
+-- composed with 'fmap'.
+rmapMethodF :: forall c f ts. (Functor f, FieldPayload f ~ 'FieldId, RecMapMethod c f ts)
+            => (forall a. c a => a -> a) -> Rec f ts -> Rec f ts
+rmapMethodF f = rmapMethod @c (fmap f)
+{-# INLINE rmapMethodF #-}
+
+-- | Apply a typeclass method to each field of a 'FieldRec'. This is a
+-- specialization of 'rmapMethod'.
+mapFields :: forall c ts. RecMapMethod c ElField ts
+           => (forall a. c a => a -> a) -> FieldRec ts -> FieldRec ts
+mapFields f = rmapMethod @c g
+  where g :: c (PayloadType ElField t) => ElField t -> ElField t
+        g (Field x) = Field (f x)
+{-# INLINE mapFields #-}
+
+-- | Like 'rtraverseIn', but the function between functors may be
+-- constrained.
+rtraverseInMethod :: forall c h f g rs.
+                     (RMap rs, RPureConstrained c rs, RApply rs)
+                  => (forall a. c a => f a -> g (ApplyToField h a))
+                  -> Rec f rs
+                  -> Rec g (MapTyCon h rs)
+rtraverseInMethod f = rtraverseIn @h (withPairedDict @c f)
+                    . rzipWith Pair (rpureConstrained @c aux)
+  where aux :: c b => DictOnly c b
+        aux = DictOnly
+
+-- Note: rtraverseInMethod is written with that `aux` helper in order
+-- to work around compatibility with GHC < 8.4. Write it more
+-- naturally as `DictOnly @c` does not work with older compilers.
+
+-- | Push an outer layer of interpretation functor into each named field.
+rsequenceInFields :: forall f rs. (Functor f, AllFields rs, RMap rs)
+                  => Rec (f :. ElField) rs -> Rec ElField (MapTyCon f rs)
+rsequenceInFields = rtraverseInMethod @KnownField (traverseField id . getCompose)
+
+
 {- $example
-    This module provides variants of typeclass methods that have 
-    a 'RecAll' constraint instead of the normal typeclass 
+    This module provides variants of typeclass methods that have
+    a 'RecAll' constraint instead of the normal typeclass
     constraint. For example, a type-specialized 'compare' would
     look like this:
 
@@ -119,24 +255,24 @@ recMaxBound (_ :& rs) = maxBound :& recMaxBound rs
 
 > recCompare :: RecAll f rs Ord => Rec f rs -> Rec f rs -> Ordering
 
-    The only difference is the constraint. Let's look at a potential 
+    The only difference is the constraint. Let's look at a potential
     use case for these functions.
 
-    Let's write a function that projects out a subrecord from two records and 
-    then compares those for equality. We can write this with 
+    Let's write a function that projects out a subrecord from two records and
+    then compares those for equality. We can write this with
     the '<:' operator from @Data.Vinyl.Lens@ and the normal 'compare'
     function. We don't need 'recCompare':
 
 > -- This needs ScopedTypeVariables
-> projectAndCompare :: forall super sub f. (super <: sub, Ord (Rec f sub)) 
+> projectAndCompare :: forall super sub f. (super <: sub, Ord (Rec f sub))
 >                   => Proxy sub -> Rec f super -> Rec f super -> Ordering
 > projectAndCompare _ a b = compare (rcast a :: Rec f sub) (rcast b :: Rec f sub)
 
-    That works fine for the majority of use cases, and it is probably how you should 
+    That works fine for the majority of use cases, and it is probably how you should
     write the function if it does everything you need. However, let's consider
-    a somewhat more complicated case. 
+    a somewhat more complicated case.
 
-    What if the exact subrecord we were projecting couldn't be 
+    What if the exact subrecord we were projecting couldn't be
     known at compile time? Assume that the end user was allowd to
     choose the fields on which he or she wanted to compare records.
     The @projectAndCompare@ function cannot handle this because of the
@@ -187,6 +323,3 @@ recMaxBound (_ :& rs) = maxBound :& recMaxBound rs
     Notice that in this case, the 'Ord' constraint applies to the full set of fields
     and is then weakened to target a subset of them instead.
 -}
-
-
-

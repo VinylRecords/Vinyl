@@ -14,6 +14,7 @@ module Data.Vinyl.Curry where
 
 import           Data.Vinyl
 import           Data.Vinyl.Functor
+import           Data.Vinyl.XRec
 
 -- * Currying
 
@@ -100,6 +101,20 @@ runcurry' x RNil               = x
 runcurry' f (Identity x :& xs) = runcurry' (f x) xs
 {-# INLINABLE runcurry' #-}
 
+-- | Apply an uncurried function to an 'XRec'.
+xruncurry :: CurriedX f ts a -> XRec f ts -> a
+xruncurry x RNil = x
+xruncurry f (x :& xs) = xruncurry (f (unX x)) xs
+{-# INLINABLE xruncurry #-}
+
+-- | Apply an uncurried function to a 'Rec' like 'runcurry' except the
+-- function enjoys a type simplified by the 'XData' machinery that
+-- strips away type-induced noise like 'Identity', 'Compose', and
+-- 'ElField'.
+runcurryX :: IsoXRec f ts => CurriedX f ts a -> Rec f ts -> a
+runcurryX f = xruncurry f . toXRec
+{-# INLINE runcurryX #-}
+
 -- * Applicative Combinators
 
 {-|
@@ -155,3 +170,16 @@ CurriedF Maybe '[Int, Bool, String] Int :: *
 type family CurriedF (f :: u -> *) (ts :: [u]) a where
   CurriedF f '[] a = a
   CurriedF f (t ': ts) a = f t -> CurriedF f ts a
+
+{-|
+For the type-level list @ts@, @'CurriedX' f ts a@ is a curried function type
+from arguments of type @HKD f t@ for @t@ in @ts@, to a result of type @a@.
+
+>>> :set -XTypeOperators
+>>> :kind! CurriedX (Maybe :. Identity) '[Int, Bool, String] Int
+CurriedX (Maybe :. Identity) '[Int, Bool, String] Int :: *
+= Maybe Int -> Maybe Bool -> Maybe [Char] -> Int
+-}
+type family CurriedX (f :: u -> *) (ts :: [u]) a where
+  CurriedX f '[] a = a
+  CurriedX f (t ': ts) a = HKD f t -> CurriedX f ts a
