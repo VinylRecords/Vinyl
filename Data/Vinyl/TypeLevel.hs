@@ -115,3 +115,8 @@ type family ApplyToField (t :: Type -> Type) (a :: k1) = (r :: k1) | r -> t a wh
 type family MapTyCon t xs = r | r -> xs where
   MapTyCon t '[] = '[]
   MapTyCon t (x ': xs) = ApplyToField t x ': MapTyCon t xs
+
+-- | Remove a type constructor from each element of a type level list
+type family MapTyDeCon t xs where
+  MapTyDeCon t '[] = '[]
+  MapTyDeCon t ((t x) ': xs) = x ': MapTyDeCon t xs

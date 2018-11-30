@@ -209,6 +209,43 @@ rsequenceIn :: forall f g (rs :: [Type]). (Traversable f, Applicative g)
 rsequenceIn = rtraverseIn @f (sequenceA . getCompose)
 {-# INLINABLE rsequenceIn #-}
 
+-- | Sometimes record fields may contain an applicative functor that
+-- is not the same as the intepretation function. If the interpretation
+-- functor is traversable these can be swapped. An example use is extracting
+-- the list functor from each field of the record, replacing it with the
+-- interpretation functor.
+class RSequence (m :: * -> *) (xs :: [*]) where
+  rsequence :: forall f. (Traversable f, Applicative m) =>
+    Rec f xs -> Rec m (MapTyCon f (MapTyDeCon m xs))
+
+instance RSequence m '[] where
+  rsequence RNil = RNil
+
+instance (RSequence m xs) => RSequence m ((m x) ': xs) where
+  rsequence (a :& as) =
+    sequenceA a :& rsequence @m as
+
+-- | If a record has an applicative interpretation functor, that functor
+-- can extracted from the record, and replaced with @Identity@. This acts
+-- in a similar fashion to a special case of @rtraverse@ but an alternative
+-- @pure@ and @liftA2@ can be passed. For example, extracting the list functor
+-- with `repeat` and `zipWith` gives zipped unnesting similar to dplyr in the
+-- R programming language, where @pure@ and @liftA2@ give the usual cartesian
+-- product unnesting.
+class RJoin (m :: * -> *) (xs :: [*]) where
+  rjoin :: (Applicative m) =>
+           (Rec Identity '[] -> m (Rec Identity '[])) ->
+           (forall a b c. (a -> b -> c) -> m a -> m b -> m c) ->
+           Rec m xs ->
+           m (Rec Identity xs)
+
+instance RJoin m '[] where
+  rjoin f _ RNil = f RNil
+
+instance (RJoin m xs) => RJoin m (x ': xs) where
+  rjoin f j (a :& as) = (j (:&)) (fmap Identity a) (rjoin @m f j as)
+
+
 -- | Given a natural transformation from the product of @f@ and @g@ to @h@, we
 -- have a natural transformation from the product of @'Rec' f@ and @'Rec' g@ to
 -- @'Rec' h@. You can also think about this operation as zipping two records
