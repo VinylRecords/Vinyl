@@ -285,6 +285,10 @@ instance RPureConstrained c '[] where
   rpureConstrained _ = RNil
   {-# INLINE rpureConstrained #-}
 
+instance (c x, RPureConstrained c xs) => RPureConstrained c (x ': xs) where
+  rpureConstrained f = f :& rpureConstrained @c @xs f
+  {-# INLINE rpureConstrained #-}
+
 -- | Capture a type class instance dictionary. See
 -- 'Data.Vinyl.Lens.getDict' for a way to obtain a 'DictOnly' value
 -- from an 'RPureConstrained' constraint.
@@ -296,10 +300,6 @@ data DictOnly (c :: k -> Constraint) a where
 -- @MyClass@. This helper can then be used to eliminate the original.
 withPairedDict :: (c a => f a -> r) -> Product (DictOnly c) f a -> r
 withPairedDict f (Pair DictOnly x) = f x
-
-instance (c x, RPureConstrained c xs) => RPureConstrained c (x ': xs) where
-  rpureConstrained f = f :& rpureConstrained @c @xs f
-  {-# INLINE rpureConstrained #-}
 
 -- | Build a record whose elements are derived solely from a
 -- list of constraint constructors satisfied by each.

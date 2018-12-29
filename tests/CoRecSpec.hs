@@ -1,5 +1,5 @@
-{-# LANGUAGE CPP, DataKinds, FlexibleContexts,
-             ScopedTypeVariables, TypeApplications, TypeOperators #-}
+{-# LANGUAGE CPP, DataKinds, FlexibleContexts, ScopedTypeVariables,
+             TypeApplications, TypeOperators #-}
 {-# OPTIONS_GHC -fdefer-type-errors #-}
 module CoRecSpec (spec) where
 import Control.Monad ((>=>))
