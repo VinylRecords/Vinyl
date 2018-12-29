@@ -17,11 +17,26 @@ import Data.Vinyl.Core
 import Data.Vinyl.Lens (RElem, rget, rput, type (∈))
 import Data.Vinyl.Functor (Compose(..), (:.), Identity(..), Const(..))
 import Data.Vinyl.TypeLevel
+import Data.Vinyl.Derived (FieldType, (:::))
+import GHC.TypeLits (Symbol, KnownSymbol)
+import GHC.Types (type Type)
+
 import Unsafe.Coerce (unsafeCoerce)
 
 -- | Generalize algebraic sum types.
 data CoRec :: (k -> *) -> [k] -> * where
   CoRec :: RElem a ts (RIndex a ts) => !(f a) -> CoRec f ts
+
+-- | A 'CoRec' constructor with better inference. If you have a label
+-- that should pick out a type from the list of types that index a
+-- 'CoRec', this function will help you more so than the raw 'CoRec'
+-- data constructor.
+corec :: forall (l :: Symbol)
+                (ts :: [(Symbol,Type)])
+                (f :: (Symbol,Type) -> Type).
+         (KnownSymbol l, (l ::: FieldType l ts) ∈ ts)
+      => f (l ::: FieldType l ts) -> CoRec f ts
+corec x = CoRec x
 
 -- | Apply a function to a 'CoRec' value. The function must accept
 -- /any/ variant.
@@ -35,9 +50,17 @@ type Field = CoRec Identity
 -- reverse order.
 newtype Op b a = Op { runOp :: a -> b }
 
-instance forall ts. (RPureConstrained Show ts, RecApplicative ts)
-  => Show (CoRec Identity ts) where
-  show x = "(Col " ++ onField @Show show x++")"
+-- | Helper for writing a 'Show' instance for 'CoRec'. This lets us
+-- ask for a 'Show' constraint on the type formed by applying a type
+-- constructor to a type index.
+class ShowF f a where
+  showf :: f a -> String
+
+instance Show (f a) => ShowF f a where
+  showf = show
+
+instance forall f ts. RPureConstrained (ShowF f) ts => Show (CoRec f ts) where
+  show x = "{|" ++ onCoRec @(ShowF f) showf x ++ "|}"
 
 instance forall ts. (RecApplicative ts, RecordToList ts,
                      RApply ts, ReifyConstraint Eq Maybe ts, RMap ts)
