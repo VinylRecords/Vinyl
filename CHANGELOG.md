@@ -1,3 +1,9 @@
+# 0.11.0
+
+- Changed the `Show` instance of `CoRec`
+- Added the `corec` helper that specifically helps type inference when
+  constructing `CoRec ElField` values.
+
 # 0.10.0
 
 - Changed the types of `Data.Vinyl.CoRec.onCoRec` and `Data.Vinyl.CoRec.onField`. This was pushing through the changes to drop the use of `Proxy` arguments, relying instead on `TypeApplications`. Also added `onCoRec1` and `onField` to work with functions relying on a single type class.
