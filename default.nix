@@ -11,8 +11,8 @@ let whitelistSource = src: allowedPrefixes:
                   src;
 in mkDerivation {
   pname = "vinyl";
-  version = "0.10.0";
-  src = whitelistSource ./. [ "Data" "vinyl.cabal" "LICENSE" "Setup.hs" "test" "benchmarks"];
+  version = "0.11.0";
+  src = whitelistSource ./. [ "Data" "vinyl.cabal" "LICENSE" "Setup.hs" "test" "benchmarks" ];
   libraryHaskellDepends = [ array base ghc-prim ];
   testHaskellDepends = [
     base doctest hspec lens microlens should-not-typecheck singletons
