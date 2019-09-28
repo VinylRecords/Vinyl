@@ -38,9 +38,7 @@ import Data.Vinyl.TypeLevel
 -- the constraint solver realize that this is a decidable predicate
 -- with respect to the judgemental equality in @k@.
 class (i ~ RIndex r rs, NatToInt i)
-  => RecElem record (r :: k) (r' :: k)
-             (rs :: [k]) (rs' :: [k])
-             (i :: Nat) | r r' rs i -> rs' where
+  => RecElem record r r' rs rs' (i :: Nat) | r r' rs i -> rs' where
   -- | An opportunity for instances to generate constraints based on
   -- the functor parameter of records passed to class methods.
   type RecElemFCtx record (f :: k -> *) :: Constraint

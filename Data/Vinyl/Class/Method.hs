@@ -160,8 +160,8 @@ type family PayloadType f (a :: u) :: * where
 
 -- | Generate a record from fields derived from type class
 -- instances.
-class RecPointed c (f :: u -> *) (ts :: [u]) where
-  rpointMethod :: (forall (a :: u). c (f a) => f a) -> Rec f ts
+class RecPointed c f ts where
+  rpointMethod :: (forall a. c (f a) => f a) -> Rec f ts
 
 instance RecPointed c f '[] where
   rpointMethod _ = RNil
@@ -175,14 +175,14 @@ instance (c (f t), RecPointed c f ts)
 -- | Apply a typeclass method to each field of a 'Rec' where the class
 -- constrains the index of the field, but not its interpretation
 -- functor.
-class RecMapMethod c (f :: u -> *) (ts :: [u]) where
+class RecMapMethod c f ts where
   rmapMethod :: (forall a. c (PayloadType f a) => f a -> g a)
              -> Rec f ts -> Rec g ts
 
 -- | Apply a typeclass method to each field of a 'Rec' where the class
 -- constrains the field when considered as a value interpreted by the
 -- record's interpretation functor.
-class RecMapMethod1 c (f :: u -> *) (ts :: [u])where
+class RecMapMethod1 c f ts where
   rmapMethod1 :: (forall a. c (f a) => f a -> g a)
               -> Rec f ts -> Rec g ts
 
