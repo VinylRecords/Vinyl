@@ -51,7 +51,7 @@ type family UncurriedXRec (t :: (u -> *, [u])) = r | r -> t where
   UncurriedXRec '(f, ts) = XRec f ts
 
 -- | Convert between an 'XRec' and an isomorphic tuple.
-class TupleXRec (f :: u -> *) (t :: [u]) where
+class TupleXRec f t where
   -- | Convert an 'XRec' to a tuple. Useful for pattern matching on an
   -- entire record.
   xrecTuple :: XRec f t -> ListToHKDTuple f t

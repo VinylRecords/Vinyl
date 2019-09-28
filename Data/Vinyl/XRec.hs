@@ -81,8 +81,8 @@ newtype XData t a = XData { unX :: HKD t a }
 -- permit unrolling of the recursion across a record. The function
 -- mapped across the vector hides the 'HKD' type family under a newtype
 -- constructor to help the type checker.
-class XRMap (f :: u -> *) (g :: u -> *) (rs :: [u]) where
-  xrmapAux :: (forall (a :: u) . XData f a -> XData g a) -> XRec f rs -> XRec g rs
+class XRMap f g rs where
+  xrmapAux :: (forall a . XData f a -> XData g a) -> XRec f rs -> XRec g rs
 
 instance XRMap f g '[] where
   xrmapAux _ RNil = RNil
@@ -127,7 +127,7 @@ instance (IsoXRec f ts, IsoHKD f t) => IsoXRec f (t ': ts) where
 -- This involves the so-called /higher-kinded data/ type family. See
 -- <http://reasonablypolymorphic.com/blog/higher-kinded-data> for more
 -- discussion.
-class IsoHKD (f :: u -> *) (a :: u) where
+class IsoHKD f a where
   type HKD f a
   type HKD f a = f a
   unHKD :: HKD f a -> f a
