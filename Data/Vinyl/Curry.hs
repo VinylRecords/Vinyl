@@ -33,6 +33,7 @@ class RecordCurry ts where
   -}
   rcurry :: (Rec f ts -> a) -> CurriedF f ts a
 
+class RecordCurry' ts where
   {-|
   N-ary version of 'curry' over pure records.
 
@@ -51,12 +52,14 @@ class RecordCurry ts where
 instance RecordCurry '[] where
   rcurry f = f RNil
   {-# INLINABLE rcurry #-}
+instance RecordCurry' '[] where
   rcurry' f = f RNil
   {-# INLINABLE rcurry' #-}
 
 instance RecordCurry ts => RecordCurry (t ': ts) where
   rcurry f x = rcurry (\xs -> f (x :& xs))
   {-# INLINABLE rcurry #-}
+instance RecordCurry' ts => RecordCurry' (t ': ts) where
   rcurry' f x = rcurry' (\xs -> f (Identity x :& xs))
   {-# INLINABLE rcurry' #-}
 
