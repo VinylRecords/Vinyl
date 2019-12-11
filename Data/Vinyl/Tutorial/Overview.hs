@@ -38,7 +38,7 @@
 >>> data Fields = Name | Age | Sleeping | Master deriving Show
 
     Any record can be now described by a type-level list of these labels.
-    The @DataKinds@ extension must be enabled to autmatically turn all the
+    The @DataKinds@ extension must be enabled to automatically turn all the
     constructors of the @Field@ type into types.
 
 >>> type LifeForm = [Name, Age, Sleeping]
