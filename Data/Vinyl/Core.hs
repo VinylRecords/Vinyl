@@ -30,8 +30,9 @@
 -- type. Instead, they treat the record as a list of fields, so will
 -- have performance linear in the size of the record.
 module Data.Vinyl.Core where
-
+#if __GLASGOW_HASKELL__ < 808
 import Data.Monoid (Monoid)
+#endif
 #if __GLASGOW_HASKELL__ < 804
 import Data.Semigroup (Semigroup(..))
 #endif
