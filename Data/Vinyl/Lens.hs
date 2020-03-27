@@ -11,6 +11,7 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE CPP                   #-}
 -- | Lenses into record fields.
 module Data.Vinyl.Lens
   ( RecElem(..)
@@ -176,7 +177,11 @@ class is ~ RImage rs ss => RecSubset record rs ss is where
 -- | A lens into a slice of the larger record. This is 'rsubsetC' with
 -- the type arguments reordered for more convenient usage with
 -- @TypeApplications@.
+#if __GLASGOW_HASKELL__ < 810
 rsubset :: forall rs ss f g record is.
+#else
+rsubset :: forall k rs ss f g record is.
+#endif
            (RecSubset record (rs :: [k]) (ss :: [k]) is,
            Functor g, RecSubsetFCtx record f)
         => (record f rs -> g (record f rs)) -> record f ss -> g (record f ss)

@@ -28,6 +28,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -219,7 +220,11 @@ mallocAndCopy src n = do
       dst <$ copyBytes dst' src' n
 
 -- | Set a field.
+#if __GLASGOW_HASKELL__ < 810
 sput :: forall (f :: u -> *) (t :: u) (ts :: [u]).
+#else
+sput :: forall u (f :: u -> *) (t :: u) (ts :: [u]).
+#endif
         ( FieldOffset f ts t
         , Storable (Rec f ts)
         , AllConstrained (FieldOffset f ts) ts)
@@ -296,7 +301,11 @@ instance ( i ~ RIndex (t :: (Symbol,*)) (ts :: [(Symbol,*)])
   {-# INLINE rputC #-}
 
 -- | Get a subset of a record's fields.
+#if __GLASGOW_HASKELL__ < 810
 srecGetSubset :: forall (ss :: [u]) (rs :: [u]) (f :: u -> *).
+#else
+srecGetSubset :: forall u (ss :: [u]) (rs :: [u]) (f :: u -> *).
+#endif
                  (RPureConstrained (FieldOffset f ss) rs,
                   RPureConstrained (FieldOffset f rs) rs,
                   RFoldMap rs, RMap rs, RApply rs,
@@ -334,7 +343,11 @@ newtype TaggedIO a = TaggedIO { unTagIO :: IO () }
 type Poker f = Lift (->) f TaggedIO
 
 -- | Set a subset of a record's fields.
+#if __GLASGOW_HASKELL__ < 810
 srecSetSubset :: forall (f :: u -> *) (ss :: [u]) (rs :: [u]).
+#else
+srecSetSubset :: forall u (f :: u -> *) (ss :: [u]) (rs :: [u]).
+#endif
                  (rs ⊆ ss,
                   RPureConstrained (FieldOffset f ss) rs,
                   RPureConstrained (FieldOffset f rs) rs,
