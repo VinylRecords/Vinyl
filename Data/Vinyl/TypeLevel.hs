@@ -11,6 +11,10 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE CPP                   #-}
+#if __GLASGOW_HASKELL__ >= 810
+{-# LANGUAGE UndecidableInstances  #-}
+#endif
 
 module Data.Vinyl.TypeLevel where
 
