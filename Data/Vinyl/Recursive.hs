@@ -7,11 +7,18 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ < 806
+{-# LANGUAGE TypeInType #-}
+#endif
+
 -- | Recursive definitions of various core vinyl functions. These are
 -- simple definitions that put less strain on the compiler. They are
 -- expected to have slower run times, but faster compile times than
 -- the definitions in "Data.Vinyl.Core".
 module Data.Vinyl.Recursive where
+#if __GLASGOW_HASKELL__ < 806
+import Data.Kind
+#endif
 import Data.Proxy (Proxy(..))
 import Data.Vinyl.Core (rpure, RecApplicative, Rec(..), Dict(..))
 import Data.Vinyl.Functor (Compose(..), (:.), Lift(..), Const(..))
@@ -140,11 +147,7 @@ reifyConstraint prx rec =
 
 -- | Build a record whose elements are derived solely from a
 -- constraint satisfied by each.
-#if __GLASGOW_HASKELL__ < 810
-rpureConstrained :: forall c (f :: u -> *) proxy ts.
-#else
 rpureConstrained :: forall u c (f :: u -> *) proxy ts.
-#endif
                     (AllConstrained c ts, RecApplicative ts)
                  => proxy c -> (forall a. c a => f a) -> Rec f ts
 rpureConstrained _ f = go (rpure Proxy)
