@@ -12,13 +12,20 @@
 {-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE CPP                   #-}
+#if __GLASGOW_HASKELL__ < 806
+{-# LANGUAGE TypeInType #-}
+#endif
 #if __GLASGOW_HASKELL__ >= 810
 {-# LANGUAGE UndecidableInstances  #-}
 #endif
 
 module Data.Vinyl.TypeLevel where
 
+#if __GLASGOW_HASKELL__ < 806
+import Data.Kind
+#else
 import GHC.Exts
+#endif
 import GHC.Types (Type)
 
 -- | A mere approximation of the natural numbers. And their image as lifted by

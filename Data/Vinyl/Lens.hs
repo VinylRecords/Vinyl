@@ -12,6 +12,10 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE CPP                   #-}
+#if __GLASGOW_HASKELL__ < 806
+{-# LANGUAGE TypeInType #-}
+#endif
+
 -- | Lenses into record fields.
 module Data.Vinyl.Lens
   ( RecElem(..)
@@ -33,6 +37,9 @@ import Data.Kind (Constraint)
 import Data.Vinyl.Core
 import Data.Vinyl.Functor
 import Data.Vinyl.TypeLevel
+#if __GLASGOW_HASKELL__ < 806
+import Data.Kind
+#endif
 
 -- | The presence of a field in a record is witnessed by a lens into
 -- its value.  The fifth parameter to 'RecElem', @i@, is there to help
@@ -177,11 +184,7 @@ class is ~ RImage rs ss => RecSubset record rs ss is where
 -- | A lens into a slice of the larger record. This is 'rsubsetC' with
 -- the type arguments reordered for more convenient usage with
 -- @TypeApplications@.
-#if __GLASGOW_HASKELL__ < 810
-rsubset :: forall rs ss f g record is.
-#else
 rsubset :: forall k rs ss f g record is.
-#endif
            (RecSubset record (rs :: [k]) (ss :: [k]) is,
            Functor g, RecSubsetFCtx record f)
         => (record f rs -> g (record f rs)) -> record f ss -> g (record f ss)
