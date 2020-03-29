@@ -21,7 +21,11 @@ extensions first:
 > {-# LANGUAGE FlexibleContexts, FlexibleInstances, NoMonomorphismRestriction #-}
 > {-# LANGUAGE GADTs, TypeSynonymInstances, TemplateHaskell, StandaloneDeriving #-}
 > {-# LANGUAGE TypeApplications #-}
+> {-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 810
 > {-# LANGUAGE StandaloneKindSignatures #-}
+#endif
+
 > module Intro where
 > import Data.Vinyl
 > import Data.Vinyl.Functor
