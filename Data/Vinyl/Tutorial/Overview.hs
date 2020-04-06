@@ -157,7 +157,7 @@ let upcastedTucker :: Rec Attr LifeForm
 The subtyping relationship between record types is expressed with the
 '<:' constraint; so, 'rcast' is of the following type:
 
-> rcast :: r1 <: r2 => Rec f r1 -> Rec f r2
+> rcast :: r1 <: r2 => Rec f r2 -> Rec f r1
 
 Also provided is a "≅" constraint which indicates record congruence
 (that is, two record types differ only in the order of their fields).
