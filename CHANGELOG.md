@@ -1,4 +1,9 @@
+# 0.12.2
+
+- GHC 8.10.1 support
+
 # 0.12.0
+
 - GHC 8.8.1 support. Class type signatures were changed to remove explicit kind variables. This is to simplify the use of `TypeApplications` which changed with GHC 8.8.1 to require explicit application to those kind variables. Leaving them out of the class definitions preserves existing usage of `TypeApplications`. Thanks to Justin Le (@mstksg).
 
 # 0.11.0
