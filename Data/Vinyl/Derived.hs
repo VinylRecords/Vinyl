@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds  #-}
@@ -23,6 +24,7 @@ import Data.Vinyl.Lens
 import Data.Vinyl.TypeLevel (Fst, Snd, RIndex)
 import GHC.OverloadedLabels
 import GHC.TypeLits
+import Unsafe.Coerce (unsafeCoerce)
 
 -- | Alias for Field spec
 type a ::: b = '(a, b)
@@ -209,6 +211,20 @@ instance (KnownSymbol s, StripFieldNames ts) => StripFieldNames ('(s,t) ': ts) w
   stripNames' (Compose x :& xs) = fmap getField x :& stripNames' xs
   withNames (Identity x :& xs) = Field x :& withNames xs
   withNames' (x :& xs) = Compose (fmap Field x) :& withNames' xs
+
+-- | @Rename old new fields@ replaces the first occurence of the
+-- field label @old@ with @new@ in a list of @fields@. Used by
+-- 'rename'.
+type family Rename old new ts where
+  Rename old new '[] = '[]
+  Rename old new ('(old,x) ': xs) = '(new,x) ': xs
+  Rename old new ('(s,x) ': xs) = '(s,x) ': Rename old new xs
+
+-- | Replace a field label. Example:
+--
+-- @rename \@"name" \@"handle" (fieldRec (#name =: "Joe", #age =: (40::Int)))
+rename :: forall old new ts. Rec ElField ts -> Rec ElField (Rename old new ts)
+rename = unsafeCoerce
 
 -- | Construct a 'Rec' with 'ElField' elements.
 rpuref :: AllFields fs => (forall a. KnownField a => f a) -> Rec f fs
