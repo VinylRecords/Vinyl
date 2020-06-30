@@ -92,14 +92,14 @@ rvalf x = getField . rgetf x
 rputf' :: forall l v v' record us us'.
           (HasField record l us us' v v', KnownSymbol l, RecElemFCtx record ElField)
        => Label l -> v' -> record ElField us -> record ElField us'
-rputf' _ = rput' @(l:::v) . (Field :: v' -> ElField '(l,v'))
+rputf' _ = rput' @_ @(l:::v) . (Field :: v' -> ElField '(l,v'))
 
 -- | Set a named field without changing its type. @rputf #foo 23@ sets
 -- the field named @#foo@ to @23@.
 rputf :: forall l v record us.
           (HasField record l us us v v, KnownSymbol l, RecElemFCtx record ElField)
        => Label l -> v -> record ElField us -> record ElField us
-rputf _ = rput @(l:::v) . Field
+rputf _ = rput @_ @(l:::v) . Field
 
 -- | A lens into a 'Rec' identified by a 'Label'.
 rlensfL' :: forall l v v' record g f us us'.

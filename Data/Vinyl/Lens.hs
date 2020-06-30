@@ -46,7 +46,7 @@ import Data.Kind
 -- the constraint solver realize that this is a decidable predicate
 -- with respect to the judgemental equality in @k@.
 class (i ~ RIndex r rs, NatToInt i)
-  => RecElem record r r' rs rs' (i :: Nat) | r r' rs i -> rs' where
+  => RecElem (record :: (k -> *) -> [k] -> *) (r :: k) (r' :: k) (rs :: [k]) (rs' :: [k]) (i :: Nat) | r r' rs i -> rs' where
   -- | An opportunity for instances to generate constraints based on
   -- the functor parameter of records passed to class methods.
   type RecElemFCtx record (f :: k -> *) :: Constraint
@@ -98,16 +98,16 @@ instance RecElem Rec r r' (r ': rs) (r' ': rs) 'Z where
   {-# INLINE rlensC #-}
   rgetC = getConst . rlensC Const
   {-# INLINE rgetC #-}
-  rputC y = getIdentity . rlensC @_ @r (\_ -> Identity y)
+  rputC y = getIdentity . rlensC @_ @_ @r (\_ -> Identity y)
   {-# INLINE rputC #-}
 
 instance (RIndex r (s ': rs) ~ 'S i, RecElem Rec r r' rs rs' i)
   => RecElem Rec r r' (s ': rs) (s ': rs') ('S i) where
   rlensC f (x :& xs) = fmap (x :&) (rlensC f xs)
   {-# INLINE rlensC #-}
-  rgetC = getConst . rlensC @_ @r @r' Const
+  rgetC = getConst . rlensC @_ @_ @r @r' Const
   {-# INLINE rgetC #-}
-  rputC y = getIdentity . rlensC @_ @r (\_ -> Identity y)
+  rputC y = getIdentity . rlensC @_ @_ @r (\_ -> Identity y)
   {-# INLINE rputC #-}
 
 --  | The 'rgetC' field getter with the type arguments re-ordered for
@@ -119,15 +119,16 @@ rget = rgetC
 
 -- | The type-changing field setter 'rputC' with the type arguments
 -- re-ordered for more convenient usage with @TypeApplications@.
-rput' :: forall r r' rs rs' record f. (RecElem record r r' rs rs' (RIndex r rs), RecElemFCtx record f)
+rput' :: forall k (r :: k) (r' :: k) (rs :: [k]) (rs' :: [k]) record f
+       . (RecElem record r r' rs rs' (RIndex r rs), RecElemFCtx record f)
       => f r' -> record f rs -> record f rs'
-rput' = rputC @_ @r @r'
+rput' = rputC @_ @_ @r @r'
 
 -- | Type-preserving field setter. This type is simpler to work with
 -- than that of 'rput''.
-rput :: forall r rs record f. (RecElem record r r rs rs (RIndex r rs), RecElemFCtx record f)
+rput :: forall k (r :: k) rs record f. (RecElem record r r rs rs (RIndex r rs), RecElemFCtx record f)
       => f r -> record f rs -> record f rs
-rput = rput' @r
+rput = rput' @_ @r
 
 -- | Type-changing field lens 'rlensC' with the type arguments
 -- re-ordered for more convenient usage with @TypeApplications@.
