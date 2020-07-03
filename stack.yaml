@@ -1,6 +1,4 @@
-resolver: ghc-8.4.3
-# packages:
-# - .
-nix:
-  enable: true
-  shell-file: shell.nix
+resolver: lts-16.3
+
+packages:
+- .
