@@ -122,13 +122,13 @@ rget = rgetC
 rput' :: forall k (r :: k) (r' :: k) (rs :: [k]) (rs' :: [k]) record f
        . (RecElem record r r' rs rs' (RIndex r rs), RecElemFCtx record f)
       => f r' -> record f rs -> record f rs'
-rput' = rputC @_ @_ @r @r'
+rput' = rputC @k @record @r @r' @rs @rs'
 
 -- | Type-preserving field setter. This type is simpler to work with
 -- than that of 'rput''.
 rput :: forall k (r :: k) rs record f. (RecElem record r r rs rs (RIndex r rs), RecElemFCtx record f)
       => f r -> record f rs -> record f rs
-rput = rput' @_ @r
+rput = rput' @_ @r @r @rs @rs @record
 
 -- | Type-changing field lens 'rlensC' with the type arguments
 -- re-ordered for more convenient usage with @TypeApplications@.
