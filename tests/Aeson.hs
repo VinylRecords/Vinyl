@@ -33,6 +33,7 @@
 -- another, nested, 'Array' for the rest of the record. We include
 -- here a function to flatten that recursive structure into the
 -- 'Object' shape we want.
+module Main where
 import Control.Lens (view, deep)
 import Control.Monad.State.Strict
 import qualified Data.HashMap.Strict as H
