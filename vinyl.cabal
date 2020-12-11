@@ -23,6 +23,7 @@ source-repository head
 library
   exposed-modules:     Data.Vinyl
                      , Data.Vinyl.ARec
+                     , Data.Vinyl.ARec.Internal
                      , Data.Vinyl.Class.Method
                      , Data.Vinyl.Core
                      , Data.Vinyl.CoRec

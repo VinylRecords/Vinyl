@@ -1,6 +1,9 @@
 import Test.DocTest
 
 main :: IO ()
-main = doctest [ "tests/Intro.lhs"
+main = doctest [ "-package lens"
+               , "-package doctest"
+               , "-package singletons"
+               , "tests/Intro.lhs"
                , "Data/Vinyl/Functor.hs"
                , "Data/Vinyl/Curry.hs" ]
