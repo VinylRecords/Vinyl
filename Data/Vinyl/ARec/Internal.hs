@@ -1,4 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -6,9 +8,14 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
+#if __GLASGOW_HASKELL__ >= 806
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE RankNTypes #-}
+#endif
 {-# LANGUAGE RoleAnnotations #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 -- | Constant-time field accessors for extensible records. The
@@ -26,6 +33,8 @@ module Data.Vinyl.ARec.Internal
   , alens
   , arecGetSubset
   , arecSetSubset
+  , arecRepsMatchCoercion
+  , arecConsMatchCoercion
   ) where
 import Data.Vinyl.Core
 import Data.Vinyl.Lens (RecElem(..), RecSubset(..))
@@ -35,11 +44,50 @@ import qualified Data.Array as Array
 import qualified Data.Array.Base as BArray
 import GHC.Exts (Any)
 import Unsafe.Coerce
+#if __GLASGOW_HASKELL__ < 806
+import Data.Constraint.Forall (Forall)
+#endif
+import Data.Coerce (Coercible)
+import Data.Type.Coercion (Coercion (..))
 
 -- | An array-backed extensible record with constant-time field
 -- access.
 newtype ARec (f :: k -> *) (ts :: [k]) = ARec (Array.Array Int Any)
 type role ARec representational nominal
+
+-- | Given that @xs@ and @ys@ have the same length, and mapping
+-- @f@ over @xs@ and @g@ over @ys@ produces lists whose elements
+-- are pairwise 'Coercible', @ARec f xs@ and @ARec g ys@ are
+-- 'Coercible'.
+arecRepsMatchCoercion :: AllRepsMatch f xs g ys => Coercion (ARec f xs) (ARec g ys)
+arecRepsMatchCoercion = Coercion
+
+-- | Given that @forall x. Coercible (f x) (g x)@, produce a coercion from
+-- @ARec f xs@ to @ARec g xs@. While the constraint looks a lot like
+-- @Coercible f g@, it is actually weaker.
+
+#if __GLASGOW_HASKELL__ >= 806
+arecConsMatchCoercion ::
+  (forall (x :: k). Coercible (f x) (g x)) => Coercion (ARec f xs) (ARec g xs)
+arecConsMatchCoercion = Coercion
+#else
+arecConsMatchCoercion :: forall k (f :: k -> *) (g :: k -> *) (xs :: [k]).
+  Forall (Similar f g) => Coercion (Rec f xs) (Rec g xs)
+-- Why do we need this? No idea, really. I guess some change in
+-- newtype handling for Coercible in 8.6?
+arecConsMatchCoercion = unsafeCoerce (Coercion :: Coercion (Rec f xs) (Rec f xs))
+#endif
+
+{-
+-- This is sensible, but the ergonomics are likely quite bad thanks to the
+-- interaction between Coercible resolution and resolution in the presence of
+-- quantified constraints. Is there a good way to do this?
+
+arecConsMatchCoercible :: forall k f g rep (r :: TYPE rep).
+     (forall (x :: k). Coercible (f x) (g x))
+  => ((forall (xs :: [k]). Coercible (ARec f xs) (ARec g xs)) => r) -> r
+arecConsMatchCoercible f = f
+-}
 
 -- | Convert a 'Rec' into an 'ARec' for constant-time field access.
 toARec :: forall f ts. (NatToInt (RLength ts)) => Rec f ts -> ARec f ts

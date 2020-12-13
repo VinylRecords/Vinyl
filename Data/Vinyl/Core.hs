@@ -10,8 +10,12 @@
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE Trustworthy           #-}
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
+#if __GLASGOW_HASKELL__ >= 806
+{-# LANGUAGE QuantifiedConstraints #-}
+#endif
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
@@ -30,6 +34,7 @@
 -- type. Instead, they treat the record as a list of fields, so will
 -- have performance linear in the size of the record.
 module Data.Vinyl.Core where
+import Data.Coerce (Coercible)
 #if __GLASGOW_HASKELL__ < 808
 import Data.Monoid (Monoid)
 #endif
@@ -46,6 +51,10 @@ import Data.Type.Equality (TestEquality (..), (:~:) (..))
 import Data.Type.Coercion (TestCoercion (..), Coercion (..))
 import GHC.Generics
 import GHC.Types (Constraint, Type)
+import Unsafe.Coerce (unsafeCoerce)
+#if __GLASGOW_HASKELL__ < 806
+import Data.Constraint.Forall (Forall)
+#endif
 
 -- | A record is parameterized by a universe @u@, an interpretation @f@ and a
 -- list of rows @rs@.  The labels or indices of the record are given by
@@ -397,3 +406,90 @@ instance (Generic (Rec f rs)) => Generic (Rec f (r ': rs)) where
          (Rep (Rec f rs)))
   from (x :& xs) = M1 (M1 (K1 x) :*: M1 (from xs))
   to (M1 (M1 (K1 x) :*: M1 xs)) = x :& to xs
+
+type family Head xs where
+  Head (x ': _) = x
+type family Tail xs where
+  Tail (_ ': xs) = xs
+
+type family AllRepsMatch_ (f :: j -> *) (xs :: [j]) (g :: k -> *) (ys :: [k]) :: Constraint where
+  AllRepsMatch_ f (x ': xs) g ys =
+    ( ys ~ (Head ys ': Tail ys)
+    , Coercible (f x) (g (Head ys))
+    , AllRepsMatch_ f xs g (Tail ys) )
+  AllRepsMatch_ _ '[] _ ys = ys ~ '[]
+
+-- | @AllRepsMatch f xs g ys@ means that @xs@ and @ys@ have the
+-- same lengths, and that mapping @f@ over @xs@ and @g@ over @ys@
+-- produces lists whose corresponding elements are 'Coercible' with
+-- each other. For example, the following hold:
+--
+-- @AllRepsMatch Proxy '[1,2,3] Proxy '[4,5,6]@
+-- @AllRepsMatch Sum '[Int,Word] Identity '[Min Int, Max Word]@
+type AllRepsMatch f xs g ys = (AllRepsMatch_ f xs g ys, AllRepsMatch_ g ys f xs)
+
+-- This two-sided approach means that the *length* of each list
+-- can be inferred from the length of the other. I don't know how
+-- useful that is in practice, but we get it almost for free.
+
+-- | Given that for each element @x@ in the list @xs@,
+repsMatchCoercion :: AllRepsMatch f xs g ys => Coercion (Rec f xs) (Rec g ys)
+repsMatchCoercion = unsafeCoerce (Coercion :: Coercion () ())
+
+{-
+-- "Proof" that repsMatchCoercion is sensible.
+repsMatchConvert :: AllRepsMatch f xs g ys => Rec f xs -> Rec g ys
+repsMatchConvert RNil = RNil
+repsMatchConvert (x :& xs) = coerce x :& repsMatchConvert xs
+-}
+
+#if __GLASGOW_HASKELL__ >= 806
+consMatchCoercion ::
+  (forall (x :: k). Coercible (f x) (g x)) => Coercion (Rec f xs) (Rec g xs)
+#else
+consMatchCoercion :: forall k (f :: k -> *) (g :: k -> *) (xs :: [k]).
+  Forall (Similar f g) => Coercion (Rec f xs) (Rec g xs)
+#endif
+consMatchCoercion = unsafeCoerce (Coercion :: Coercion () ())
+{-
+-- "Proof" that consMatchCoercion is sensible.
+consMatchConvert ::
+  (forall (x :: k). Coercible (f x) (g x)) => Rec f xs -> Rec g xs
+consMatchConvert RNil = RNil
+consMatchConvert (x :& xs) = coerce x :& consMatchConvert xs
+
+-- And for old GHC.
+consMatchConvert' :: forall k (f :: k -> *) (g :: k -> *) (xs :: [k]).
+  Forall (Similar f g) => Rec f xs -> Rec g xs
+consMatchConvert' RNil = RNil
+consMatchConvert' ((x :: f x) :& xs) =
+  case inst :: Forall (Similar f g) DC.:- Similar f g x of
+    DC.Sub DC.Dict -> coerce x :& consMatchConvert' xs
+-}
+
+{-
+-- This is sensible, but I suspect the ergonomics will be awful
+-- thanks to the interaction between Coercible constraint resolution
+-- and constraint resolution with quantified constraints. Is there
+-- a good way to accomplish it?
+
+-- | Given
+--
+-- @
+-- forall x. Coercible (f x) (g x)
+-- @
+--
+-- provide the constraint
+--
+-- @
+-- forall xs. Coercible (Rec f xs) (Rec g xs)
+-- @
+consMatchCoercible :: forall k f g rep (r :: TYPE rep).
+     (forall (x :: k). Coercible (f x) (g x))
+  => ((forall (xs :: [k]). Coercible (Rec f xs) (Rec g xs)) => r) -> r
+consMatchCoercible f = case unsafeCoerce @(Zouch f f) @(Zouch f g) (Zouch $ \r -> r) of
+  Zouch q -> q f
+
+newtype Zouch (f :: k -> *) (g :: k -> *) =
+  Zouch (forall rep (r :: TYPE rep). ((forall (xs :: [k]). Coercible (Rec f xs) (Rec g xs)) => r) -> r)
+-}

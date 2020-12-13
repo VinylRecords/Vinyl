@@ -21,12 +21,8 @@
 
 module Data.Vinyl.TypeLevel where
 
-#if __GLASGOW_HASKELL__ < 806
+import Data.Coerce
 import Data.Kind
-#else
-import GHC.Exts
-#endif
-import GHC.Types (Type)
 
 -- | A mere approximation of the natural numbers. And their image as lifted by
 -- @-XDataKinds@ corresponds to the actual natural numbers.
@@ -126,3 +122,8 @@ type family ApplyToField (t :: Type -> Type) (a :: k1) = (r :: k1) | r -> t a wh
 type family MapTyCon t xs = r | r -> xs where
   MapTyCon t '[] = '[]
   MapTyCon t (x ': xs) = ApplyToField t x ': MapTyCon t xs
+
+-- | This class is used for `consMatchCoercion` with older versions
+-- of GHC.
+class Coercible (f x) (g x) => Similar f g (x :: k)
+instance Coercible (f x) (g x) => Similar f g (x :: k)
