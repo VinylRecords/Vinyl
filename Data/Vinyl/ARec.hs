@@ -15,5 +15,7 @@ module Data.Vinyl.ARec
   , alens
   , arecGetSubset
   , arecSetSubset
+  , arecRepsMatchCoercion
+  , arecConsMatchCoercion
   ) where
 import Data.Vinyl.ARec.Internal
