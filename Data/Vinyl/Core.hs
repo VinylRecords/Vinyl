@@ -52,6 +52,7 @@ import Data.Type.Coercion (TestCoercion (..), Coercion (..))
 import GHC.Generics
 import GHC.Types (Constraint, Type)
 import Unsafe.Coerce (unsafeCoerce)
+import Control.DeepSeq (NFData, rnf)
 #if __GLASGOW_HASKELL__ < 806
 import Data.Constraint.Forall (Forall)
 #endif
@@ -406,6 +407,13 @@ instance (Generic (Rec f rs)) => Generic (Rec f (r ': rs)) where
          (Rep (Rec f rs)))
   from (x :& xs) = M1 (M1 (K1 x) :*: M1 (from xs))
   to (M1 (M1 (K1 x) :*: M1 xs)) = x :& to xs
+
+instance ReifyConstraint NFData f xs => NFData (Rec f xs) where
+  rnf = go . reifyConstraint @NFData
+    where
+      go :: forall elems. Rec (Dict NFData :. f) elems -> ()
+      go RNil = ()
+      go (Compose (Dict x) :& xs) = rnf x `seq` go xs
 
 type family Head xs where
   Head (x ': _) = x

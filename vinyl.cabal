@@ -41,6 +41,7 @@ library
                      , Data.Vinyl.XRec
   build-depends:       base >= 4.11 && <= 5,
                        ghc-prim,
+                       deepseq,
                        array
   if impl (ghc < 8.6.0)
     build-depends: constraints >= 0.6.1
