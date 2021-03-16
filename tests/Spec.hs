@@ -10,6 +10,7 @@ import Data.Vinyl.Syntax ()
 
 import qualified CoRecSpec as C
 import qualified XRecSpec as X
+import qualified SupersetSpec as SS
 
 -- d1 :: FieldRec '[ '("X",String), '("Y", String) ]
 -- d1 = Field @"X" "5" :& Field @"Y" "Hi" :& RNil
@@ -32,6 +33,7 @@ main :: IO ()
 main = hspec $ do
   C.spec
   X.spec
+  SS.spec
   describe "Rec is like an Applicative" $ do
     it "Can apply parsing functions" $ d3 `shouldBe` Field 5 :& Field "Hi" :& RNil
   describe "Fields may be accessed by overloaded labels" $ do

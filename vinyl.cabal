@@ -1,5 +1,5 @@
 name:                vinyl
-version:             0.13.0
+version:             0.13.1
 synopsis:            Extensible Records
 -- description:
 license:             MIT
@@ -36,6 +36,7 @@ library
                      , Data.Vinyl.Notation
                      , Data.Vinyl.Recursive
                      , Data.Vinyl.SRec
+                     , Data.Vinyl.Superset
                      , Data.Vinyl.Syntax
                      , Data.Vinyl.Tutorial.Overview
                      , Data.Vinyl.XRec
@@ -89,6 +90,14 @@ benchmark asa
   ghc-options:      -O2
   default-language: Haskell2010
 
+benchmark subsetelem
+  type:             exitcode-stdio-1.0
+  hs-source-dirs:   benchmarks
+  main-is:          SubsetElem.hs
+  build-depends:    base, criterion, vinyl
+  ghc-options:      -O2
+  default-language: Haskell2010
+
 test-suite doctests
   type:             exitcode-stdio-1.0
   hs-source-dirs:   tests
@@ -109,7 +118,7 @@ test-suite spec
   type:                exitcode-stdio-1.0
   hs-source-dirs:      tests
   main-is:             Spec.hs
-  other-modules:       CoRecSpec XRecSpec
+  other-modules:       CoRecSpec XRecSpec SupersetSpec
   build-depends:       base
                      , vinyl
                      , microlens
