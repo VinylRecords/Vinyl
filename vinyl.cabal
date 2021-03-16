@@ -94,7 +94,7 @@ test-suite doctests
   hs-source-dirs:   tests
   other-modules:    Intro
   main-is:          doctests.hs
-  build-depends:    base, lens, doctest >= 0.8, singletons >= 0.10, vinyl
+  build-depends:    base, lens, doctest >= 0.8, singletons >= 0.10 && < 3, vinyl
   default-language: Haskell2010
 
 test-suite aeson
