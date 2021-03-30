@@ -94,7 +94,10 @@ test-suite doctests
   hs-source-dirs:   tests
   other-modules:    Intro
   main-is:          doctests.hs
-  build-depends:    base, lens, doctest >= 0.8, singletons >= 0.10 && < 3, vinyl
+  if impl (ghc < 9.0.1)
+    build-depends:    base, lens, doctest >= 0.8, singletons >= 0.10 && < 3, vinyl
+  else
+    build-depends:    base, lens, doctest >= 0.8, singletons-th >= 3 && < 3.1, vinyl
   default-language: Haskell2010
 
 test-suite aeson
