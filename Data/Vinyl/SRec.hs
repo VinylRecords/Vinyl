@@ -75,13 +75,17 @@ import Foreign.Marshal.Utils (copyBytes)
 import Foreign.Ptr (Ptr)
 import Foreign.Storable (Storable(..))
 import System.IO.Unsafe (unsafePerformIO, unsafeDupablePerformIO)
+#if __GLASGOW_HASKELL__ >= 900
+import Unsafe.Coerce (unsafeCoerce#)
+import GHC.Prim (touch#, RealWorld)
+#else
+import GHC.Prim (touch#, unsafeCoerce#, RealWorld)
+#endif
 
 import GHC.IO (IO(IO))
 import GHC.Base (realWorld#)
 import GHC.TypeLits (Symbol)
-
 import GHC.Prim (MutableByteArray#, newAlignedPinnedByteArray#, byteArrayContents#)
-import GHC.Prim (unsafeCoerce#, touch#, RealWorld)
 import GHC.Ptr (Ptr(..))
 import GHC.Types (Int(..))
 

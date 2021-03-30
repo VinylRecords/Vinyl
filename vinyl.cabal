@@ -1,5 +1,5 @@
 name:                vinyl
-version:             0.13.0
+version:             0.13.1
 synopsis:            Extensible Records
 -- description:
 license:             MIT
@@ -12,7 +12,7 @@ stability:           Experimental
 build-type:          Simple
 cabal-version:       >=1.10
 extra-source-files:  CHANGELOG.md
-tested-with:         GHC == 8.4.4, GHC == 8.6.5, GHC == 8.8.4, GHC == 8.10.4
+tested-with:         GHC == 8.4.4, GHC == 8.6.5, GHC == 8.8.4, GHC == 8.10.4, GHC == 9.0.1
 
 description: Extensible records for Haskell with lenses.
 

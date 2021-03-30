@@ -1,3 +1,6 @@
+# 0.13.1
+- GHC 9.0.1 support
+
 # 0.13.0
 - GHC 8.10.1 support fix. A fix for the previous attempt at 8.10 support involves a backwards incompatible change.
 
