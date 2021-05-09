@@ -1,3 +1,6 @@
+# 0.14.0
+- Removed aput and alens from Data.Vinyl.ARec. They were used internally, but their type is unsound.
+
 # 0.13.1
 - GHC 9.0.1 support
 
