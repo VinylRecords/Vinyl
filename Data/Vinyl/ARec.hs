@@ -11,8 +11,6 @@ module Data.Vinyl.ARec
   , toARec
   , fromARec
   , aget
-  , aput
-  , alens
   , arecGetSubset
   , arecSetSubset
   , arecRepsMatchCoercion
