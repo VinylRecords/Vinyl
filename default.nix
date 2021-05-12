@@ -1,16 +1,16 @@
-{ mkDerivation, aeson, array, base, criterion, doctest, ghc-prim
+{ mkDerivation, aeson, array, base, criterion, deepseq, ghc-prim
 , hspec, lens, lens-aeson, lib, linear, microlens, mtl, mwc-random
-, primitive, should-not-typecheck, singletons, tagged, text
+, primitive, should-not-typecheck, tagged, text
 , unordered-containers, vector
 }:
 mkDerivation {
   pname = "vinyl";
-  version = "0.13.1";
-  src = ./.;
-  libraryHaskellDepends = [ array base ghc-prim ];
+  version = "0.13.2";
+  src = ./Vinyl;
+  libraryHaskellDepends = [ array base deepseq ghc-prim ];
   testHaskellDepends = [
-    aeson base doctest hspec lens lens-aeson microlens mtl
-    should-not-typecheck singletons text unordered-containers vector
+    aeson base hspec lens lens-aeson microlens mtl should-not-typecheck
+    text unordered-containers vector
   ];
   benchmarkHaskellDepends = [
     base criterion linear microlens mwc-random primitive tagged vector
