@@ -42,6 +42,7 @@ import Foreign.Storable
 import GHC.Generics
 import GHC.TypeLits
 import GHC.Types (Type)
+import Data.Vinyl.TypeLevel (Snd)
 
 {- $introduction
     This module provides functors and functor compositions
@@ -107,8 +108,10 @@ newtype Const (a :: *) (b :: k)
 -- | A value with a phantom 'Symbol' label. It is not a
 -- Haskell 'Functor', but it is used in many of the same places a
 -- 'Functor' is used in vinyl.
-data ElField (field :: (Symbol, Type)) where
-  Field :: KnownSymbol s => !t -> ElField '(s,t)
+--
+-- Morally: newtype ElField (s, t) = Field t
+-- But GHC doesn't allow that
+newtype ElField (t :: (Symbol, Type)) = Field (Snd t)
 
 deriving instance Eq t => Eq (ElField '(s,t))
 deriving instance Ord t => Ord (ElField '(s,t))

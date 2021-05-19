@@ -142,7 +142,7 @@ data FieldTyper = FieldId | FieldSnd
 -- | The interpretation function of the 'FieldTyper' symbols.
 type family ApplyFieldTyper (f :: FieldTyper) (a :: k) :: * where
   ApplyFieldTyper 'FieldId a = a
-  ApplyFieldTyper 'FieldSnd '(s, b) = b
+  ApplyFieldTyper 'FieldSnd a = Snd a
 
 -- | A mapping of record contexts into the 'FieldTyper' function
 -- space. We explicitly match on 'ElField' to pick out the payload
