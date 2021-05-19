@@ -62,7 +62,7 @@ instance ToJSON a => ToJSON (Identity a) where
 
 -- | A named field serializes to a JSON object with a single named
 -- field.
-instance ToJSON a => ToJSON (ElField '(s,a)) where
+instance (KnownSymbol s, ToJSON a) => ToJSON (ElField '(s,a)) where
   toJSON x = object [(T.pack (getLabel x), toJSON (getField x))]
 
 -- | A @((Text,) :. f) a@ value maps to a JSON field whose name is the
