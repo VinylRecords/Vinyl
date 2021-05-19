@@ -46,7 +46,7 @@ getField :: ElField '(s,t) -> t
 getField (Field x) = x
 
 -- | Get the label name of an 'ElField'.
-getLabel :: forall s t. ElField '(s,t) -> String
+getLabel :: forall s t. KnownSymbol s => ElField '(s,t) -> String
 getLabel (Field _) = symbolVal (Proxy::Proxy s)
 
 -- | 'ElField' is isomorphic to a functor something like @Compose
