@@ -1,4 +1,8 @@
-# 0.14.0
+# 0.13.3
+- Fixed CHANGELOG entry for 0.13.2: it referred to version 0.14.0
+- Relax bounds on `hspec`
+
+# 0.13.2
 - Removed aput and alens from Data.Vinyl.ARec. They were used internally, but their type is unsound.
 
 # 0.13.1
