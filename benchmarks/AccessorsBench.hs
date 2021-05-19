@@ -8,21 +8,12 @@ import           Criterion.Main
 import Data.Monoid (Endo(..))
 import           Data.Vinyl
 import           Data.Vinyl.Syntax ()
-import Lens.Micro ((%~), (&))
-import           System.Exit (exitFailure)
+import           Lens.Micro        ((%~), (&))
+import           System.Exit       (exitFailure)
 
-type Fields = '[ '( "a0", Int ), '( "a1", Int ), '( "a2", Int ), '( "a3", Int )
-               , '( "a4", Int ), '( "a5", Int ), '( "a6", Int ), '( "a7", Int )
-               , '( "a8", Int ), '( "a9", Int ), '( "a10", Int ), '( "a11", Int )
-               , '( "a12", Int ), '( "a13", Int ), '( "a14", Int ), '( "a15", Int )
-               ]
-
-newF :: FieldRec Fields
-newF = Field 0 :& Field 0 :& Field 0 :& Field 0 :&
-       Field 0 :& Field 0 :& Field 0 :& Field 0 :&
-       Field 0 :& Field 0 :& Field 0 :& Field 0 :&
-       Field 0 :& Field 0 :& Field 0 :& Field 99 :&
-       RNil
+import           Bench.ARec
+import           Bench.SRec
+import           Bench.Rec
 
 data HaskRec = HaskRec {
   a0 :: Int,
@@ -45,6 +36,10 @@ data HaskRec = HaskRec {
 haskRec :: HaskRec
 haskRec = HaskRec 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 99
 
+sumHaskRec r =
+    a0 r + a1 r + a2 r + a3 r + a4 r + a5 r + a6 r + a7 r + a8 r + a9 r
+  + a10 r + a11 r + a12 r + a13 r + a14 r + a15 r
+
 data StrictHaskRec = StrictHaskRec {
   sa0 :: !Int,
   sa1 :: !Int,
@@ -66,6 +61,10 @@ data StrictHaskRec = StrictHaskRec {
 shaskRec :: StrictHaskRec
 shaskRec = StrictHaskRec 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 99
 
+sumSHaskRec r =
+    sa0 r + sa1 r + sa2 r + sa3 r + sa4 r + sa5 r + sa6 r + sa7 r + sa8 r + sa9 r
+  + sa10 r + sa11 r + sa12 r + sa13 r + sa14 r + sa15 r
+
 data UStrictHaskRec = UStrictHaskRec {
   usa0 :: {-# UNPACK #-} !Int,
   usa1 :: {-# UNPACK #-} !Int,
@@ -86,6 +85,10 @@ data UStrictHaskRec = UStrictHaskRec {
 
 ushaskRec :: UStrictHaskRec
 ushaskRec = UStrictHaskRec 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 99
+
+sumUSHaskRec r =
+    usa0 r + usa1 r + usa2 r + usa3 r + usa4 r + usa5 r + usa6 r + usa7 r + usa8 r
+    + usa9 r + usa10 r + usa11 r + usa12 r + usa13 r + usa14 r + usa15 r
 
 type SubFields = '[ '("a0", Int), '("a8", Int), '("a15", Int)]
 
@@ -115,7 +118,8 @@ updateHaskRec r = r { a0 = suba0 s, a8 = suba8 s, a15 = suba15 s }
 
 main :: IO ()
 main =
-  do let arec = toARec newF
+  do let newF = mkRec 0
+         arec = toARec newF
          srec = toSRec newF
      unless (rvalf #a15 arec == rvalf #a15 newF)
             (do putStrLn "AFieldRec accessor disagrees with rvalf"
@@ -142,7 +146,22 @@ main =
          , bench "ARec" $ nf (rvalf #a15 . updateARec) arec
          , bench "SRec" $ nf (rvalf #a15 . updateSRec) srec
          ]
-         , bgroup "FieldRec"
+         ,
+         bgroup "creating"
+         [ bench "vinyl record" $ whnf mkRec 0
+         , bench "toSRec" $ whnf mkToSRec 0
+         , bench "New style ARec with toARec " $ whnf mkToARec 0
+         , bench "New style ARec with arec " $ whnf mkARec 0
+         ]
+         ,bgroup "sums"
+         [ bench "haskell record" $ nf sumHaskRec haskRec
+         , bench "strict haskell record" $ whnf sumSHaskRec shaskRec
+         , bench "unboxed strict haskell record" $ whnf sumUSHaskRec ushaskRec
+         , bench "vinyl SRec" $ nf sumSRec srec
+         , bench "vinyl Rec" $ nf sumRec newF
+         , bench "vinyl ARec" $ nf sumARec arec
+         ]
+       , bgroup "FieldRec"
          [ bench "a0" $ nf (rvalf #a0) newF
          , bench "a4" $ nf (rvalf #a4) newF
          , bench "a8" $ nf (rvalf #a8) newF
