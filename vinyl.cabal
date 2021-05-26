@@ -117,7 +117,9 @@ test-suite spec
   type:                exitcode-stdio-1.0
   hs-source-dirs:      tests
   main-is:             Spec.hs
-  other-modules:       CoRecSpec XRecSpec
+  other-modules:       CoRecSpec
+                       XRecSpec
+                       Test.ARec
   build-depends:       base
                      , vinyl
                      , microlens
