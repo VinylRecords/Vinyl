@@ -11,6 +11,8 @@ import Data.Vinyl.Syntax ()
 import qualified CoRecSpec as C
 import qualified XRecSpec as X
 
+import qualified Test.ARec as ARec
+
 -- d1 :: FieldRec '[ '("X",String), '("Y", String) ]
 -- d1 = Field @"X" "5" :& Field @"Y" "Hi" :& RNil
 
@@ -37,7 +39,7 @@ main = hspec $ do
   describe "Fields may be accessed by overloaded labels" $ do
     it "Can get field X" $ rvalf #x d3 `shouldBe` 5
     it "Can get field Y" $ rvalf #y d3 `shouldBe` "Hi"
-  describe "ARec" $ do
+  describe "ARec provides field accessors" $ do
     it "Can get field Y" $ rvalf #y (toARec d3) `shouldBe` "Hi"
     it "Can set field X" $ rvalf #x (rputf #x 7 (toARec d3)) `shouldBe` 7
   describe "Converting between Rec and ARec" $ do
@@ -71,3 +73,5 @@ main = hspec $ do
       (#x .~ 2.1) d3 `shouldBe` fieldRec (#x =: 2.1, #y =: "Hi")
     it "Can change a field's type" $
       (d3 & #y %~ length) `shouldBe` fieldRec (#x =: 5, #y =: 2)
+
+  ARec.spec
