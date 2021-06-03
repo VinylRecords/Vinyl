@@ -5,8 +5,13 @@
 }:
 mkDerivation {
   pname = "vinyl";
-  version = "0.13.2";
-  src = ./Vinyl;
+  version = "0.14.0";
+  src =
+    builtins.filterSource
+      (path: type:
+        type != "directory"
+        || lib.lists.all (x: baseNameOf path != x) ["dist-newstyle" ".direnv" ".git"])
+      ./.;
   libraryHaskellDepends = [ array base deepseq ghc-prim ];
   testHaskellDepends = [
     aeson base hspec lens lens-aeson microlens mtl should-not-typecheck
