@@ -24,7 +24,7 @@
 -- element to the head of a list, but element access is linear time;
 -- array access time is uniform, but extending the array is more
 -- slower.
-
+--
 -- Tradeoffs:
 --
 -- * No sharing of the spine (i.e. when you change elements in the front of the
