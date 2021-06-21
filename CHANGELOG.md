@@ -1,3 +1,9 @@
+# 0.14.0
+- `ARec` efficiency improvements (@Philonous)
+- Make `ElField` a newtype (@Philonous)
+
+The `ElField` change brings more opportunities for the optimizer, but can result in longer compile times.
+
 # 0.13.3
 - Fixed CHANGELOG entry for 0.13.2: it referred to version 0.14.0
 - Relax bounds on `hspec`
