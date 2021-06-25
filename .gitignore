@@ -21,3 +21,4 @@ bench.html
 *~
 /.direnv*
 /.ghc.environment*
+.envrc
