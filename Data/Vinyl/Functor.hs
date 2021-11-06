@@ -73,10 +73,10 @@ data Thunk a
              , Traversable
              )
 
-newtype Lift (op :: l -> l' -> *) (f :: k -> l) (g :: k -> l') (x :: k)
+newtype Lift (op :: l -> l' -> Type) (f :: k -> l) (g :: k -> l') (x :: k)
   = Lift { getLift :: op (f x) (g x) }
 
-newtype Compose (f :: l -> *) (g :: k -> l) (x :: k)
+newtype Compose (f :: l -> Type) (g :: k -> l) (x :: k)
   = Compose { getCompose :: f (g x) }
     deriving (Storable, Generic)
 
@@ -85,7 +85,7 @@ instance Semigroup (f (g a)) => Semigroup (Compose f g a) where
 
 instance Monoid (f (g a)) => Monoid (Compose f g a) where
   mempty = Compose mempty
-  mappend (Compose x) (Compose y) = Compose (mappend x y)
+  mappend = (<>)
 
 -- | Apply a function to a value whose type is the application of the
 -- 'Compose' type constructor. This works under the 'Compose' newtype
@@ -96,7 +96,7 @@ onCompose f = Compose . f . getCompose
 type f :. g = Compose f g
 infixr 9 :.
 
-newtype Const (a :: *) (b :: k)
+newtype Const (a :: Type) (b :: k)
   = Const { getConst :: a }
     deriving ( Functor
              , Foldable
@@ -134,7 +134,7 @@ instance Semigroup t => Semigroup (ElField '(s,t)) where
 
 instance (KnownSymbol s, Monoid t) => Monoid (ElField '(s,t)) where
   mempty = Field mempty
-  mappend (Field x) (Field y) = Field (mappend x y)
+  mappend = (<>)
 
 instance (Real t, KnownSymbol s) => Real (ElField '(s,t)) where
   toRational (Field x) = toRational x
@@ -197,7 +197,7 @@ instance Applicative Identity where
   Identity f <*> Identity x = Identity (f x)
 
 instance Monad Identity where
-  return = Identity
+  return = pure
   Identity x >>= f = f x
 
 instance Show a => Show (Identity a) where
@@ -208,7 +208,7 @@ instance Applicative Thunk where
   (Thunk f) <*> (Thunk x) = Thunk (f x)
 
 instance Monad Thunk where
-  return = Thunk
+  return = pure
   (Thunk x) >>= f = f x
 
 instance Show a => Show (Thunk a) where

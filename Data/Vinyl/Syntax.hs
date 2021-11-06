@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP, FlexibleInstances, InstanceSigs,
              MultiParamTypeClasses, ScopedTypeVariables,
              TypeApplications, TypeFamilies, TypeOperators,
-             UndecidableInstances #-}
+             UndecidableInstances, FlexibleContexts #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 -- | Concise vinyl record field lens syntax. This module exports an
 -- orphan instance to make working with labels a bit more powerful. It

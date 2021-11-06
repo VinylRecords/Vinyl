@@ -61,7 +61,7 @@ import Data.Constraint.Forall (Forall)
 -- list of rows @rs@.  The labels or indices of the record are given by
 -- inhabitants of the kind @u@; the type of values at any label @r :: u@ is
 -- given by its interpretation @f r :: *@.
-data Rec :: (u -> *) -> [u] -> * where
+data Rec :: (u -> Type) -> [u] -> Type where
   RNil :: Rec f '[]
   (:&) :: !(f r) -> !(Rec f rs) -> Rec f (r ': rs)
 
@@ -346,11 +346,11 @@ instance (Semigroup (f r), Semigroup (Rec f rs))
 
 instance Monoid (Rec f '[]) where
   mempty = RNil
-  RNil `mappend` RNil = RNil
+  mappend = (<>)
 
 instance (Monoid (f r), Monoid (Rec f rs)) => Monoid (Rec f (r ': rs)) where
   mempty = mempty :& mempty
-  (x :& xs) `mappend` (y :& ys) = (mappend x y) :& (mappend xs ys)
+  mappend = (<>)
 
 instance Eq (Rec f '[]) where
   _ == _ = True
@@ -420,7 +420,7 @@ type family Head xs where
 type family Tail xs where
   Tail (_ ': xs) = xs
 
-type family AllRepsMatch_ (f :: j -> *) (xs :: [j]) (g :: k -> *) (ys :: [k]) :: Constraint where
+type family AllRepsMatch_ (f :: j -> Type) (xs :: [j]) (g :: k -> Type) (ys :: [k]) :: Constraint where
   AllRepsMatch_ f (x ': xs) g ys =
     ( ys ~ (Head ys ': Tail ys)
     , Coercible (f x) (g (Head ys))
@@ -455,7 +455,7 @@ repsMatchConvert (x :& xs) = coerce x :& repsMatchConvert xs
 consMatchCoercion ::
   (forall (x :: k). Coercible (f x) (g x)) => Coercion (Rec f xs) (Rec g xs)
 #else
-consMatchCoercion :: forall k (f :: k -> *) (g :: k -> *) (xs :: [k]).
+consMatchCoercion :: forall k (f :: k -> Type) (g :: k -> Type) (xs :: [k]).
   Forall (Similar f g) => Coercion (Rec f xs) (Rec g xs)
 #endif
 consMatchCoercion = unsafeCoerce (Coercion :: Coercion () ())
@@ -467,7 +467,7 @@ consMatchConvert RNil = RNil
 consMatchConvert (x :& xs) = coerce x :& consMatchConvert xs
 
 -- And for old GHC.
-consMatchConvert' :: forall k (f :: k -> *) (g :: k -> *) (xs :: [k]).
+consMatchConvert' :: forall k (f :: k -> Type) (g :: k -> Type) (xs :: [k]).
   Forall (Similar f g) => Rec f xs -> Rec g xs
 consMatchConvert' RNil = RNil
 consMatchConvert' ((x :: f x) :& xs) =
@@ -498,6 +498,6 @@ consMatchCoercible :: forall k f g rep (r :: TYPE rep).
 consMatchCoercible f = case unsafeCoerce @(Zouch f f) @(Zouch f g) (Zouch $ \r -> r) of
   Zouch q -> q f
 
-newtype Zouch (f :: k -> *) (g :: k -> *) =
+newtype Zouch (f :: k -> Type) (g :: k -> Type) =
   Zouch (forall rep (r :: TYPE rep). ((forall (xs :: [k]). Coercible (Rec f xs) (Rec g xs)) => r) -> r)
 -}

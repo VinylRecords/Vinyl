@@ -56,6 +56,7 @@ module Data.Vinyl.Class.Method
     -- * Example
     -- $example
   ) where
+import Data.Kind
 import Data.Functor.Product (Product(Pair))
 import Data.Vinyl.Core
 import Data.Vinyl.Derived (KnownField, AllFields, FieldRec, traverseField)
@@ -140,7 +141,7 @@ recMaxBound (_ :& rs) = maxBound :& recMaxBound rs
 data FieldTyper = FieldId | FieldSnd
 
 -- | The interpretation function of the 'FieldTyper' symbols.
-type family ApplyFieldTyper (f :: FieldTyper) (a :: k) :: * where
+type family ApplyFieldTyper (f :: FieldTyper) (a :: k) :: Type where
   ApplyFieldTyper 'FieldId a = a
   ApplyFieldTyper 'FieldSnd a = Snd a
 
@@ -149,13 +150,13 @@ type family ApplyFieldTyper (f :: FieldTyper) (a :: k) :: * where
 -- type, and 'Compose' to pick out the inner-most context. All other
 -- type constructor contexts are understood to not perform any
 -- computation on their arguments.
-type family FieldPayload (f :: u -> *) :: FieldTyper where
+type family FieldPayload (f :: u -> Type) :: FieldTyper where
   FieldPayload ElField = 'FieldSnd
   FieldPayload (f :. g) = FieldPayload g
   FieldPayload f = 'FieldId
 
 -- | Shorthand for combining 'ApplyFieldTyper' and 'FieldPayload'.
-type family PayloadType f (a :: u) :: * where
+type family PayloadType f (a :: u) :: Type where
   PayloadType f a = ApplyFieldTyper (FieldPayload f) a
 
 -- | Generate a record from fields derived from type class
