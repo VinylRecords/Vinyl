@@ -15,6 +15,7 @@
 -- | Commonly used 'Rec' instantiations.
 module Data.Vinyl.Derived where
 
+import Data.Kind
 import Data.Proxy
 import Data.Vinyl.ARec
 import Data.Vinyl.Core
@@ -71,7 +72,7 @@ infix 8 =:
 -- | Operator for creating an 'ElField'. With the @-XOverloadedLabels@
 -- extension, this permits usage such as, @#foo =: 23@ to produce a
 -- value of type @ElField ("foo" ::: Int)@.
-(=:) :: KnownSymbol l => Label (l :: Symbol) -> (v :: *) -> ElField (l ::: v)
+(=:) :: KnownSymbol l => Label (l :: Symbol) -> (v :: Type) -> ElField (l ::: v)
 _ =: v = Field v
 
 -- | Get a named field from a record.

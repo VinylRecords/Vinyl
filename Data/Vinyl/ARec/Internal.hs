@@ -69,12 +69,12 @@ import GHC.Types
 
 -- | An array-backed extensible record with constant-time field
 -- access.
-newtype ARec (f :: k -> *) (ts :: [k]) = ARec SmallArray
+newtype ARec (f :: k -> Type) (ts :: [k]) = ARec SmallArray
 type role ARec representational nominal
 
 -- | Get the ith element from the ARec
 unsafeIxARec
-  :: forall a k (f :: k -> *) (ts :: [k]).
+  :: forall a k (f :: k -> Type) (ts :: [k]).
      ARec f ts
   -> Int
   -> a

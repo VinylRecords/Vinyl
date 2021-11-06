@@ -16,9 +16,8 @@
 -- expected to have slower run times, but faster compile times than
 -- the definitions in "Data.Vinyl.Core".
 module Data.Vinyl.Recursive where
-#if __GLASGOW_HASKELL__ < 806
+
 import Data.Kind
-#endif
 import Data.Proxy (Proxy(..))
 import Data.Vinyl.Core (rpure, RecApplicative, Rec(..), Dict(..))
 import Data.Vinyl.Functor (Compose(..), (:.), Lift(..), Const(..))
@@ -147,7 +146,7 @@ reifyConstraint prx rec =
 
 -- | Build a record whose elements are derived solely from a
 -- constraint satisfied by each.
-rpureConstrained :: forall u c (f :: u -> *) proxy ts.
+rpureConstrained :: forall u c (f :: u -> Type) proxy ts.
                     (AllConstrained c ts, RecApplicative ts)
                  => proxy c -> (forall a. c a => f a) -> Rec f ts
 rpureConstrained _ f = go (rpure Proxy)
@@ -157,7 +156,7 @@ rpureConstrained _ f = go (rpure Proxy)
 
 -- | Build a record whose elements are derived solely from a
 -- list of constraint constructors satisfied by each.
-rpureConstraints :: forall cs (f :: * -> *) proxy ts. (AllAllSat cs ts, RecApplicative ts)
+rpureConstraints :: forall cs (f :: Type -> Type) proxy ts. (AllAllSat cs ts, RecApplicative ts)
                  => proxy cs -> (forall a. AllSatisfied cs a => f a) -> Rec f ts
 rpureConstraints _ f = go (rpure Nothing)
   where go :: AllAllSat cs ts' => Rec Maybe ts' -> Rec f ts'

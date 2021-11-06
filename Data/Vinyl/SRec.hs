@@ -64,9 +64,7 @@ module Data.Vinyl.SRec (
   , peekField, pokeField
 ) where
 import Data.Coerce (coerce)
-#if __GLASGOW_HASKELL__ < 806
 import Data.Kind
-#endif
 import Data.Vinyl.Core
 import Data.Vinyl.Functor (Lift(..), Compose(..), type (:.), ElField)
 import Data.Vinyl.Lens (RecElem(..), RecSubset(..), type (⊆), RecElemFCtx)
@@ -132,7 +130,7 @@ mallocForeignPtrBytes = fmap ForeignPtr . newBytes
 -- to use it at a different type, consider using 'sget', 'sput', and
 -- 'slens' which work with any functor given that the necessary
 -- 'Storable' instances exist.
-newtype SRec2 (g :: k -> *) (f :: k -> *) (ts :: [k]) =
+newtype SRec2 (g :: k -> Type) (f :: k -> Type) (ts :: [k]) =
   SRec2 (ForeignPtr (Rec f ts))
 
 -- | A simpler type for 'SRec2' whose 'RecElem' and 'RecSubset'
@@ -230,7 +228,7 @@ mallocAndCopy src n = do
       dst <$ copyBytes dst' src' n
 
 -- | Set a field.
-sput :: forall u (f :: u -> *) (t :: u) (ts :: [u]).
+sput :: forall u (f :: u -> Type) (t :: u) (ts :: [u]).
         ( FieldOffset f ts t
         , Storable (Rec f ts)
         , AllConstrained (FieldOffset f ts) ts)
@@ -292,12 +290,12 @@ coerceSRec1to2 = coerce
 coerceSRec2to1 :: SRec2 f f ts -> SRec f ts
 coerceSRec2to1 = coerce
 
-instance ( i ~ RIndex (t :: (Symbol,*)) (ts :: [(Symbol,*)])
+instance ( i ~ RIndex (t :: (Symbol,Type)) (ts :: [(Symbol,Type)])
          , NatToInt i
          , FieldOffset ElField ts t
          , Storable (Rec ElField ts)
          , AllConstrained (FieldOffset ElField ts) ts)
-  => RecElem SRec (t :: (Symbol,*)) t (ts :: [(Symbol,*)]) ts i where
+  => RecElem SRec (t :: (Symbol,Type)) t (ts :: [(Symbol,Type)]) ts i where
   type RecElemFCtx SRec f = f ~ ElField
   rlensC f = fmap coerceSRec2to1 . slens f . coerceSRec1to2
   {-# INLINE rlensC #-}
@@ -307,7 +305,7 @@ instance ( i ~ RIndex (t :: (Symbol,*)) (ts :: [(Symbol,*)])
   {-# INLINE rputC #-}
 
 -- | Get a subset of a record's fields.
-srecGetSubset :: forall u (ss :: [u]) (rs :: [u]) (f :: u -> *).
+srecGetSubset :: forall u (ss :: [u]) (rs :: [u]) (f :: u -> Type).
                  (RPureConstrained (FieldOffset f ss) rs,
                   RPureConstrained (FieldOffset f rs) rs,
                   RFoldMap rs, RMap rs, RApply rs,
@@ -345,7 +343,7 @@ newtype TaggedIO a = TaggedIO { unTagIO :: IO () }
 type Poker f = Lift (->) f TaggedIO
 
 -- | Set a subset of a record's fields.
-srecSetSubset :: forall u (f :: u -> *) (ss :: [u]) (rs :: [u]).
+srecSetSubset :: forall u (f :: u -> Type) (ss :: [u]) (rs :: [u]).
                  (rs ⊆ ss,
                   RPureConstrained (FieldOffset f ss) rs,
                   RPureConstrained (FieldOffset f rs) rs,

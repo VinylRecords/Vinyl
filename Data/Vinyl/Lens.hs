@@ -33,23 +33,20 @@ module Data.Vinyl.Lens
   , type (:~:)
   ) where
 
-import Data.Kind (Constraint)
 import Data.Vinyl.Core
 import Data.Vinyl.Functor
 import Data.Vinyl.TypeLevel
-#if __GLASGOW_HASKELL__ < 806
 import Data.Kind
-#endif
 
 -- | The presence of a field in a record is witnessed by a lens into
 -- its value.  The fifth parameter to 'RecElem', @i@, is there to help
 -- the constraint solver realize that this is a decidable predicate
 -- with respect to the judgemental equality in @k@.
 class (i ~ RIndex r rs, NatToInt i)
-  => RecElem (record :: (k -> *) -> [k] -> *) (r :: k) (r' :: k) (rs :: [k]) (rs' :: [k]) (i :: Nat) | r r' rs i -> rs' where
+  => RecElem (record :: (k -> Type) -> [k] -> Type) (r :: k) (r' :: k) (rs :: [k]) (rs' :: [k]) (i :: Nat) | r r' rs i -> rs' where
   -- | An opportunity for instances to generate constraints based on
   -- the functor parameter of records passed to class methods.
-  type RecElemFCtx record (f :: k -> *) :: Constraint
+  type RecElemFCtx record (f :: k -> Type) :: Constraint
   type RecElemFCtx record f = ()
 
   -- | We can get a lens for getting and setting the value of a field which is
@@ -151,7 +148,7 @@ rlens = rlensC
 class is ~ RImage rs ss => RecSubset record rs ss is where
   -- | An opportunity for instances to generate constraints based on
   -- the functor parameter of records passed to class methods.
-  type RecSubsetFCtx record (f :: k -> *) :: Constraint
+  type RecSubsetFCtx record (f :: k -> Type) :: Constraint
   type RecSubsetFCtx record f = ()
 
   -- | This is a lens into a slice of the larger record. Morally, we have:
