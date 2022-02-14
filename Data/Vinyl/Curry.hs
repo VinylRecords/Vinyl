@@ -11,7 +11,7 @@ records.
 
 -}
 module Data.Vinyl.Curry where
-
+import           Data.Kind (Type)
 import           Data.Vinyl
 import           Data.Vinyl.Functor
 import           Data.Vinyl.XRec
@@ -170,7 +170,7 @@ from arguments of type @f t@ for @t@ in @ts@, to a result of type @a@.
 CurriedF Maybe '[Int, Bool, String] Int :: *
 = Maybe Int -> Maybe Bool -> Maybe [Char] -> Int
 -}
-type family CurriedF (f :: u -> *) (ts :: [u]) a where
+type family CurriedF (f :: u -> Type) (ts :: [u]) a where
   CurriedF f '[] a = a
   CurriedF f (t ': ts) a = f t -> CurriedF f ts a
 
@@ -183,6 +183,6 @@ from arguments of type @HKD f t@ for @t@ in @ts@, to a result of type @a@.
 CurriedX (Maybe :. Identity) '[Int, Bool, String] Int :: *
 = Maybe Int -> Maybe Bool -> Maybe [Char] -> Int
 -}
-type family CurriedX (f :: u -> *) (ts :: [u]) a where
+type family CurriedX (f :: u -> Type) (ts :: [u]) a where
   CurriedX f '[] a = a
   CurriedX f (t ': ts) a = HKD f t -> CurriedX f ts a

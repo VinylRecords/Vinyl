@@ -14,6 +14,7 @@
 -- example record construction using 'ElField' for named fields:
 -- @fieldRec (#x =: True, #y =: 'b') :: FieldRec '[ '("x", Bool), '("y", Char) ]@
 module Data.Vinyl.FromTuple where
+import Data.Kind (Type)
 import Data.Monoid (First(..))
 #if __GLASGOW_HASKELL__ < 804
 import Data.Semigroup (Semigroup(..))
@@ -29,7 +30,7 @@ import GHC.TypeLits (TypeError, ErrorMessage(Text))
 -- type constructor to a tuple of the common type constructor and a
 -- list of the types to which it is applied in the original
 -- tuple. E.g. @TupleToRecArgs f (f a, f b) ~ (f, [a,b])@.
-type family TupleToRecArgs f t = (r :: (u -> *, [u])) | r -> t where
+type family TupleToRecArgs f t = (r :: (u -> Type, [u])) | r -> t where
   TupleToRecArgs f (f a, f b, f c, f d, f e, f z, f g, f h) =
     '(f, [a,b,c,d,e,z,g,h])
   TupleToRecArgs f (f a, f b, f c, f d, f e, f z, f g) = '(f, [a,b,c,d,e,z,g])
@@ -42,12 +43,12 @@ type family TupleToRecArgs f t = (r :: (u -> *, [u])) | r -> t where
 
 -- | Apply the 'Rec' type constructor to a type-level tuple of its
 -- arguments.
-type family UncurriedRec (t :: (u -> *, [u])) = r | r -> t where
+type family UncurriedRec (t :: (u -> Type, [u])) = r | r -> t where
   UncurriedRec '(f, ts) = Rec f ts
 
 -- | Apply the 'XRec' type constructor to a type-level tuple of its
 -- arguments.
-type family UncurriedXRec (t :: (u -> *, [u])) = r | r -> t where
+type family UncurriedXRec (t :: (u -> Type, [u])) = r | r -> t where
   UncurriedXRec '(f, ts) = XRec f ts
 
 -- | Convert between an 'XRec' and an isomorphic tuple.
@@ -90,7 +91,7 @@ instance TupleXRec f '[a,b,c,d,e,z,g,h] where
     (a, b, c, d, e, z, g, h)
   xrecX (a, b, c, d, e, z, g, h) = a ::& b ::& c ::& d ::& e ::& z ::& g ::& h ::& XRNil
 
-type family ListToHKDTuple (f :: u -> *) (ts :: [u]) :: * where
+type family ListToHKDTuple (f :: u -> Type) (ts :: [u]) :: Type where
   ListToHKDTuple f '[] = HKD f ()
   ListToHKDTuple f '[a,b] = (HKD f a, HKD f b)
   ListToHKDTuple f '[a,b,c] = (HKD f  a, HKD f b, HKD f c)
