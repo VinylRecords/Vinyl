@@ -1,3 +1,6 @@
+# 0.14.1
+- Compatibility with `aeson` > 2.0
+
 # 0.14.0
 - `ARec` efficiency improvements (@Philonous)
 - Make `ElField` a newtype (@Philonous)
