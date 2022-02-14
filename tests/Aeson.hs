@@ -48,10 +48,41 @@ import Data.Vinyl.Class.Method (RecMapMethod1(..))
 import Data.Vinyl.Functor (Compose(..), (:.), Identity(..), Const(..))
 import Data.Aeson
 import Data.Aeson.Encoding.Internal (wrapObject, pair)
+#if MIN_VERSION_aeson(2,0,0)
+import Control.Lens (_1, (%~))
+import qualified Data.Aeson.Key as Key
+import qualified Data.Aeson.KeyMap as KeyMap
+#endif
 import Data.Aeson.Lens (_Object)
 import GHC.Generics (Generic, Rep)
 import GHC.TypeLits (KnownSymbol)
 import Test.Hspec
+
+-- * Compatibility with aeson < 2
+#if MIN_VERSION_aeson(2,0,0)
+type KeyMap = KeyMap.KeyMap Value
+
+keyFromString :: String -> Key
+keyFromString = Key.fromString
+
+keyFromText :: Text -> Key
+keyFromText = Key.fromText
+
+keyMapToList :: KeyMap -> [(Key,Value)]
+keyMapToList = KeyMap.toList
+#else
+type Key = Text
+type KeyMap = H.HashMap Text Value
+
+keyFromString :: String -> Key
+keyFromString = T.pack
+
+keyFromText :: Text -> Key
+keyFromText = id
+
+keyMapToList :: KeyMap -> [(Key,Value)]
+keyMapToList = H.toList
+#endif
 
 -- * Implementing 'ToJSON' for 'Rec'
 
@@ -63,22 +94,22 @@ instance ToJSON a => ToJSON (Identity a) where
 -- | A named field serializes to a JSON object with a single named
 -- field.
 instance (KnownSymbol s, ToJSON a) => ToJSON (ElField '(s,a)) where
-  toJSON x = object [(T.pack (getLabel x), toJSON (getField x))]
+  toJSON x = object [(keyFromString (getLabel x), toJSON (getField x))]
 
 -- | A @((Text,) :. f) a@ value maps to a JSON field whose name is the
 -- 'Text' value, and whose value has type @f a@.
 instance ToJSON (f a) => ToJSON ((((,) Text) :. f) a) where
-  toJSON (Compose (name, x)) = object [(name, toJSON x)]
+  toJSON (Compose (name, x)) = object [(keyFromText name, toJSON x)]
 
 -- | Replace each field of a record with the result of serializing it
 -- to a JSON 'Value', and then extracting that 'Value''s single named
 -- field. If the serialization is not in the form of an object with a
 -- single field, the conversion fails with a 'Nothing'.
 fieldsToJSON :: (RecMapMethod1 ToJSON f rs)
-             => Rec f rs -> Rec (Maybe :. Const (Text,Value)) rs
+             => Rec f rs -> Rec (Maybe :. Const (Key,Value)) rs
 fieldsToJSON = rmapMethod1 @ToJSON (Compose . aux)
   where aux x = case toJSON x of
-                  Object (H.toList -> [field]) -> Just (Const field)
+                  Object (keyMapToList -> [field]) -> Just (Const field)
                   _ -> Nothing
 
 -- | Convert a homogeneous record to a list factored through an outer
@@ -176,19 +207,21 @@ main = hspec $ do
 -- loses precision in the type.
 class ToJSONField a where
   encodeJSONField :: a -> Series
-  toJSONField :: a -> (Text,Value)
+  toJSONField :: a -> (Key,Value)
 
 -- | An @ElField '(s,a)@ value maps to a JSON field with name @s@ and
 -- value @a@.
 instance (ToJSON a, KnownSymbol s) => ToJSONField (ElField '(s,a)) where
-  encodeJSONField x = pair (T.pack (getLabel x)) (toEncoding (getField x))
-  toJSONField x = (T.pack (getLabel x), toJSON (getField x))
+  encodeJSONField x = pair (keyFromString (getLabel x))
+                           (toEncoding (getField x))
+  toJSONField x = (keyFromString (getLabel x), toJSON (getField x))
 
 -- | A @((Text,) :. f) a@ value maps to a JSON field whose name is the
 -- 'Text' value, and whose value has type @f a@.
 instance ToJSON (f a) => ToJSONField (((,) Text :. f) a) where
-  encodeJSONField (Compose (name,val)) = pair name (toEncoding val)
-  toJSONField (Compose (name,val)) = (name, toJSON val)
+  encodeJSONField (Compose (name,val)) =
+    pair (keyFromText name) (toEncoding val)
+  toJSONField (Compose (name,val)) = (keyFromText name, toJSON val)
 
 encodeRec :: (RFoldMap rs, RecMapMethod1 ToJSONField f rs)
           => Rec f rs -> Encoding
@@ -207,7 +240,7 @@ recToJSON = object
 
 -- | If a 'Value' is a nested 'Array' of 'Object's, extract the
 -- collection of key-value pairs from the entire recursive structure.
-allAesonFields :: Value -> Maybe (H.HashMap Text Value)
+allAesonFields :: Value -> Maybe Object
 allAesonFields (Array arr) =
   case V.toList arr of
     [] -> Just mempty
@@ -224,8 +257,15 @@ unnestFields v = maybe v Object (allAesonFields v)
 
 -- | A lens implementation of something a bit looser than
 -- 'unnestFields'.
-allFields :: Value -> H.HashMap Text Value
+allFields :: Value -> Object
+#if MIN_VERSION_aeson(2,0,0)
+allFields = KeyMap.fromList
+          . map (_1 %~ Key.fromText)
+          . H.toList
+          . view (deep _Object)
+#else
 allFields = view (deep _Object)
+#endif
 
 -- | The generic 'ToJSON' instance is not quite right since we use the
 -- record's interpretation type constructor to define serialization,
