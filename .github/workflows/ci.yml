@@ -16,12 +16,13 @@ jobs:
       matrix:
         # os: [ubuntu-latest, macOS-latest, windows-latest]
         os: [ubuntu-latest]
-        cabal: ["3.4"]
+        cabal: ["3.6"]
         ghc:
           - "8.6.5"
           - "8.8.4"
-          - "8.10.4"
+          - "8.10.7"
           - "9.0.1"
+          - "9.2.1"
 
     steps:
     - uses: actions/checkout@v2
@@ -36,7 +37,7 @@ jobs:
 
     - name: Freeze
       run: |
-        cabal freeze
+        cabal freeze --enable-tests
 
     - uses: actions/cache@v1
       name: Cache ~/.cabal/store
@@ -58,9 +59,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # stack: ["2.3.1"]
         stack: ["latest"]
-        ghc: ["8.10.4"]
+        ghc: ["8.10.7"]
 
     steps:
     - uses: actions/checkout@v2
