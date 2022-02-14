@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, FlexibleInstances, InstanceSigs,
+{-# LANGUAGE CPP, FlexibleContexts, FlexibleInstances, InstanceSigs,
              MultiParamTypeClasses, ScopedTypeVariables,
              TypeApplications, TypeFamilies, TypeOperators,
              UndecidableInstances #-}
