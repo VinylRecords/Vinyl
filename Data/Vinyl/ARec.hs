@@ -8,6 +8,7 @@
 module Data.Vinyl.ARec
   ( ARec -- Exported abstractly
   , IndexableField
+  , ToARec
   , toARec
   , fromARec
   , aget

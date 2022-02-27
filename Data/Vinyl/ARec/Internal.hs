@@ -39,6 +39,7 @@
 --   * 1 word for the pointer to the element
 module Data.Vinyl.ARec.Internal
   ( ARec (..)
+  , ToARec
   , IndexableField
   , arec
   , ARecBuilder (..)

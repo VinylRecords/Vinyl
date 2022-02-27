@@ -1,3 +1,6 @@
+# 0.14.2
+- Export the `ToARec` class
+
 # 0.14.1
 - Compatibility with `aeson` > 2.0
 
