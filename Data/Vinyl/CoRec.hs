@@ -152,7 +152,7 @@ lastField v@(x :& _) = coRecTraverse getCompose $ foldRec aux (CoRec x) v
         aux c _ = c
 
 -- | Apply methods from a type class to a 'CoRec'. Intended for use
--- with @TypeApplications@, e.g. @onCoRec \@Show show r@
+-- with @TypeApplications@, e.g., @onCoRec \@Show show r@
 onCoRec :: forall c f ts b g. (RPureConstrained c ts)
         => (forall a. (a ∈ ts, c a) => f a -> g b)
         -> CoRec f ts -> g b
@@ -161,7 +161,7 @@ onCoRec f (CoRec x) = case getDict @c @ts x of
 {-# INLINE onCoRec #-}
 
 -- | Apply a type class method to a 'Field'. Intended for use with
--- @TypeApplications@, e.g. @onField \@Show show r@.
+-- @TypeApplications@, e.g., @onField \@Show show r@.
 onField :: forall c ts b. (RPureConstrained c ts)
         => (forall a. (a ∈ ts, c a) => a -> b)
         -> Field ts -> b

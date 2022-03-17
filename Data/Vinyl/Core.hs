@@ -103,7 +103,7 @@ rappend (x :& xs) ys = x :& (xs `rappend` ys)
 
 -- | Combine two records by combining their fields using the given
 -- function. The first argument is a binary operation for combining
--- two values (e.g. '(<>)'), the second argument takes a record field
+-- two values (e.g., '(<>)'), the second argument takes a record field
 -- into the type equipped with the desired operation, the third
 -- argument takes the combined value back to a result type.
 rcombine :: (RMap rs, RApply rs)

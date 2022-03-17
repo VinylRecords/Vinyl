@@ -6,7 +6,7 @@
 -- | Concise vinyl record field lens syntax. This module exports an
 -- orphan instance to make working with labels a bit more powerful. It
 -- will conflict with other libraries that provide special syntax for
--- labels (i.e. placing a label in function application position, as
+-- labels (i.e., placing a label in function application position, as
 -- in @#age 23@, or using a label as a lens).
 --
 -- Example:

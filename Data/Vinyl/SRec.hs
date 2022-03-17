@@ -1,5 +1,5 @@
 -- | 'Storable' records offer an efficient flat, packed representation
--- in memory. In particular, field access is constant time (i.e. it
+-- in memory. In particular, field access is constant time (i.e., it
 -- doesn't depend on where in the record the field is) and as fast as
 -- possible, but updating fields may not be as efficient. The
 -- requirement is that all fields of a record have 'Storable'
@@ -16,7 +16,7 @@
 -- records here takes two functor arguments: they will usually be the
 -- same; we fix one when writing instances and write instance contexts
 -- that reference that type, and then require that the methods
--- (e.g. 'rget') are called on records whose functor argument is equal
+-- (e.g., 'rget') are called on records whose functor argument is equal
 -- to the one we picked. For usability, we provide an 'SRec' type
 -- whose lens API is fixed to 'ElField' as the functor. Other
 -- specializations are possible, and the work of those instances can
@@ -265,7 +265,7 @@ slens f sr = fmap (flip sput sr) (f (sget sr))
 -- 'SRec2' a phantom tag that duplicates the "real" functor parameter,
 -- and define a constraint that the real argument is in fact
 -- 'ElField'. This lets us write instances for different applications
--- of @SRec2@ (e.g. instance for @SRec2 Foo@ for records of type
+-- of @SRec2@ (e.g., instance for @SRec2 Foo@ for records of type
 -- @SRec2 Foo Foo ts@, and an instance for @SRec2 Bar@ for records of
 -- type @SRec2 Bar Bar ts@).
 

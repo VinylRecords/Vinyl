@@ -27,8 +27,8 @@
 --
 -- Tradeoffs:
 --
--- * No sharing of the spine (i.e. when you change elements in the front of the
---   record the tail can't be re-used)
+-- * No sharing of the spine (i.e., when you change elements in the front of
+--   the record the tail can't be re-used)
 -- * ARec requires (4 + n) words + size of the fields
 --   * 1 for the ARec constructor
 --   * 1 for the pointer to the SmallArray#

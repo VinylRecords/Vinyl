@@ -14,7 +14,7 @@
 -- by inspecting the JSON serialization of each field, and extracting
 -- it as a key-value pair if it was serialized as a JSON object with a
 -- single named field. This works, but means that the types do not
--- guarantee correctness (i.e. if a record field is serialized as a
+-- guarantee correctness (i.e., if a record field is serialized as a
 -- 'Number', we won't be able to include it in the serialization of
 -- the 'Rec').
 --

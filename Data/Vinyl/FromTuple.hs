@@ -29,7 +29,7 @@ import GHC.TypeLits (TypeError, ErrorMessage(Text))
 -- | Convert a tuple of types formed by the application of a common
 -- type constructor to a tuple of the common type constructor and a
 -- list of the types to which it is applied in the original
--- tuple. E.g. @TupleToRecArgs f (f a, f b) ~ (f, [a,b])@.
+-- tuple, e.g., @TupleToRecArgs f (f a, f b) ~ (f, [a,b])@.
 type family TupleToRecArgs f t = (r :: (u -> Type, [u])) | r -> t where
   TupleToRecArgs f (f a, f b, f c, f d, f e, f z, f g, f h) =
     '(f, [a,b,c,d,e,z,g,h])

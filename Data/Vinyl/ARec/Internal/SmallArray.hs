@@ -8,7 +8,7 @@
 -- This module exposes _unsafe_ functions to work with SmallArrays.  That means
 -- that specifically neither index bounds nor element types are checked So this
 -- functionality should only be used in a context that enforces them by some
--- other means, e.g. ARec's type index
+-- other means, e.g., ARec's type index
 
 module Data.Vinyl.ARec.Internal.SmallArray where
 

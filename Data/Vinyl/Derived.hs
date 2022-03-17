@@ -184,7 +184,7 @@ rmapf :: AllFields fs
       -> Rec f fs -> Rec g fs
 rmapf f = (rpureConstrained @KnownField (Lift f) <<*>>)
 
--- | Remove the first component (e.g. the label) from a type-level
+-- | Remove the first component (e.g., the label) from a type-level
 -- list of pairs.
 type family Unlabeled ts where
   Unlabeled '[] = '[]
