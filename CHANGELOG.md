@@ -1,3 +1,6 @@
+# 0.14.3
+- Compatibility with `lens-aeson` > 1.2
+
 # 0.14.2
 - Export the `ToARec` class
 

@@ -16,6 +16,7 @@
       };
       dontCheck = pkgs.haskell.lib.dontCheck;
       dontHaddock = pkgs.haskell.lib.dontHaddock;
+      overrideSrc = pkgs.haskell.lib.overrideSrc;
       hspkgs = (pkgs.haskell.packages."ghc${compiler}").override {
         overrides = self: super: 
           if compiler == "921"
@@ -30,6 +31,15 @@
             tasty-golden = dontHaddock super.tasty-golden;
             aeson = dontCheck (super.callHackage "aeson" "2.0.3.0" {});
             microlens = pkgs.haskell.lib.dontHaddock super.microlens;
+            lens-aeson = overrideSrc super.lens-aeson {
+              version = "1.2";
+              src = pkgs.fetchFromGitHub {
+                owner = "lens";
+                repo = "lens-aeson";
+                rev = "28ff4ffd778c6e42084cff26e9c9d973b0645cd9";
+                hash = "sha256-AO7X3fvdgTYJeoVViQSXZq3BqLtHl8/PAcSoxWxfpXg=";
+              };
+            };
           } 
           else { };
       };

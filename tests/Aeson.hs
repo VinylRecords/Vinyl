@@ -260,8 +260,12 @@ unnestFields v = maybe v Object (allAesonFields v)
 allFields :: Value -> Object
 #if MIN_VERSION_aeson(2,0,0)
 allFields = KeyMap.fromList
+#if MIN_VERSION_lens_aeson(1,2,0)
+          . keyMapToList
+#else
           . map (_1 %~ Key.fromText)
           . H.toList
+#endif
           . view (deep _Object)
 #else
 allFields = view (deep _Object)
