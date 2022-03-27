@@ -408,6 +408,31 @@ instance (Generic (Rec f rs)) => Generic (Rec f (r ': rs)) where
   from (x :& xs) = M1 (M1 (K1 x) :*: M1 (from xs))
   to (M1 (M1 (K1 x) :*: M1 xs)) = x :& to xs
 
+rnilConstr :: Constr
+rnilConstr = Data.mkConstr recDataType "RNil" [] Prefix
+
+rconsConstr :: Constr
+rconsConstr = Data.mkConstr recDataType "(:&)" [] Infix
+
+recDataType :: DataType
+recDataType = mkDataType "Data.Vinyl.Core.Rec" [rnilConstr, rconsConstr]
+
+instance Data (Record '[]) where
+  gfoldl _ z RNil = z RNil
+  toConstr RNil = rnilConstr
+  dataTypeOf _ = recDataType
+  gunfold _ z c = case constrIndex c of
+                   1 -> z RNil
+                   _ -> errorWithoutStackTrace "Data.Data.gunfold(Rec)"
+
+instance (Data x, Typeable xs, Data (Record xs)) => Data (Record (x ': xs)) where
+  gfoldl f z (x :& xs) = z (:&) `f` x `f` xs
+  toConstr (_ :& _) = rconsConstr
+  dataTypeOf _ = recDataType
+  gunfold k z c = case constrIndex c of
+                   2 -> k (k (z (:&)))
+                   _ -> errorWithoutStackTrace "Data.Data.gunfold(Rec)"
+
 instance ReifyConstraint NFData f xs => NFData (Rec f xs) where
   rnf = go . reifyConstraint @NFData
     where
