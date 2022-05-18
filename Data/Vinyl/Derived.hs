@@ -57,7 +57,7 @@ fieldMap f (Field x) = Field (f x)
 
 -- | Something in the spirit of 'traverse' for 'ElField' whose kind
 -- fights the standard library.
-traverseField :: (KnownSymbol s, Functor f)
+traverseField :: Functor f
               => (a -> b) -> f (ElField '(s,a)) -> ElField '(s, f b)
 traverseField f t = Field (fmap (f . getField)  t)
 
@@ -71,7 +71,7 @@ infix 8 =:
 -- | Operator for creating an 'ElField'. With the @-XOverloadedLabels@
 -- extension, this permits usage such as, @#foo =: 23@ to produce a
 -- value of type @ElField ("foo" ::: Int)@.
-(=:) :: KnownSymbol l => Label (l :: Symbol) -> (v :: *) -> ElField (l ::: v)
+(=:) :: Label (l :: Symbol) -> (v :: *) -> ElField (l ::: v)
 _ =: v = Field v
 
 -- | Get a named field from a record.
@@ -90,14 +90,14 @@ rvalf x = getField . rgetf x
 -- | Set a named field. @rputf' #foo 23@ sets the field named @#foo@ to
 -- @23@.
 rputf' :: forall l v v' record us us'.
-          (HasField record l us us' v v', KnownSymbol l, RecElemFCtx record ElField)
+          (HasField record l us us' v v', RecElemFCtx record ElField)
        => Label l -> v' -> record ElField us -> record ElField us'
 rputf' _ = rput' @_ @(l:::v) . (Field :: v' -> ElField '(l,v'))
 
 -- | Set a named field without changing its type. @rputf #foo 23@ sets
 -- the field named @#foo@ to @23@.
 rputf :: forall l v record us.
-          (HasField record l us us v v, KnownSymbol l, RecElemFCtx record ElField)
+          (HasField record l us us v v, RecElemFCtx record ElField)
        => Label l -> v -> record ElField us -> record ElField us
 rputf _ = rput @_ @(l:::v) . Field
 
@@ -134,7 +134,7 @@ rlensf :: forall l v record g us.
 rlensf _ f = rlens @(l ::: v) (rfield f)
 
 -- | Shorthand for a 'FieldRec' with a single field.
-(=:=) :: KnownSymbol s => Label (s :: Symbol) -> a -> FieldRec '[ '(s,a) ]
+(=:=) :: Label (s :: Symbol) -> a -> FieldRec '[ '(s,a) ]
 (=:=) _ x = Field x :& RNil
 
 -- | A proxy for field types.
@@ -204,7 +204,7 @@ instance StripFieldNames '[] where
   withNames RNil = RNil
   withNames' RNil = RNil
 
-instance (KnownSymbol s, StripFieldNames ts) => StripFieldNames ('(s,t) ': ts) where
+instance StripFieldNames ts => StripFieldNames ('(s,t) ': ts) where
   stripNames (Field x :& xs) = pure x :& stripNames xs
   stripNames' (Compose x :& xs) = fmap getField x :& stripNames' xs
   withNames (Identity x :& xs) = Field x :& withNames xs
