@@ -32,7 +32,6 @@ import Data.Vinyl.Functor
 import Data.Vinyl.Lens (RecElem, RecElemFCtx, rgetC)
 import Data.Vinyl.TypeLevel (RIndex)
 import Data.Monoid
-import GHC.TypeLits (KnownSymbol)
 
 type XRec f = Rec (XData f)
 pattern (::&) :: HKD f r -> XRec f rs -> XRec f (r ': rs)
@@ -146,7 +145,7 @@ instance IsoHKD Identity a where
 
 -- | Work with values of type 'ElField' @'(s,a)@ as if they were of
 -- type @a@.
-instance KnownSymbol s => IsoHKD ElField '(s,a) where
+instance IsoHKD ElField '(s,a) where
   type HKD ElField '(s,a) = a
   unHKD = Field
   toHKD (Field x) = x

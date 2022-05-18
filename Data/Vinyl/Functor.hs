@@ -116,12 +116,12 @@ newtype ElField (t :: (Symbol, Type)) = Field (Snd t)
 deriving instance Eq t => Eq (ElField '(s,t))
 deriving instance Ord t => Ord (ElField '(s,t))
 
-instance KnownSymbol s => Generic (ElField '(s,a)) where
+instance Generic (ElField '(s,a)) where
   type Rep (ElField '(s,a)) = C1 ('MetaCons s 'PrefixI 'False) (Rec0 a)
   from (Field x) = M1 (K1 x)
   to (M1 (K1 x)) = Field x
 
-instance (Num t, KnownSymbol s) => Num (ElField '(s,t)) where
+instance Num t => Num (ElField '(s,t)) where
   Field x + Field y = Field (x+y)
   Field x * Field y = Field (x*y)
   abs (Field x) = Field (abs x)
@@ -132,18 +132,18 @@ instance (Num t, KnownSymbol s) => Num (ElField '(s,t)) where
 instance Semigroup t => Semigroup (ElField '(s,t)) where
   Field x <> Field y = Field (x <> y)
 
-instance (KnownSymbol s, Monoid t) => Monoid (ElField '(s,t)) where
+instance Monoid t => Monoid (ElField '(s,t)) where
   mempty = Field mempty
   mappend (Field x) (Field y) = Field (mappend x y)
 
-instance (Real t, KnownSymbol s) => Real (ElField '(s,t)) where
+instance Real t => Real (ElField '(s,t)) where
   toRational (Field x) = toRational x
 
-instance (Fractional t, KnownSymbol s) => Fractional (ElField '(s,t)) where
+instance Fractional t => Fractional (ElField '(s,t)) where
   fromRational = Field . fromRational
   Field x / Field y = Field (x / y)
 
-instance (Floating t, KnownSymbol s) => Floating (ElField '(s,t)) where
+instance Floating t => Floating (ElField '(s,t)) where
   pi = Field pi
   exp (Field x) = Field (exp x)
   log (Field x) = Field (log x)
@@ -158,13 +158,13 @@ instance (Floating t, KnownSymbol s) => Floating (ElField '(s,t)) where
   acosh (Field x) = Field (acosh x)
   atanh (Field x) = Field (atanh x)
 
-instance (RealFrac t, KnownSymbol s) => RealFrac (ElField '(s,t)) where
+instance RealFrac t => RealFrac (ElField '(s,t)) where
   properFraction (Field x) = fmap Field (properFraction x)
 
 instance (Show t, KnownSymbol s) => Show (ElField '(s,t)) where
   show (Field x) = symbolVal (Proxy::Proxy s) ++" :-> "++show x
 
-instance forall s t. (KnownSymbol s, Storable t)
+instance forall s t. Storable t
     => Storable (ElField '(s,t)) where
   sizeOf _ = sizeOf (undefined::t)
   alignment _ = alignment (undefined::t)
