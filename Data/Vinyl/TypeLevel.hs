@@ -83,6 +83,8 @@ type family RecAll (f :: u -> *) (rs :: [u]) (c :: * -> Constraint) :: Constrain
   RecAll f '[] c = ()
   RecAll f (r ': rs) c = (c (f r), RecAll f rs c)
 
+infixr 5 ++
+
 -- | Append for type-level lists.
 type family (as :: [k]) ++ (bs :: [k]) :: [k] where
   '[] ++ bs = bs
