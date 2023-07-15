@@ -43,9 +43,14 @@ library
   build-depends:       base >= 4.11 && <= 5,
                        ghc-prim,
                        deepseq,
-                       array
+                       array,
+                       singletons
   if impl (ghc < 8.6.0)
     build-depends: constraints >= 0.6.1
+  if impl (ghc < 9.0.1)
+    build-depends:    singletons >= 0.10 && < 3
+  else
+    build-depends:    singletons-th >= 3 && < 3.1
   default-language:    Haskell2010
   ghc-options:         -Wall
   other-extensions:    TypeApplications
