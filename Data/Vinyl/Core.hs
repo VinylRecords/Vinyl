@@ -57,10 +57,32 @@ import Control.DeepSeq (NFData, rnf)
 import Data.Constraint.Forall (Forall)
 #endif
 
--- | A record is parameterized by a universe @u@, an interpretation @f@ and a
--- list of rows @rs@.  The labels or indices of the record are given by
--- inhabitants of the kind @u@; the type of values at any label @r :: u@ is
--- given by its interpretation @f r :: *@.
+{- |
+A record is parameterized by a universe @u@, an interpretation @f@ and a
+list of rows @rs@.  The labels or indices of the record are given by
+inhabitants of the kind @u@; the type of values at any label @r :: u@ is
+given by its interpretation @f r :: *@.
+
+>>> :set -XDataKinds
+>>> import Data.Vinyl.Functor (Identity(Identity))
+>>> testRec = Identity 3 :& Identity "Hi" :& RNil
+>>> :t testRec
+testRec :: Num r => Rec Identity '[r, [Char]]
+>>> testRec :: Rec Identity '[Int, String]
+{3, "Hi"}
+
+>>> testRec = Just 3 :& Nothing :& Just "Hi" :& RNil
+>>> :t testRec
+testRec :: Num r1 => Rec Maybe '[r1, r2, [Char]]
+
+>>> :set -XTypeApplications
+>>> import Data.Vinyl.Functor (ElField(Field))
+>>> testRec = Field @'("name", String) "Alice" :& Field @'("age", Int) 20 :& RNil
+>>> :t testRec
+testRec :: Rec ElField '[ '("name", String), '("age", Int)]
+>>> testRec
+{name :-> "Alice", age :-> 20}
+-}
 data Rec :: (u -> *) -> [u] -> * where
   RNil :: Rec f '[]
   (:&) :: !(f r) -> !(Rec f rs) -> Rec f (r ': rs)
