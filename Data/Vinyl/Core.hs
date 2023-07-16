@@ -108,7 +108,16 @@ instance TestCoercion f => TestCoercion (Rec f) where
     Just Coercion
   testCoercion _ _ = Nothing
 
--- | Two records may be pasted together.
+{- |
+Two records may be pasted together.
+
+>>> :set -XScopedTypeVariables
+>>> testRec1 :: Rec Maybe '[Int, String] = Just 3 :& Just "Hi" :& RNil
+>>> testRec2 :: Rec Maybe '[Double, [Double]] = Nothing :& Just [3.0, 2.2] :& RNil
+>>> appendedTestRec = rappend testRec1 testRec2
+>>> :t appendedTestRec
+appendedTestRec :: Rec Maybe '[Int, [Char], Double, [Double]]
+-}
 rappend
   :: Rec f as
   -> Rec f bs
