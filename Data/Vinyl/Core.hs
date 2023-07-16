@@ -141,11 +141,37 @@ appendedTestRecs :: Rec Maybe '[Int, [Char], Double, [Double]]
   -> Rec f (as ++ bs)
 (<+>) = rappend
 
--- | Combine two records by combining their fields using the given
--- function. The first argument is a binary operation for combining
--- two values (e.g. '(<>)'), the second argument takes a record field
--- into the type equipped with the desired operation, the third
--- argument takes the combined value back to a result type.
+{- | Combine two records by combining their fields using the given
+function. The first argument is a binary operation for combining
+two values (e.g. '(<>)'), the second argument takes a record field
+into the type equipped with the desired operation, the third
+argument takes the combined value back to a result type.
+
+This function makes no assumption on the types stored in the record and is thus
+limited to basic operations that can be executed on all types (as defined via
+the unconstrained forall a in arguments 1,2 and 3). The
+following snippet shows how to put each entry of a Rec Maybe in a list
+(second argument), concatenating them (first argument), and then outputting a
+Rec [] instead of a Rec Maybe—something which can be done for any type:
+
+>>> import Data.Maybe (maybeToList)
+>>> combineAsList = rcombine (<>) maybeToList id
+
+>>> testRec1 :: Rec Maybe '[String, String] = Just "Ho" :& Just "Hi" :& RNil
+>>> combineAsList testRec1 testRec1
+{["Ho","Ho"], ["Hi","Hi"]}
+
+We can't combine testRec1 with rcombine such that the Strings would be
+concatenated directly because that would make assumptions on the types and
+violate the unconstrained forall a. However, we can use combineAsList now on
+any other Rec Maybe as well.
+
+>>> testRec2 :: Rec Maybe '[String, Double, Int] = Just "Ho" :& Just 3.0 :& Nothing :& RNil
+>>> combineAsList testRec2 testRec2
+{["Ho","Ho"], [3.0,3.0], []}
+
+-}
+
 rcombine :: (RMap rs, RApply rs)
          => (forall a. m a -> m a -> m a)
          -> (forall a. f a -> m a)
