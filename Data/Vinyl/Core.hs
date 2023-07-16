@@ -125,7 +125,16 @@ rappend
 rappend RNil ys = ys
 rappend (x :& xs) ys = x :& (xs `rappend` ys)
 
--- | A shorthand for 'rappend'.
+{- |
+A shorthand for 'rappend'.
+
+>>> :set -XScopedTypeVariables
+>>> testRec1 :: Rec Maybe '[Int, String] = Just 3 :& Just "Hi" :& RNil
+>>> testRec2 :: Rec Maybe '[Double, [Double]] = Nothing :& Just [3.0, 2.2] :& RNil
+>>> appendedTestRecs = testRec1 <+> testRec2
+>>> :t appendedTestRecs
+appendedTestRecs :: Rec Maybe '[Int, [Char], Double, [Double]]
+-}
 (<+>)
   :: Rec f as
   -> Rec f bs
