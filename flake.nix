@@ -56,6 +56,7 @@
       buildInputs = [
         ghc
         hspkgs.cabal-install
+        hspkgs.haskell-language-server
         nurpkgs.repos.amesgen.cabal-docspec
       ];
     };
