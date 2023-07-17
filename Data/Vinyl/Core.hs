@@ -239,8 +239,22 @@ instance RMap xs => RMap (x ': xs) where
 xs <<&>> f = rmap f xs
 {-# INLINE (<<&>>) #-}
 
--- | A record of components @f r -> g r@ may be applied to a record of @f@ to
--- get a record of @g@.
+{- |
+A record of components @f r -> g r@ may be applied to a record of @f@ to
+get a record of @g@.
+
+>>> import Data.Vinyl.Functor (Const(Const), Lift(Lift))
+>>> testRec :: Rec Maybe '[String, Double, Int] = Just "Ho" :& Just 3.0 :& Nothing :& RNil
+>>> :{
+funcRec = Lift (\x -> Const "String")
+  :& Lift (\x -> Const "Double")
+  :& Lift (\x -> Const "Int")
+  :& RNil
+:}
+
+>>> recordToList $ rapply funcRec testRec
+["String","Double","Int"]
+-}
 class RApply rs where
   rapply :: Rec (Lift (->) f g) rs
          -> Rec f rs
