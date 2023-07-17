@@ -268,7 +268,21 @@ instance RApply xs => RApply (x ': xs) where
   rapply (f :& fs) (x :& xs) = getLift f x :& (fs `rapply` xs)
   {-# INLINE rapply #-}
 
--- | A shorthand for 'rapply'.
+{- |
+A shorthand for 'rapply'.
+
+>>> import Data.Vinyl.Functor (Const(Const), Lift(Lift))
+>>> testRec :: Rec Maybe '[String, Double, Int] = Just "Ho" :& Just 3.0 :& Nothing :& RNil
+>>> :{
+funcRec = Lift (\x -> Const "String")
+  :& Lift (\x -> Const "Double")
+  :& Lift (\x -> Const "Int")
+  :& RNil
+:}
+
+>>> recordToList $ funcRec <<*>> testRec
+["String","Double","Int"]
+-}
 (<<*>>)
   :: RApply rs
   => Rec (Lift (->) f g) rs
