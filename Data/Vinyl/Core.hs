@@ -291,8 +291,23 @@ funcRec = Lift (\x -> Const "String")
 (<<*>>) = rapply
 {-# INLINE (<<*>>) #-}
 
--- | Given a section of some functor, records in that functor of any size are
--- inhabited.
+{- |
+Given a section of some functor, records in that functor of any size are
+inhabited. Note that you need a value that can inhabit any type in the record.
+It is not possible, with this function, to derive a default with a type class
+method. Here are a few examples:
+
+>>> testRec :: Rec Maybe '[Double, String] = rpure Nothing
+>>> testRec
+{Nothing, Nothing}
+>>> testRec :: Rec [] '[Double, String] = rpure []
+>>> testRec
+{[], []}
+>>> import Data.Proxy (Proxy(Proxy))
+>>> testRec :: Rec Proxy '[Double, String] = rpure Proxy
+>>> testRec
+{Proxy, Proxy}
+-}
 class RecApplicative rs where
   rpure
     :: (forall x. f x)
