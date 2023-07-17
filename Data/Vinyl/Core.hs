@@ -335,7 +335,6 @@ ext Nothing = Nothing
 >>> rtraverse ext testRec
 Nothing
 -}
-
 rtraverse
   :: Applicative h
   => (forall x. f x -> h (g x))
@@ -345,13 +344,27 @@ rtraverse _ RNil      = pure RNil
 rtraverse f (x :& xs) = (:&) <$> f x <*> rtraverse f xs
 {-# INLINABLE rtraverse #-}
 
--- | While 'rtraverse' pulls the interpretation functor out of the
--- record, 'rtraverseIn' pushes the interpretation functor in to each
--- field type. This is particularly useful when you wish to discharge
--- that interpretation on a per-field basis. For instance, rather than
--- a @Rec IO '[a,b]@, you may wish to have a @Rec Identity '[IO a, IO
--- b]@ so that you can evaluate a single field to obtain a value of
--- type @Rec Identity '[a, IO b]@.
+{- |
+While 'rtraverse' pulls the interpretation functor out of the
+record, 'rtraverseIn' pushes the interpretation functor in to each
+field type. This is particularly useful when you wish to discharge
+that interpretation on a per-field basis. For instance, rather than
+a @Rec IO '[a,b]@, you may wish to have a @Rec Identity '[IO a, IO
+b]@ so that you can evaluate a single field to obtain a value of
+type @Rec Identity '[a, IO b]@.
+
+>>> import Data.Vinyl.Functor (Identity(Identity))
+>>> testRec :: Rec Maybe '[String, Double, Int] = Just "Ho" :& Just 3.0 :& Nothing :& RNil
+>>>
+:{
+push :: forall x. Maybe x -> Identity (Maybe x)
+push (Just x) = Identity (Just x)
+push Nothing = Identity Nothing
+:}
+>>> :t rtraverseIn push testRec
+rtraverseIn push testRec
+  :: Rec Identity '[Maybe [Char], Maybe Double, Maybe Int]
+-}
 rtraverseIn :: forall h f g rs.
                (forall a. f a -> g (ApplyToField h a))
             -> Rec f rs
