@@ -184,9 +184,22 @@ rcombine smash toM fromM x y =
   where x' = rmap toM x
         y' = rmap toM y
 
--- | 'Rec' @_ rs@ with labels in kind @u@ gives rise to a functor @Hask^u ->
--- Hask@; that is, a natural transformation between two interpretation functors
--- @f,g@ may be used to transport a value from 'Rec' @f rs@ to 'Rec' @g rs@.
+{- |
+'Rec' @_ rs@ with labels in kind @u@ gives rise to a functor @Hask^u ->
+Hask@; that is, a natural transformation between two interpretation functors
+@f,g@ may be used to transport a value from 'Rec' @f rs@ to 'Rec' @g rs@.
+
+Here is an example:
+
+>>> import Data.Maybe (maybeToList)
+>>> testRec :: Rec Maybe '[String, Double, Int] = Just "Ho" :& Just 3.0 :& Nothing :& RNil
+>>> rmap maybeToList testRec
+{["Ho"], [3.0], []}
+
+Similar to other functions in this module, we can not use rmap to map type
+specific functions over a record. Only functions that work for any type can be
+used.
+-}
 class RMap rs where
   rmap :: (forall x. f x -> g x) -> Rec f rs -> Rec g rs
 
