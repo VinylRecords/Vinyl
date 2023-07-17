@@ -319,9 +319,23 @@ instance RecApplicative rs => RecApplicative (r ': rs) where
   rpure s = s :& rpure s
   {-# INLINE rpure #-}
 
--- | A record may be traversed with respect to its interpretation functor. This
--- can be used to yank (some or all) effects from the fields of the record to
--- the outside of the record.
+{- |
+A record may be traversed with respect to its interpretation functor. This
+can be used to yank (some or all) effects from the fields of the record to
+the outside of the record.
+
+>>> import Data.Vinyl.Functor (Identity(Identity))
+>>> testRec :: Rec Maybe '[String, Double, Int] = Just "Ho" :& Just 3.0 :& Nothing :& RNil
+>>>
+:{
+ext :: Maybe x -> Maybe (Identity x)
+ext (Just x) = Just (Identity x)
+ext Nothing = Nothing
+:}
+>>> rtraverse ext testRec
+Nothing
+-}
+
 rtraverse
   :: Applicative h
   => (forall x. f x -> h (g x))
