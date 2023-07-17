@@ -225,7 +225,12 @@ instance RMap xs => RMap (x ': xs) where
 (<<$>>) = rmap
 {-# INLINE (<<$>>) #-}
 
--- | An inverted shorthand for 'rmap'.
+{- | An inverted shorthand for 'rmap'.
+>>> import Data.Maybe (maybeToList)
+>>> testRec :: Rec Maybe '[String, Double, Int] = Just "Ho" :& Just 3.0 :& Nothing :& RNil
+>>> testRec <<&>> maybeToList 
+{["Ho"], [3.0], []}
+-}
 (<<&>>)
   :: RMap rs
   => Rec f rs
