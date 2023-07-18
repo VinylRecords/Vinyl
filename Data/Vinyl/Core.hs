@@ -373,7 +373,28 @@ rtraverseIn _ RNil = RNil
 rtraverseIn f (x :& xs) = f x :& rtraverseIn f xs
 {-# INLINABLE rtraverseIn #-}
 
--- | Push an outer layer of interpretation functor into each field.
+{- |
+Push an outer layer of interpretation functor into each field.
+
+>>> :set -XTypeOperators
+>>> import Data.Vinyl.Functor ((:.), Identity(Identity), Compose(Compose))
+:{
+testRec :: Rec (Maybe :. Identity) '[ String, Double, Int] =
+    Compose (Just (Identity "Ho"))
+    :& Compose (Just (Identity 3.0))
+    :& Compose Nothing
+    :& RNil
+:}
+>>> :t rsequenceIn testRec
+rsequenceIn testRec
+  :: Rec Identity '[Maybe [Char], Maybe Double, Maybe Int]
+
+Note that this function can't be applied as easily to anything
+composed with interpretation functors as inner layer that take custom
+kinds as inputs. For example, when dealing with (Maybe :. ElField),
+Maybe the function can't be applied because that would require applying Maybe
+to a (Symbol, *) kind.
+-}
 rsequenceIn :: forall f g (rs :: [Type]). (Traversable f, Applicative g)
             => Rec (f :. g) rs -> Rec g (MapTyCon f rs)
 rsequenceIn = rtraverseIn @f (sequenceA . getCompose)
