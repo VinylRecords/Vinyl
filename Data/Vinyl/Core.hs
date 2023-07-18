@@ -334,6 +334,23 @@ ext Nothing = Nothing
 :}
 >>> rtraverse ext testRec
 Nothing
+
+Here is another interesting example that allows reading a record
+interactively.
+
+>>> :set -XTypeOperators
+>>> import Text.Read (readMaybe)
+>>> import Data.Vinyl.Functor ((:.), Compose(Compose), getCompose)
+>>>
+:{
+readMaybeIO :: forall a. Read a => (IO :. Maybe) a
+readMaybeIO = Compose $ readMaybe <$> getLine
+testRec :: Rec (IO :. Maybe) [String, Double, Int]
+testRec = rpureConstrained @Read readMaybeIO
+:}
+>>> :t rtraverse getCompose testRec
+rtraverse getCompose testRec
+  :: IO (Rec Maybe '[String, Double, Int])
 -}
 rtraverse
   :: Applicative h
