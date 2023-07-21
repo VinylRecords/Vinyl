@@ -544,11 +544,21 @@ data Dict c a where
     => a
     -> Dict c a
 
--- | Sometimes we may know something for /all/ fields of a record, but when
--- you expect to be able to /each/ of the fields, you are then out of luck.
--- Surely given @∀x:u.φ(x)@ we should be able to recover @x:u ⊢ φ(x)@! Sadly,
--- the constraint solver is not quite smart enough to realize this and we must
--- make it patently obvious by reifying the constraint pointwise with proof.
+{- |
+Sometimes we may know something for /all/ fields of a record, but when
+you expect to be able to /each/ of the fields, you are then out of luck.
+Surely given @∀x:u.φ(x)@ we should be able to recover @x:u ⊢ φ(x)@! Sadly,
+the constraint solver is not quite smart enough to realize this and we must
+make it patently obvious by reifying the constraint pointwise with proof.
+
+Here is an example how this can be used in practise:
+
+>>> import Data.Vinyl.Functor (ElField(Field), Compose(Compose))
+>>> testRec :: Rec ElField '[ '("age", Double), '("number", Int)] = Field 1.0 :& Field 0 :& RNil
+>>> testRecWithConstraints = reifyConstraint @Num testRec
+>>> rmap (\(Compose (Dict x)) -> x+1) testRecWithConstraints
+{age :-> 2.0, number :-> 1}
+-}
 class ReifyConstraint c f rs where
   reifyConstraint
     :: Rec f rs
