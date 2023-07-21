@@ -500,7 +500,44 @@ instance RecordToList xs => RecordToList (x ': xs) where
   recordToList (x :& xs) = getConst x : recordToList xs
   {-# INLINE recordToList #-}
 
--- | Wrap up a value with a capability given by its type
+{- |
+Wrap up a value with a capability given by its type. In other words, the
+existance of a value x :: Dict c a proves the existence of an instance c a.
+This is useful to help the type checker realize that a value in a record does
+indeed have a certain instance.
+
+To understand better why this type is useful, consider the following function
+that doesn't typecheck:
+
+>>> import Data.Vinyl.Functor (Identity(Identity))
+>>> import Data.Vinyl.TypeLevel (AllConstrained)
+>>>
+:{
+func :: forall rs. (RMap rs, AllConstrained Num rs) => Rec Identity rs -> Rec Identity rs
+func = rmap (\(Identity x) -> Identity (x+1))
+:}
+...
+    • Could not deduce (Num x) arising from a use of ‘+’
+      from the context: (RMap rs, AllConstrained Num rs)
+        bound by the type signature for:
+                   func :: forall (rs :: [*]).
+                           (RMap rs, AllConstrained Num rs) =>
+                           Rec Identity rs -> Rec Identity rs
+...
+
+Dict allows to encapsulate a constraint directly in the type such that anything
+wrapped in it automatically fullfils it. RMap understands that as well:
+
+>>> import Data.Vinyl.Functor (Identity(Identity))
+>>>
+:{
+func :: forall rs. RMap rs => Rec (Dict Num) rs -> Rec Identity rs
+func = rmap (\(Dict x) -> Identity (x + 1))
+:}
+>>> testRec :: Rec (Dict Num) '[Double, Int] = Dict 1.0 :& Dict 0 :& RNil
+>>> func testRec
+{2.0, 1}
+-}
 data Dict c a where
   Dict
     :: c a
