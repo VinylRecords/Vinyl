@@ -467,6 +467,22 @@ instance RFoldMap xs => RFoldMap (x ': xs) where
   rfoldMapAux f m (r :& rs) = rfoldMapAux f (mappend m (f r)) rs
   {-# INLINE rfoldMapAux #-}
 
+{- |
+This function allows to collect all elements of a record in a monoid. The
+collector function can be specialized for a particular interpretation functor
+but has to be applicable for any type. It's therefore most useful to collect
+effects.
+
+>>> testRec1 :: Rec Maybe '[String, Double] = Just "Anna" :& Nothing :& RNil
+>>>
+:{
+func :: forall x. Maybe x -> String
+func (Just x) = "Just "
+func Nothing = "Nothing "
+:}
+>>> rfoldMap func testRec1
+"Just Nothing "
+-}
 rfoldMap :: forall rs m f. (Monoid m, RFoldMap rs)
          => (forall x. f x -> m) -> Rec f rs -> m
 rfoldMap f = rfoldMapAux f mempty
