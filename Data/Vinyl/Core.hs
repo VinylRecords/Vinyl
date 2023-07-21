@@ -435,10 +435,18 @@ rsequenceIn :: forall f g (rs :: [Type]). (Traversable f, Applicative g)
 rsequenceIn = rtraverseIn @f (sequenceA . getCompose)
 {-# INLINABLE rsequenceIn #-}
 
--- | Given a natural transformation from the product of @f@ and @g@ to @h@, we
--- have a natural transformation from the product of @'Rec' f@ and @'Rec' g@ to
--- @'Rec' h@. You can also think about this operation as zipping two records
--- with the same element types but different interpretations.
+{- |
+Given a natural transformation from the product of @f@ and @g@ to @h@, we
+have a natural transformation from the product of @'Rec' f@ and @'Rec' g@ to
+@'Rec' h@. You can also think about this operation as zipping two records
+with the same element types but different interpretations.
+
+>>> import Data.Vinyl.Functor (Identity(Identity))
+>>> testRec1 :: Rec Identity '[String, Double] = Identity "Joe" :& Identity 20.0 :& RNil
+>>> testRec2 :: Rec [] '[String, Double] = ["John"] :& [15.3] :& RNil
+>>> rzipWith (\(Identity a) xs -> a:xs) testRec1 testRec2
+{["Joe","John"], [20.0,15.3]}
+-}
 rzipWith :: (RMap xs, RApply xs)
          => (forall x. f x -> g x -> h x) -> Rec f xs -> Rec g xs -> Rec h xs
 rzipWith f = rapply . rmap (Lift . f)
