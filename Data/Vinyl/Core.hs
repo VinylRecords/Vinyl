@@ -351,6 +351,24 @@ testRec = rpureConstrained @Read readMaybeIO
 >>> :t rtraverse getCompose testRec
 rtraverse getCompose testRec
   :: IO (Rec Maybe '[String, Double, Int])
+
+And one more with State
+
+>>> :set -package mtl
+>>> import Control.Monad.State (StateT(StateT), runState, State, state)
+>>> import qualified Data.Vinyl.Functor as V
+>>> import qualified Data.Functor.Identity as I
+>>> testRec1 :: Rec (State Int) '[Int, Double] = state (\s -> (s, 2 * s)) :& state (\s -> (fromIntegral s, 3 * s)) :& RNil
+>>>
+:{
+ext :: State Int a -> State Int (V.Identity a)
+ext (StateT f) = StateT $ \s -> let (a, s') = I.runIdentity (f s) in I.Identity (V.Identity a, s')
+:}
+>>> stateRec = rtraverse ext testRec1
+>>> runState stateRec 1
+({1, 2.0},6)
+>>> runState (sequence $ replicate 5 stateRec) 1
+([{1, 2.0},{6, 12.0},{36, 72.0},{216, 432.0},{1296, 2592.0}],7776)
 -}
 rtraverse
   :: Applicative h
