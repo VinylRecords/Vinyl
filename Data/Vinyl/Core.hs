@@ -573,8 +573,27 @@ instance (c (f x), ReifyConstraint c f xs)
   reifyConstraint (x :& xs) = Compose (Dict x) :& reifyConstraint xs
   {-# INLINE reifyConstraint #-}
 
--- | Build a record whose elements are derived solely from a
--- constraint satisfied by each.
+{- |
+Build a record whose elements are derived solely from a
+constraint satisfied by each.
+
+>>> :set -XFlexibleInstances
+>>> :set -XFlexibleContexts
+>>> :set -XUndecidableInstances
+>>> import Data.Vinyl.Derived (KnownField)
+>>> import Data.Vinyl.TypeLevel (Snd)
+>>> import Data.Vinyl.Functor (ElField(Field))
+>>> import Data.Proxy (Proxy(Proxy))
+>>> class (KnownField a, Monoid (Snd a)) => Helper a
+>>> instance (KnownField a, Monoid (Snd a)) => Helper a
+>>>
+:{
+testRec :: Rec ElField '[ '("list", [Double]), '("string", String) ]
+testRec = rpureConstrained @Helper (Field mempty)
+:}
+>>> testRec
+{list :-> [], string :-> ""}
+-}
 class RPureConstrained c ts where
   rpureConstrained :: (forall a. c a => f a) -> Rec f ts
 
