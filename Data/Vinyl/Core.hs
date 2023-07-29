@@ -645,9 +645,22 @@ testRec = rpureConstrained @Num @'[Double, Int] builder
 data DictOnly (c :: k -> Constraint) a where
   DictOnly :: forall c a. c a => DictOnly c a
 
--- | A useful technique is to use 'rmap (Pair (DictOnly @MyClass))' on
--- a 'Rec' to pair each field with a type class dictionary for
--- @MyClass@. This helper can then be used to eliminate the original.
+{- |
+A useful technique is to use 'rmap (Pair (DictOnly @MyClass))' on a 'Rec' to
+pair each field with a type class dictionary for @MyClass@. This helper can
+then be used to apply a function to a DictOnly that is paired with another
+field:
+
+>>> import Data.Vinyl.Functor (Identity(Identity))
+>>> import Data.Functor.Product (Product(Pair))
+>>>
+:{
+testRec :: Rec (Product (DictOnly Num) Identity) '[Double, Int]
+testRec = rpureConstrained @Num @'[Double, Int] (Pair DictOnly (Identity 0))
+:}
+>>> rmap (withPairedDict (fmap (2 +))) testRec
+{2.0, 2}
+-}
 withPairedDict :: (c a => f a -> r) -> Product (DictOnly c) f a -> r
 withPairedDict f (Pair DictOnly x) = f x
 
