@@ -605,9 +605,43 @@ instance (c x, RPureConstrained c xs) => RPureConstrained c (x ': xs) where
   rpureConstrained f = f :& rpureConstrained @c @xs f
   {-# INLINE rpureConstrained #-}
 
--- | Capture a type class instance dictionary. See
--- 'Data.Vinyl.Lens.getDict' for a way to obtain a 'DictOnly' value
--- from an 'RPureConstrained' constraint.
+{- |
+Capture a type class instance dictionary. This data type can
+be used together with rpureConstrained:
+
+>>> import Data.Vinyl.Lens (rget)
+>>>
+:{
+testRec :: Rec (DictOnly Num) '[Double, Int]
+testRec = rpureConstrained @Num @'[Double, Int] DictOnly
+:}
+>>>
+:{
+val :: DictOnly Num Double
+val = rget @Double testRec
+:}
+
+In itself not much can be done with a @DictOnly@. However,
+it becomes useful together with the @Product@ Functor that allows
+to pair it on the side with another value. That way we can keep
+track of a constraint and use the other value for computations:
+
+>>> import Data.Vinyl.Functor (Identity(Identity))
+>>> import Data.Functor.Product (Product(Pair))
+>>>
+:{
+builder :: Num a => Product (DictOnly Num) Identity a
+builder = Pair DictOnly (Identity 0)
+:}
+>>>
+:{
+testRec :: Rec (Product (DictOnly Num) Identity) '[Double, Int]
+testRec = rpureConstrained @Num @'[Double, Int] builder
+:}
+>>> Pair DictOnly val = rget @Double testRec
+>>> val
+0.0
+-}
 data DictOnly (c :: k -> Constraint) a where
   DictOnly :: forall c a. c a => DictOnly c a
 
