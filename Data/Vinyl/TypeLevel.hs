@@ -65,8 +65,13 @@ instance NatToInt n => NatToInt ('S n) where
   natToInt = 1 + natToInt @n
   {-# INLINE natToInt #-}
 
--- | Reify a list of type-level natural number indices as runtime
--- 'Int's relying on instances of 'NatToInt'.
+{- |
+Reify a list of type-level natural number indices as runtime
+'Int's relying on instances of 'NatToInt'.
+
+>>> indexWitnesses @'[S (S Z), Z, S (S (S Z))]
+[2,0,3]
+-}
 class IndexWitnesses (is :: [Nat]) where
   indexWitnesses :: [Int]
 
