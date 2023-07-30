@@ -134,7 +134,13 @@ type family RImage (rs :: [k]) (ss :: [k]) :: [Nat] where
   RImage '[] ss = '[]
   RImage (r ': rs) ss = RIndex r ss ': RImage rs ss
 
--- | Remove the first occurrence of a type from a type-level list.
+{- |
+Remove the first occurrence of a type from a type-level list.
+
+>>> :k! RDelete Int '[Int, Double, String]
+RDelete Int '[Int, Double, String] :: [*]
+= '[Double, String]
+-}
 type family RDelete r rs where
   RDelete r (r ': rs) = rs
   RDelete r (s ': rs) = s ': RDelete r rs
