@@ -123,7 +123,13 @@ type family RIndex (r :: k) (rs :: [k]) :: Nat where
   RIndex r (r ': rs) = 'Z
   RIndex r (s ': rs) = 'S (RIndex r rs)
 
--- | A partial relation that gives the indices of a sublist in a larger list.
+{- |
+Compute the indices of a sublist in a larger list.
+
+>>> :k! RImage '[Int, String] '[Int, Double, String]
+RImage '[Int, String] '[Int, Double, String] :: [Nat]
+= '[ 'Z, 'S ('S 'Z)]
+-}
 type family RImage (rs :: [k]) (ss :: [k]) :: [Nat] where
   RImage '[] ss = '[]
   RImage (r ': rs) ss = RIndex r ss ': RImage rs ss
