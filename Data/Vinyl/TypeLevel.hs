@@ -112,7 +112,13 @@ type family RLength xs where
   RLength '[] = 'Z
   RLength (x ': xs) = 'S (RLength xs)
 
--- | A partial relation that gives the index of a value in a list.
+{- |
+Compute the index of a value in a list.
+
+>>> :k! RIndex '("age", Int) '[ '("age", Int), '("name", String)]
+RIndex '("age", Int) '[ '("age", Int), '("name", String)] :: Nat
+= 'Z
+-}
 type family RIndex (r :: k) (rs :: [k]) :: Nat where
   RIndex r (r ': rs) = 'Z
   RIndex r (s ': rs) = 'S (RIndex r rs)
