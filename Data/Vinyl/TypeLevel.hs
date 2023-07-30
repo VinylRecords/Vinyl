@@ -101,6 +101,13 @@ Snd '("age", Int) :: *
 -}
 type family Snd (a :: (k1,k2)) where Snd '(x,y) = y
 
+{- |
+Compute the length of a type level list.
+
+>>> :k! RLength '[ '("age", Int), '("name", String)]
+RLength '[ '("age", Int), '("name", String)] :: Nat
+= 'S ('S 'Z)
+-}
 type family RLength xs where
   RLength '[] = 'Z
   RLength (x ': xs) = 'S (RLength xs)
