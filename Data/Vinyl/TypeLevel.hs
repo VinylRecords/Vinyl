@@ -24,8 +24,27 @@ module Data.Vinyl.TypeLevel where
 import Data.Coerce
 import Data.Kind
 
--- | A mere approximation of the natural numbers. And their image as lifted by
--- @-XDataKinds@ corresponds to the actual natural numbers.
+{- |
+A mere approximation of the natural numbers. And their image as lifted by
+@-XDataKinds@ corresponds to the actual natural numbers.
+
+The following is an example for a term level number of type Nat:
+
+>>> number = S (S Z)
+>>> :t number
+number :: Nat
+
+But it is intended to be used at the type level:
+
+>>> import Data.Proxy (Proxy(Proxy))
+>>> Proxy :: Proxy (S (S Z))
+Proxy
+
+Often it is used with type applications:
+
+>>> Proxy @(S (S Z))
+Proxy
+-}
 data Nat = Z | S !Nat
 
 -- | Produce a runtime 'Int' value corresponding to a 'Nat' type.
