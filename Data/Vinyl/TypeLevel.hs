@@ -83,7 +83,13 @@ instance (IndexWitnesses is, NatToInt i) => IndexWitnesses (i ': is) where
   indexWitnesses = natToInt @i : indexWitnesses @is
   {-# INLINE indexWitnesses #-}
 
--- | Project the first component of a type-level tuple.
+{- |
+Project the first component of a type-level tuple.
+
+>>> :k! Fst '("age", Int)
+Fst '("age", Int) :: GHC.Types.Symbol
+= "age"
+-}
 type family Fst (a :: (k1,k2)) where Fst '(x,y) = x
 
 -- | Project the second component of a type-level tuple.
