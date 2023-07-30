@@ -47,7 +47,13 @@ Proxy
 -}
 data Nat = Z | S !Nat
 
--- | Produce a runtime 'Int' value corresponding to a 'Nat' type.
+{- |
+Produce a runtime 'Int' value corresponding to a 'Nat' type.
+This is intended to be used with TypeApplications:
+
+>>> natToInt @('S ('S 'Z))
+2
+-}
 class NatToInt (n :: Nat) where
   natToInt :: Int
 
