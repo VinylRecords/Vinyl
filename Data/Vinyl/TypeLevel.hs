@@ -92,7 +92,13 @@ Fst '("age", Int) :: GHC.Types.Symbol
 -}
 type family Fst (a :: (k1,k2)) where Fst '(x,y) = x
 
--- | Project the second component of a type-level tuple.
+{- |
+Project the second component of a type-level tuple.
+
+>>> :k! Snd '("age", Int)
+Snd '("age", Int) :: *
+= Int
+-}
 type family Snd (a :: (k1,k2)) where Snd '(x,y) = y
 
 type family RLength xs where
