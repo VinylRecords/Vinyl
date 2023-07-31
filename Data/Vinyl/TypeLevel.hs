@@ -145,7 +145,16 @@ type family RDelete r rs where
   RDelete r (r ': rs) = rs
   RDelete r (s ': rs) = s ': RDelete r rs
 
--- | A constraint-former which applies to every field in a record.
+{- |
+Build a constraint tuple with one constraint for every field
+in a record.
+
+>>> import Data.Vinyl.Functor (ElField)
+>>> :k! RecAll ElField '[ '("age", Int), '("name", Double)] Num
+RecAll ElField '[ '("age", Int), '("name", Double)] Num :: Constraint
+= (Num (ElField '("age", Int)),
+   (Num (ElField '("name", Double)), () :: Constraint))
+-}
 type family RecAll (f :: u -> *) (rs :: [u]) (c :: * -> Constraint) :: Constraint where
   RecAll f '[] c = ()
   RecAll f (r ': rs) c = (c (f r), RecAll f rs c)
