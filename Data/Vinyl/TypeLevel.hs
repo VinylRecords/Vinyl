@@ -161,7 +161,13 @@ type family RecAll (f :: u -> *) (rs :: [u]) (c :: * -> Constraint) :: Constrain
 
 infixr 5 ++
 
--- | Append for type-level lists.
+{- |
+Append for type-level lists.
+
+>>> :k! '[Int, Double] ++ '[String]
+'[Int, Double] ++ '[String] :: [*]
+= '[Int, Double, String]
+-}
 type family (as :: [k]) ++ (bs :: [k]) :: [k] where
   '[] ++ bs = bs
   (a ': as) ++ bs = a ': (as ++ bs)
