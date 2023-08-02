@@ -206,12 +206,22 @@ type family AllSatisfied (cs :: [u -> Constraint]) (t :: u) :: Constraint where
     AllSatisfied '[] t = ()
     AllSatisfied (c ': cs) t = (c t, AllSatisfied cs t)
 
--- | Constraint that all types in a type-level list satisfy each
--- constraint from a list of constraints.
---
--- @AllAllSat cs ts@ should be equivalent to @AllConstrained
--- (AllSatisfied cs) ts@ if partial application of type families were
--- legal.
+{- |
+Constraint that all types in a type-level list satisfy each
+constraint from a list of constraints.
+
+@AllAllSat cs ts@ should be equivalent to @AllConstrained
+(AllSatisfied cs) ts@ if partial application of type families were
+legal.
+
+>>>
+:{
+f :: AllAllSat '[Num, Eq, Show] '[a, b] => a -> b -> (String, Bool)
+f a b = (if a == 0 then show a else "not equal to 0", b == 0)
+:}
+>>> f (0 :: Int) (1.0 :: Double)
+("0",False)
+-}
 type family AllAllSat cs ts :: Constraint where
   AllAllSat cs '[] = ()
   AllAllSat cs (t ': ts) = (AllSatisfied cs t, AllAllSat cs ts)
