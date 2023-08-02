@@ -198,35 +198,13 @@ satisfied by a particular type.
 
 >>>
 :{
-f :: AllSatisfied' '[Num, Eq, Show] a => a -> String
-f a = if a == 0 then show a else "not equal to 0"
-:}
--}
-type family AllSatisfied' (cs :: [u -> Constraint]) (t :: u) :: Constraint where
-    AllSatisfied' '[] t = ()
-    AllSatisfied' (c ': cs) t = (c t, AllSatisfied' cs t)
-
-{- |
-Constraint that each Constraint in a type-level list is satisfied by a
-particular type. This class is of limited use: Although it is required that the
-type has all instances for each of the constraints, this
-"for each" information is lost by ghc as the following example illustrates:
-
->>>
-:{
 f :: AllSatisfied '[Num, Eq, Show] a => a -> String
 f a = if a == 0 then show a else "not equal to 0"
 :}
-...
-    • Could not deduce (Eq a) arising from a use of ‘==’
-      from the context: AllSatisfied '[Num, Eq, Show] a
-        bound by the type signature for:
-                   f :: forall a. AllSatisfied '[Num, Eq, Show] a => a -> String
-...
 -}
-class AllSatisfied cs t where
-instance AllSatisfied '[] t where
-instance (c t, AllSatisfied cs t) => AllSatisfied (c ': cs) t where
+type family AllSatisfied (cs :: [u -> Constraint]) (t :: u) :: Constraint where
+    AllSatisfied '[] t = ()
+    AllSatisfied (c ': cs) t = (c t, AllSatisfied cs t)
 
 -- | Constraint that all types in a type-level list satisfy each
 -- constraint from a list of constraints.
