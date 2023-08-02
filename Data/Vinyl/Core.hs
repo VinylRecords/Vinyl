@@ -811,11 +811,17 @@ instance ReifyConstraint NFData f xs => NFData (Rec f xs) where
       go RNil = ()
       go (Compose (Dict x) :& xs) = rnf x `seq` go xs
 
--- | Analogous to 'Data.List.head'. Unlike the version in @singletons@,
--- this family merely gets stuck instead of producing a type error if
--- the list is empty. This is often better, because the type error that
--- would be produced here would be much less informative than one that
--- would likely be available where it's used.
+{- |
+Analogous to 'Data.List.head'. Unlike the version in @singletons@,
+this family merely gets stuck instead of producing a type error if
+the list is empty. This is often better, because the type error that
+would be produced here would be much less informative than one that
+would likely be available where it's used.
+
+>>> :k! Head '[Int, Double, String]
+Head '[Int, Double, String] :: *
+= Int
+-}
 type family Head xs where
   Head (x ': _) = x
   
