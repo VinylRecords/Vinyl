@@ -825,11 +825,17 @@ Head '[Int, Double, String] :: *
 type family Head xs where
   Head (x ': _) = x
   
--- | Analogous to 'Data.List.tail'. Unlike the version in @singletons@,
--- this family merely gets stuck instead of producing a type error if
--- the list is empty. This is often better, because the type error that
--- would be produced here would be much less informative than one that
--- would likely be available where it's used.
+{- |
+Analogous to 'Data.List.tail'. Unlike the version in @singletons@,
+this family merely gets stuck instead of producing a type error if
+the list is empty. This is often better, because the type error that
+would be produced here would be much less informative than one that
+would likely be available where it's used.
+
+>>> :k! Tail '[Int, Double, String]
+Tail '[Int, Double, String] :: [*]
+= '[Double, String]
+-}
 type family Tail xs where
   Tail (_ ': xs) = xs
 
