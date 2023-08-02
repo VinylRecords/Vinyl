@@ -684,8 +684,13 @@ instance (AllSatisfied cs t, RPureConstraints cs ts)
   rpureConstraints f = f :& rpureConstraints @cs @ts f
   {-# INLINE rpureConstraints #-}
 
--- | Records may be shown insofar as their points may be shown.
--- 'reifyConstraint' is used to great effect here.
+{- |
+Records may be shown insofar as their points may be shown.
+'reifyConstraint' is used to great effect here.
+
+>>> "record with Nothings: " ++ (show (rpure Nothing :: Rec Maybe '[Int, Double]))
+"record with Nothings: {Nothing, Nothing}"
+-}
 instance (RMap rs, ReifyConstraint Show f rs, RecordToList rs)
   => Show (Rec f rs) where
   show xs =
