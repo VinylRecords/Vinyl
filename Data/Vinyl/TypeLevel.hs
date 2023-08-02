@@ -193,6 +193,20 @@ type family AllConstrained (c :: u -> Constraint) (ts :: [u]) :: Constraint wher
   AllConstrained c (t ': ts) = (c t, AllConstrained c ts)
 
 {- |
+Alternative to get a constraint that each Constraint in a type-level list is
+satisfied by a particular type.
+
+>>>
+:{
+f :: AllSatisfied' '[Num, Eq, Show] a => a -> String
+f a = if a == 0 then show a else "not equal to 0"
+:}
+-}
+type family AllSatisfied' (cs :: [u -> Constraint]) (t :: u) :: Constraint where
+    AllSatisfied' '[] t = ()
+    AllSatisfied' (c ': cs) t = (c t, AllSatisfied' cs t)
+
+{- |
 Constraint that each Constraint in a type-level list is satisfied by a
 particular type. This class is of limited use: Although it is required that the
 type has all instances for each of the constraints, this
