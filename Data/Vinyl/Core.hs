@@ -715,6 +715,12 @@ instance (Semigroup (f r), Semigroup (Rec f rs))
   => Semigroup (Rec f (r ': rs)) where
   (x :& xs) <> (y :& ys) = (x <> y) :& (xs <> ys)
 
+{- |
+The Monoid instance is also mapped to each element of the record.
+
+>>> mempty :: Rec [] '[Double, String, Int]
+{[], [], []}
+-}
 instance Monoid (Rec f '[]) where
   mempty = RNil
   RNil `mappend` RNil = RNil
