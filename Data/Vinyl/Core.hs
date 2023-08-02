@@ -664,8 +664,14 @@ testRec = rpureConstrained @Num @'[Double, Int] (Pair DictOnly (Identity 0))
 withPairedDict :: (c a => f a -> r) -> Product (DictOnly c) f a -> r
 withPairedDict f (Pair DictOnly x) = f x
 
--- | Build a record whose elements are derived solely from a
--- list of constraint constructors satisfied by each.
+{- |
+Build a record whose elements are derived solely from a
+list of constraint constructors satisfied by each.
+
+>>> import Data.Functor.Identity (Identity(Identity))
+>>> rpureConstraints @'[Num, Enum] (succ (Identity 0)) :: Rec Identity '[Int, Double] 
+{Identity 1, Identity 1.0}
+-}
 class RPureConstraints cs ts where
   rpureConstraints :: (forall a. AllSatisfied cs a => f a) -> Rec f ts
 
