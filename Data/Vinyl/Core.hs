@@ -700,6 +700,14 @@ instance (RMap rs, ReifyConstraint Show f rs, RecordToList rs)
       . rmap (\(Compose (Dict x)) -> Const $ show x)
       $ reifyConstraint @Show xs
 
+{- |
+The Semigroup instance is mapped to each element of the record.
+
+>>> t1 = ["Alice", "Bob"] :& [20, 22] :& RNil
+>>> t2 = ["Charlie", "Dan"] :& [24, 23] :& RNil
+>>> t1 <> t2
+{["Alice","Bob","Charlie","Dan"], [20,22,24,23]}
+-}
 instance Semigroup (Rec f '[]) where
   RNil <> RNil = RNil
 
