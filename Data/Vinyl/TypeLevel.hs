@@ -192,8 +192,24 @@ type family AllConstrained (c :: u -> Constraint) (ts :: [u]) :: Constraint wher
   AllConstrained c '[] = ()
   AllConstrained c (t ': ts) = (c t, AllConstrained c ts)
 
--- | Constraint that each Constraint in a type-level list is satisfied
--- by a particular type.
+{- |
+Constraint that each Constraint in a type-level list is satisfied by a
+particular type. This class is of limited use: Although it is required that the
+type has all instances for each of the constraints, this
+"for each" information is lost by ghc as the following example illustrates:
+
+>>>
+:{
+f :: AllSatisfied '[Num, Eq, Show] a => a -> String
+f a = if a == 0 then show a else "not equal to 0"
+:}
+...
+    • Could not deduce (Eq a) arising from a use of ‘==’
+      from the context: AllSatisfied '[Num, Eq, Show] a
+        bound by the type signature for:
+                   f :: forall a. AllSatisfied '[Num, Eq, Show] a => a -> String
+...
+-}
 class AllSatisfied cs t where
 instance AllSatisfied '[] t where
 instance (c t, AllSatisfied cs t) => AllSatisfied (c ': cs) t where
