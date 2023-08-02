@@ -743,6 +743,16 @@ instance Eq (Rec f '[]) where
 instance (Eq (f r), Eq (Rec f rs)) => Eq (Rec f (r ': rs)) where
   (x :& xs) == (y :& ys) = (x == y) && (xs == ys)
 
+{- |
+The Ord instance is element-wise, lexicographical ordering using the Monoid
+instance of the Ordering type.
+
+>>> import Data.Vinyl.Functor (ElField(Field))
+>>> r1 :: Rec ElField '[ '("name", String), '("age", Int)] = Field "Alice":& Field 30 :& RNil
+>>> r2 :: Rec ElField '[ '("name", String), '("age", Int)] = Field "Bob":& Field 25 :& RNil
+>>> r1 < r2
+True
+-}
 instance Ord (Rec f '[]) where
   compare _ _ = EQ
 instance (Ord (f r), Ord (Rec f rs)) => Ord (Rec f (r ': rs)) where
