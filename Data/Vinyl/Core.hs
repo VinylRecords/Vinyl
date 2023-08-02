@@ -729,6 +729,15 @@ instance (Monoid (f r), Monoid (Rec f rs)) => Monoid (Rec f (r ': rs)) where
   mempty = mempty :& mempty
   (x :& xs) `mappend` (y :& ys) = (mappend x y) :& (mappend xs ys)
 
+{- |
+The Eq instance is also just an element-wise comparison.
+
+>>> import Data.Vinyl.Functor (ElField(Field))
+>>> r1 :: Rec ElField '[ '("name", String), '("age", Int)] = Field "Alice":& Field 30 :& RNil
+>>> r2 :: Rec ElField '[ '("name", String), '("age", Int)] = Field "Bob":& Field 25 :& RNil
+>>> r1 == r2
+False
+-}
 instance Eq (Rec f '[]) where
   _ == _ = True
 instance (Eq (f r), Eq (Rec f rs)) => Eq (Rec f (r ': rs)) where
