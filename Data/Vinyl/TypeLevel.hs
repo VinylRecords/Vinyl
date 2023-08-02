@@ -172,8 +172,22 @@ type family (as :: [k]) ++ (bs :: [k]) :: [k] where
   '[] ++ bs = bs
   (a ': as) ++ bs = a ': (as ++ bs)
 
--- | Constraint that all types in a type-level list satisfy a
--- constraint.
+{- |
+Constraint that all types in a type-level list satisfy a
+constraint.
+
+>>> :k! AllConstrained Num '[Int, Double]
+AllConstrained Num '[Int, Double] :: Constraint
+= (Num Int, (Num Double, () :: Constraint))
+
+>>>
+:{
+f :: AllConstrained Num '[a, b] => Either a b
+f = Right 0
+:}
+>>> f :: Either Double Int
+Right 0
+-}
 type family AllConstrained (c :: u -> Constraint) (ts :: [u]) :: Constraint where
   AllConstrained c '[] = ()
   AllConstrained c (t ': ts) = (c t, AllConstrained c ts)
