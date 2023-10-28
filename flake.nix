@@ -57,6 +57,7 @@
         ghc
         hspkgs.cabal-install
         hspkgs.haskell-language-server
+        hspkgs.cabal-plan
         nurpkgs.repos.amesgen.cabal-docspec
       ];
     };
