@@ -57,10 +57,32 @@ import Control.DeepSeq (NFData, rnf)
 import Data.Constraint.Forall (Forall)
 #endif
 
--- | A record is parameterized by a universe @u@, an interpretation @f@ and a
--- list of rows @rs@.  The labels or indices of the record are given by
--- inhabitants of the kind @u@; the type of values at any label @r :: u@ is
--- given by its interpretation @f r :: *@.
+{- |
+A record is parameterized by a universe @u@, an interpretation @f@ and a
+list of rows @rs@.  The labels or indices of the record are given by
+inhabitants of the kind @u@; the type of values at any label @r :: u@ is
+given by its interpretation @f r :: *@.
+
+>>> :set -XDataKinds
+>>> import Data.Vinyl.Functor (Identity(Identity))
+>>> testRec = Identity 3 :& Identity "Hi" :& RNil
+>>> :t testRec
+testRec :: Num r => Rec Identity '[r, [Char]]
+>>> testRec :: Rec Identity '[Int, String]
+{3, "Hi"}
+
+>>> testRec = Just 3 :& Nothing :& Just "Hi" :& RNil
+>>> :t testRec
+testRec :: Num r1 => Rec Maybe '[r1, r2, [Char]]
+
+>>> :set -XTypeApplications
+>>> import Data.Vinyl.Functor (ElField(Field))
+>>> testRec = Field @'("name", String) "Alice" :& Field @'("age", Int) 20 :& RNil
+>>> :t testRec
+testRec :: Rec ElField '[ '("name", String), '("age", Int)]
+>>> testRec
+{name :-> "Alice", age :-> 20}
+-}
 data Rec :: (u -> *) -> [u] -> * where
   RNil :: Rec f '[]
   (:&) :: !(f r) -> !(Rec f rs) -> Rec f (r ': rs)
@@ -86,7 +108,16 @@ instance TestCoercion f => TestCoercion (Rec f) where
     Just Coercion
   testCoercion _ _ = Nothing
 
--- | Two records may be pasted together.
+{- |
+Two records may be pasted together.
+
+>>> :set -XScopedTypeVariables
+>>> testRec1 :: Rec Maybe '[Int, String] = Just 3 :& Just "Hi" :& RNil
+>>> testRec2 :: Rec Maybe '[Double, [Double]] = Nothing :& Just [3.0, 2.2] :& RNil
+>>> appendedTestRec = rappend testRec1 testRec2
+>>> :t appendedTestRec
+appendedTestRec :: Rec Maybe '[Int, [Char], Double, [Double]]
+-}
 rappend
   :: Rec f as
   -> Rec f bs
@@ -94,18 +125,53 @@ rappend
 rappend RNil ys = ys
 rappend (x :& xs) ys = x :& (xs `rappend` ys)
 
--- | A shorthand for 'rappend'.
+{- |
+A shorthand for 'rappend'.
+
+>>> :set -XScopedTypeVariables
+>>> testRec1 :: Rec Maybe '[Int, String] = Just 3 :& Just "Hi" :& RNil
+>>> testRec2 :: Rec Maybe '[Double, [Double]] = Nothing :& Just [3.0, 2.2] :& RNil
+>>> appendedTestRecs = testRec1 <+> testRec2
+>>> :t appendedTestRecs
+appendedTestRecs :: Rec Maybe '[Int, [Char], Double, [Double]]
+-}
 (<+>)
   :: Rec f as
   -> Rec f bs
   -> Rec f (as ++ bs)
 (<+>) = rappend
 
--- | Combine two records by combining their fields using the given
--- function. The first argument is a binary operation for combining
--- two values (e.g. '(<>)'), the second argument takes a record field
--- into the type equipped with the desired operation, the third
--- argument takes the combined value back to a result type.
+{- | Combine two records by combining their fields using the given
+function. The first argument is a binary operation for combining
+two values (e.g. '(<>)'), the second argument takes a record field
+into the type equipped with the desired operation, the third
+argument takes the combined value back to a result type.
+
+This function makes no assumption on the types stored in the record and is thus
+limited to basic operations that can be executed on all types (as defined via
+the unconstrained forall a in arguments 1,2 and 3). The
+following snippet shows how to put each entry of a Rec Maybe in a list
+(second argument), concatenating them (first argument), and then outputting a
+Rec [] instead of a Rec Maybe—something which can be done for any type:
+
+>>> import Data.Maybe (maybeToList)
+>>> combineAsList = rcombine (<>) maybeToList id
+
+>>> testRec1 :: Rec Maybe '[String, String] = Just "Ho" :& Just "Hi" :& RNil
+>>> combineAsList testRec1 testRec1
+{["Ho","Ho"], ["Hi","Hi"]}
+
+We can't combine testRec1 with rcombine such that the Strings would be
+concatenated directly because that would make assumptions on the types and
+violate the unconstrained forall a. However, we can use combineAsList now on
+any other Rec Maybe as well.
+
+>>> testRec2 :: Rec Maybe '[String, Double, Int] = Just "Ho" :& Just 3.0 :& Nothing :& RNil
+>>> combineAsList testRec2 testRec2
+{["Ho","Ho"], [3.0,3.0], []}
+
+-}
+
 rcombine :: (RMap rs, RApply rs)
          => (forall a. m a -> m a -> m a)
          -> (forall a. f a -> m a)
@@ -118,9 +184,22 @@ rcombine smash toM fromM x y =
   where x' = rmap toM x
         y' = rmap toM y
 
--- | 'Rec' @_ rs@ with labels in kind @u@ gives rise to a functor @Hask^u ->
--- Hask@; that is, a natural transformation between two interpretation functors
--- @f,g@ may be used to transport a value from 'Rec' @f rs@ to 'Rec' @g rs@.
+{- |
+'Rec' @_ rs@ with labels in kind @u@ gives rise to a functor @Hask^u ->
+Hask@; that is, a natural transformation between two interpretation functors
+@f,g@ may be used to transport a value from 'Rec' @f rs@ to 'Rec' @g rs@.
+
+Here is an example:
+
+>>> import Data.Maybe (maybeToList)
+>>> testRec :: Rec Maybe '[String, Double, Int] = Just "Ho" :& Just 3.0 :& Nothing :& RNil
+>>> rmap maybeToList testRec
+{["Ho"], [3.0], []}
+
+Similar to other functions in this module, we can not use rmap to map type
+specific functions over a record. Only functions that work for any type can be
+used.
+-}
 class RMap rs where
   rmap :: (forall x. f x -> g x) -> Rec f rs -> Rec g rs
 
@@ -132,7 +211,12 @@ instance RMap xs => RMap (x ': xs) where
   rmap f (x :& xs) = f x :& rmap f xs
   {-# INLINE rmap #-}
 
--- | A shorthand for 'rmap'.
+{- | A shorthand for 'rmap'.
+>>> import Data.Maybe (maybeToList)
+>>> testRec :: Rec Maybe '[String, Double, Int] = Just "Ho" :& Just 3.0 :& Nothing :& RNil
+>>> maybeToList <<$>> testRec
+{["Ho"], [3.0], []}
+-}
 (<<$>>)
   :: RMap rs
   => (forall x. f x -> g x)
@@ -141,7 +225,12 @@ instance RMap xs => RMap (x ': xs) where
 (<<$>>) = rmap
 {-# INLINE (<<$>>) #-}
 
--- | An inverted shorthand for 'rmap'.
+{- | An inverted shorthand for 'rmap'.
+>>> import Data.Maybe (maybeToList)
+>>> testRec :: Rec Maybe '[String, Double, Int] = Just "Ho" :& Just 3.0 :& Nothing :& RNil
+>>> testRec <<&>> maybeToList 
+{["Ho"], [3.0], []}
+-}
 (<<&>>)
   :: RMap rs
   => Rec f rs
@@ -150,8 +239,22 @@ instance RMap xs => RMap (x ': xs) where
 xs <<&>> f = rmap f xs
 {-# INLINE (<<&>>) #-}
 
--- | A record of components @f r -> g r@ may be applied to a record of @f@ to
--- get a record of @g@.
+{- |
+A record of components @f r -> g r@ may be applied to a record of @f@ to
+get a record of @g@.
+
+>>> import Data.Vinyl.Functor (Const(Const), Lift(Lift))
+>>> testRec :: Rec Maybe '[String, Double, Int] = Just "Ho" :& Just 3.0 :& Nothing :& RNil
+>>> :{
+funcRec = Lift (\x -> Const "String")
+  :& Lift (\x -> Const "Double")
+  :& Lift (\x -> Const "Int")
+  :& RNil
+:}
+
+>>> recordToList $ rapply funcRec testRec
+["String","Double","Int"]
+-}
 class RApply rs where
   rapply :: Rec (Lift (->) f g) rs
          -> Rec f rs
@@ -165,7 +268,21 @@ instance RApply xs => RApply (x ': xs) where
   rapply (f :& fs) (x :& xs) = getLift f x :& (fs `rapply` xs)
   {-# INLINE rapply #-}
 
--- | A shorthand for 'rapply'.
+{- |
+A shorthand for 'rapply'.
+
+>>> import Data.Vinyl.Functor (Const(Const), Lift(Lift))
+>>> testRec :: Rec Maybe '[String, Double, Int] = Just "Ho" :& Just 3.0 :& Nothing :& RNil
+>>> :{
+funcRec = Lift (\x -> Const "String")
+  :& Lift (\x -> Const "Double")
+  :& Lift (\x -> Const "Int")
+  :& RNil
+:}
+
+>>> recordToList $ funcRec <<*>> testRec
+["String","Double","Int"]
+-}
 (<<*>>)
   :: RApply rs
   => Rec (Lift (->) f g) rs
@@ -174,8 +291,23 @@ instance RApply xs => RApply (x ': xs) where
 (<<*>>) = rapply
 {-# INLINE (<<*>>) #-}
 
--- | Given a section of some functor, records in that functor of any size are
--- inhabited.
+{- |
+Given a section of some functor, records in that functor of any size are
+inhabited. Note that you need a value that can inhabit any type in the record.
+It is not possible, with this function, to derive a default with a type class
+method. Here are a few examples:
+
+>>> testRec :: Rec Maybe '[Double, String] = rpure Nothing
+>>> testRec
+{Nothing, Nothing}
+>>> testRec :: Rec [] '[Double, String] = rpure []
+>>> testRec
+{[], []}
+>>> import Data.Proxy (Proxy(Proxy))
+>>> testRec :: Rec Proxy '[Double, String] = rpure Proxy
+>>> testRec
+{Proxy, Proxy}
+-}
 class RecApplicative rs where
   rpure
     :: (forall x. f x)
@@ -187,9 +319,57 @@ instance RecApplicative rs => RecApplicative (r ': rs) where
   rpure s = s :& rpure s
   {-# INLINE rpure #-}
 
--- | A record may be traversed with respect to its interpretation functor. This
--- can be used to yank (some or all) effects from the fields of the record to
--- the outside of the record.
+{- |
+A record may be traversed with respect to its interpretation functor. This
+can be used to yank (some or all) effects from the fields of the record to
+the outside of the record.
+
+>>> import Data.Vinyl.Functor (Identity(Identity))
+>>> testRec :: Rec Maybe '[String, Double, Int] = Just "Ho" :& Just 3.0 :& Nothing :& RNil
+>>>
+:{
+ext :: Maybe x -> Maybe (Identity x)
+ext (Just x) = Just (Identity x)
+ext Nothing = Nothing
+:}
+>>> rtraverse ext testRec
+Nothing
+
+Here is another interesting example that allows reading a record
+interactively.
+
+>>> :set -XTypeOperators
+>>> import Text.Read (readMaybe)
+>>> import Data.Vinyl.Functor ((:.), Compose(Compose), getCompose)
+>>>
+:{
+readMaybeIO :: forall a. Read a => (IO :. Maybe) a
+readMaybeIO = Compose $ readMaybe <$> getLine
+testRec :: Rec (IO :. Maybe) [String, Double, Int]
+testRec = rpureConstrained @Read readMaybeIO
+:}
+>>> :t rtraverse getCompose testRec
+rtraverse getCompose testRec
+  :: IO (Rec Maybe '[String, Double, Int])
+
+And one more with State
+
+>>> :set -package mtl
+>>> import Control.Monad.State (StateT(StateT), runState, State, state)
+>>> import qualified Data.Vinyl.Functor as V
+>>> import qualified Data.Functor.Identity as I
+>>> testRec1 :: Rec (State Int) '[Int, Double] = state (\s -> (s, 2 * s)) :& state (\s -> (fromIntegral s, 3 * s)) :& RNil
+>>>
+:{
+ext :: State Int a -> State Int (V.Identity a)
+ext (StateT f) = StateT $ \s -> let (a, s') = I.runIdentity (f s) in I.Identity (V.Identity a, s')
+:}
+>>> stateRec = rtraverse ext testRec1
+>>> runState stateRec 1
+({1, 2.0},6)
+>>> runState (sequence $ replicate 5 stateRec) 1
+([{1, 2.0},{6, 12.0},{36, 72.0},{216, 432.0},{1296, 2592.0}],7776)
+-}
 rtraverse
   :: Applicative h
   => (forall x. f x -> h (g x))
@@ -199,13 +379,27 @@ rtraverse _ RNil      = pure RNil
 rtraverse f (x :& xs) = (:&) <$> f x <*> rtraverse f xs
 {-# INLINABLE rtraverse #-}
 
--- | While 'rtraverse' pulls the interpretation functor out of the
--- record, 'rtraverseIn' pushes the interpretation functor in to each
--- field type. This is particularly useful when you wish to discharge
--- that interpretation on a per-field basis. For instance, rather than
--- a @Rec IO '[a,b]@, you may wish to have a @Rec Identity '[IO a, IO
--- b]@ so that you can evaluate a single field to obtain a value of
--- type @Rec Identity '[a, IO b]@.
+{- |
+While 'rtraverse' pulls the interpretation functor out of the
+record, 'rtraverseIn' pushes the interpretation functor in to each
+field type. This is particularly useful when you wish to discharge
+that interpretation on a per-field basis. For instance, rather than
+a @Rec IO '[a,b]@, you may wish to have a @Rec Identity '[IO a, IO
+b]@ so that you can evaluate a single field to obtain a value of
+type @Rec Identity '[a, IO b]@.
+
+>>> import Data.Vinyl.Functor (Identity(Identity))
+>>> testRec :: Rec Maybe '[String, Double, Int] = Just "Ho" :& Just 3.0 :& Nothing :& RNil
+>>>
+:{
+push :: forall x. Maybe x -> Identity (Maybe x)
+push (Just x) = Identity (Just x)
+push Nothing = Identity Nothing
+:}
+>>> :t rtraverseIn push testRec
+rtraverseIn push testRec
+  :: Rec Identity '[Maybe [Char], Maybe Double, Maybe Int]
+-}
 rtraverseIn :: forall h f g rs.
                (forall a. f a -> g (ApplyToField h a))
             -> Rec f rs
@@ -214,16 +408,45 @@ rtraverseIn _ RNil = RNil
 rtraverseIn f (x :& xs) = f x :& rtraverseIn f xs
 {-# INLINABLE rtraverseIn #-}
 
--- | Push an outer layer of interpretation functor into each field.
+{- |
+Push an outer layer of interpretation functor into each field.
+
+>>> :set -XTypeOperators
+>>> import Data.Vinyl.Functor ((:.), Identity(Identity), Compose(Compose))
+:{
+testRec :: Rec (Maybe :. Identity) '[ String, Double, Int] =
+    Compose (Just (Identity "Ho"))
+    :& Compose (Just (Identity 3.0))
+    :& Compose Nothing
+    :& RNil
+:}
+>>> :t rsequenceIn testRec
+rsequenceIn testRec
+  :: Rec Identity '[Maybe [Char], Maybe Double, Maybe Int]
+
+Note that this function can't be applied as easily to anything
+composed with interpretation functors as inner layer that take custom
+kinds as inputs. For example, when dealing with (Maybe :. ElField),
+Maybe the function can't be applied because that would require applying Maybe
+to a (Symbol, *) kind.
+-}
 rsequenceIn :: forall f g (rs :: [Type]). (Traversable f, Applicative g)
             => Rec (f :. g) rs -> Rec g (MapTyCon f rs)
 rsequenceIn = rtraverseIn @f (sequenceA . getCompose)
 {-# INLINABLE rsequenceIn #-}
 
--- | Given a natural transformation from the product of @f@ and @g@ to @h@, we
--- have a natural transformation from the product of @'Rec' f@ and @'Rec' g@ to
--- @'Rec' h@. You can also think about this operation as zipping two records
--- with the same element types but different interpretations.
+{- |
+Given a natural transformation from the product of @f@ and @g@ to @h@, we
+have a natural transformation from the product of @'Rec' f@ and @'Rec' g@ to
+@'Rec' h@. You can also think about this operation as zipping two records
+with the same element types but different interpretations.
+
+>>> import Data.Vinyl.Functor (Identity(Identity))
+>>> testRec1 :: Rec Identity '[String, Double] = Identity "Joe" :& Identity 20.0 :& RNil
+>>> testRec2 :: Rec [] '[String, Double] = ["John"] :& [15.3] :& RNil
+>>> rzipWith (\(Identity a) xs -> a:xs) testRec1 testRec2
+{["Joe","John"], [20.0,15.3]}
+-}
 rzipWith :: (RMap xs, RApply xs)
          => (forall x. f x -> g x -> h x) -> Rec f xs -> Rec g xs -> Rec h xs
 rzipWith f = rapply . rmap (Lift . f)
@@ -244,6 +467,22 @@ instance RFoldMap xs => RFoldMap (x ': xs) where
   rfoldMapAux f m (r :& rs) = rfoldMapAux f (mappend m (f r)) rs
   {-# INLINE rfoldMapAux #-}
 
+{- |
+This function allows to collect all elements of a record in a monoid. The
+collector function can be specialized for a particular interpretation functor
+but has to be applicable for any type. It's therefore most useful to collect
+effects.
+
+>>> testRec1 :: Rec Maybe '[String, Double] = Just "Anna" :& Nothing :& RNil
+>>>
+:{
+func :: forall x. Maybe x -> String
+func (Just x) = "Just "
+func Nothing = "Nothing "
+:}
+>>> rfoldMap func testRec1
+"Just Nothing "
+-}
 rfoldMap :: forall rs m f. (Monoid m, RFoldMap rs)
          => (forall x. f x -> m) -> Rec f rs -> m
 rfoldMap f = rfoldMapAux f mempty
@@ -261,18 +500,65 @@ instance RecordToList xs => RecordToList (x ': xs) where
   recordToList (x :& xs) = getConst x : recordToList xs
   {-# INLINE recordToList #-}
 
--- | Wrap up a value with a capability given by its type
+{- |
+Wrap up a value with a capability given by its type. In other words, the
+existance of a value x :: Dict c a proves the existence of an instance c a.
+This is useful to help the type checker realize that a value in a record does
+indeed have a certain instance.
+
+To understand better why this type is useful, consider the following function
+that doesn't typecheck:
+
+>>> import Data.Vinyl.Functor (Identity(Identity))
+>>> import Data.Vinyl.TypeLevel (AllConstrained)
+>>>
+:{
+func :: forall rs. (RMap rs, AllConstrained Num rs) => Rec Identity rs -> Rec Identity rs
+func = rmap (\(Identity x) -> Identity (x+1))
+:}
+...
+    • Could not deduce (Num x) arising from a use of ‘+’
+      from the context: (RMap rs, AllConstrained Num rs)
+        bound by the type signature for:
+                   func :: forall (rs :: [*]).
+                           (RMap rs, AllConstrained Num rs) =>
+                           Rec Identity rs -> Rec Identity rs
+...
+
+Dict allows to encapsulate a constraint directly in the type such that anything
+wrapped in it automatically fullfils it. RMap understands that as well:
+
+>>> import Data.Vinyl.Functor (Identity(Identity))
+>>>
+:{
+func :: forall rs. RMap rs => Rec (Dict Num) rs -> Rec Identity rs
+func = rmap (\(Dict x) -> Identity (x + 1))
+:}
+>>> testRec :: Rec (Dict Num) '[Double, Int] = Dict 1.0 :& Dict 0 :& RNil
+>>> func testRec
+{2.0, 1}
+-}
 data Dict c a where
   Dict
     :: c a
     => a
     -> Dict c a
 
--- | Sometimes we may know something for /all/ fields of a record, but when
--- you expect to be able to /each/ of the fields, you are then out of luck.
--- Surely given @∀x:u.φ(x)@ we should be able to recover @x:u ⊢ φ(x)@! Sadly,
--- the constraint solver is not quite smart enough to realize this and we must
--- make it patently obvious by reifying the constraint pointwise with proof.
+{- |
+Sometimes we may know something for /all/ fields of a record, but when
+you expect to be able to /each/ of the fields, you are then out of luck.
+Surely given @∀x:u.φ(x)@ we should be able to recover @x:u ⊢ φ(x)@! Sadly,
+the constraint solver is not quite smart enough to realize this and we must
+make it patently obvious by reifying the constraint pointwise with proof.
+
+Here is an example how this can be used in practise:
+
+>>> import Data.Vinyl.Functor (ElField(Field), Compose(Compose))
+>>> testRec :: Rec ElField '[ '("age", Double), '("number", Int)] = Field 1.0 :& Field 0 :& RNil
+>>> testRecWithConstraints = reifyConstraint @Num testRec
+>>> rmap (\(Compose (Dict x)) -> x+1) testRecWithConstraints
+{age :-> 2.0, number :-> 1}
+-}
 class ReifyConstraint c f rs where
   reifyConstraint
     :: Rec f rs
@@ -287,8 +573,27 @@ instance (c (f x), ReifyConstraint c f xs)
   reifyConstraint (x :& xs) = Compose (Dict x) :& reifyConstraint xs
   {-# INLINE reifyConstraint #-}
 
--- | Build a record whose elements are derived solely from a
--- constraint satisfied by each.
+{- |
+Build a record whose elements are derived solely from a
+constraint satisfied by each.
+
+>>> :set -XFlexibleInstances
+>>> :set -XFlexibleContexts
+>>> :set -XUndecidableInstances
+>>> import Data.Vinyl.Derived (KnownField)
+>>> import Data.Vinyl.TypeLevel (Snd)
+>>> import Data.Vinyl.Functor (ElField(Field))
+>>> import Data.Proxy (Proxy(Proxy))
+>>> class (KnownField a, Monoid (Snd a)) => Helper a
+>>> instance (KnownField a, Monoid (Snd a)) => Helper a
+>>>
+:{
+testRec :: Rec ElField '[ '("list", [Double]), '("string", String) ]
+testRec = rpureConstrained @Helper (Field mempty)
+:}
+>>> testRec
+{list :-> [], string :-> ""}
+-}
 class RPureConstrained c ts where
   rpureConstrained :: (forall a. c a => f a) -> Rec f ts
 
@@ -300,20 +605,73 @@ instance (c x, RPureConstrained c xs) => RPureConstrained c (x ': xs) where
   rpureConstrained f = f :& rpureConstrained @c @xs f
   {-# INLINE rpureConstrained #-}
 
--- | Capture a type class instance dictionary. See
--- 'Data.Vinyl.Lens.getDict' for a way to obtain a 'DictOnly' value
--- from an 'RPureConstrained' constraint.
+{- |
+Capture a type class instance dictionary. This data type can
+be used together with rpureConstrained:
+
+>>> import Data.Vinyl.Lens (rget)
+>>>
+:{
+testRec :: Rec (DictOnly Num) '[Double, Int]
+testRec = rpureConstrained @Num @'[Double, Int] DictOnly
+:}
+>>>
+:{
+val :: DictOnly Num Double
+val = rget @Double testRec
+:}
+
+In itself not much can be done with a @DictOnly@. However,
+it becomes useful together with the @Product@ Functor that allows
+to pair it on the side with another value. That way we can keep
+track of a constraint and use the other value for computations:
+
+>>> import Data.Vinyl.Functor (Identity(Identity))
+>>> import Data.Functor.Product (Product(Pair))
+>>>
+:{
+builder :: Num a => Product (DictOnly Num) Identity a
+builder = Pair DictOnly (Identity 0)
+:}
+>>>
+:{
+testRec :: Rec (Product (DictOnly Num) Identity) '[Double, Int]
+testRec = rpureConstrained @Num @'[Double, Int] builder
+:}
+>>> Pair DictOnly val = rget @Double testRec
+>>> val
+0.0
+-}
 data DictOnly (c :: k -> Constraint) a where
   DictOnly :: forall c a. c a => DictOnly c a
 
--- | A useful technique is to use 'rmap (Pair (DictOnly @MyClass))' on
--- a 'Rec' to pair each field with a type class dictionary for
--- @MyClass@. This helper can then be used to eliminate the original.
+{- |
+A useful technique is to use 'rmap (Pair (DictOnly @MyClass))' on a 'Rec' to
+pair each field with a type class dictionary for @MyClass@. This helper can
+then be used to apply a function to a DictOnly that is paired with another
+field:
+
+>>> import Data.Vinyl.Functor (Identity(Identity))
+>>> import Data.Functor.Product (Product(Pair))
+>>>
+:{
+testRec :: Rec (Product (DictOnly Num) Identity) '[Double, Int]
+testRec = rpureConstrained @Num @'[Double, Int] (Pair DictOnly (Identity 0))
+:}
+>>> rmap (withPairedDict (fmap (2 +))) testRec
+{2.0, 2}
+-}
 withPairedDict :: (c a => f a -> r) -> Product (DictOnly c) f a -> r
 withPairedDict f (Pair DictOnly x) = f x
 
--- | Build a record whose elements are derived solely from a
--- list of constraint constructors satisfied by each.
+{- |
+Build a record whose elements are derived solely from a
+list of constraint constructors satisfied by each.
+
+>>> import Data.Functor.Identity (Identity(Identity))
+>>> rpureConstraints @'[Num, Enum] (succ (Identity 0)) :: Rec Identity '[Int, Double] 
+{Identity 1, Identity 1.0}
+-}
 class RPureConstraints cs ts where
   rpureConstraints :: (forall a. AllSatisfied cs a => f a) -> Rec f ts
 
@@ -326,8 +684,13 @@ instance (AllSatisfied cs t, RPureConstraints cs ts)
   rpureConstraints f = f :& rpureConstraints @cs @ts f
   {-# INLINE rpureConstraints #-}
 
--- | Records may be shown insofar as their points may be shown.
--- 'reifyConstraint' is used to great effect here.
+{- |
+Records may be shown insofar as their points may be shown.
+'reifyConstraint' is used to great effect here.
+
+>>> "record with Nothings: " ++ (show (rpure Nothing :: Rec Maybe '[Int, Double]))
+"record with Nothings: {Nothing, Nothing}"
+-}
 instance (RMap rs, ReifyConstraint Show f rs, RecordToList rs)
   => Show (Rec f rs) where
   show xs =
@@ -337,6 +700,14 @@ instance (RMap rs, ReifyConstraint Show f rs, RecordToList rs)
       . rmap (\(Compose (Dict x)) -> Const $ show x)
       $ reifyConstraint @Show xs
 
+{- |
+The Semigroup instance is mapped to each element of the record.
+
+>>> t1 = ["Alice", "Bob"] :& [20, 22] :& RNil
+>>> t2 = ["Charlie", "Dan"] :& [24, 23] :& RNil
+>>> t1 <> t2
+{["Alice","Bob","Charlie","Dan"], [20,22,24,23]}
+-}
 instance Semigroup (Rec f '[]) where
   RNil <> RNil = RNil
 
@@ -344,6 +715,12 @@ instance (Semigroup (f r), Semigroup (Rec f rs))
   => Semigroup (Rec f (r ': rs)) where
   (x :& xs) <> (y :& ys) = (x <> y) :& (xs <> ys)
 
+{- |
+The Monoid instance is also mapped to each element of the record.
+
+>>> mempty :: Rec [] '[Double, String, Int]
+{[], [], []}
+-}
 instance Monoid (Rec f '[]) where
   mempty = RNil
   RNil `mappend` RNil = RNil
@@ -352,11 +729,30 @@ instance (Monoid (f r), Monoid (Rec f rs)) => Monoid (Rec f (r ': rs)) where
   mempty = mempty :& mempty
   (x :& xs) `mappend` (y :& ys) = (mappend x y) :& (mappend xs ys)
 
+{- |
+The Eq instance is also just an element-wise comparison.
+
+>>> import Data.Vinyl.Functor (ElField(Field))
+>>> r1 :: Rec ElField '[ '("name", String), '("age", Int)] = Field "Alice":& Field 30 :& RNil
+>>> r2 :: Rec ElField '[ '("name", String), '("age", Int)] = Field "Bob":& Field 25 :& RNil
+>>> r1 == r2
+False
+-}
 instance Eq (Rec f '[]) where
   _ == _ = True
 instance (Eq (f r), Eq (Rec f rs)) => Eq (Rec f (r ': rs)) where
   (x :& xs) == (y :& ys) = (x == y) && (xs == ys)
 
+{- |
+The Ord instance is element-wise, lexicographical ordering using the Monoid
+instance of the Ordering type.
+
+>>> import Data.Vinyl.Functor (ElField(Field))
+>>> r1 :: Rec ElField '[ '("name", String), '("age", Int)] = Field "Alice":& Field 30 :& RNil
+>>> r2 :: Rec ElField '[ '("name", String), '("age", Int)] = Field "Bob":& Field 25 :& RNil
+>>> r1 < r2
+True
+-}
 instance Ord (Rec f '[]) where
   compare _ _ = EQ
 instance (Ord (f r), Ord (Rec f rs)) => Ord (Rec f (r ': rs)) where
@@ -415,19 +811,31 @@ instance ReifyConstraint NFData f xs => NFData (Rec f xs) where
       go RNil = ()
       go (Compose (Dict x) :& xs) = rnf x `seq` go xs
 
--- | Analogous to 'Data.List.head'. Unlike the version in @singletons@,
--- this family merely gets stuck instead of producing a type error if
--- the list is empty. This is often better, because the type error that
--- would be produced here would be much less informative than one that
--- would likely be available where it's used.
+{- |
+Analogous to 'Data.List.head'. Unlike the version in @singletons@,
+this family merely gets stuck instead of producing a type error if
+the list is empty. This is often better, because the type error that
+would be produced here would be much less informative than one that
+would likely be available where it's used.
+
+>>> :k! Head '[Int, Double, String]
+Head '[Int, Double, String] :: *
+= Int
+-}
 type family Head xs where
   Head (x ': _) = x
   
--- | Analogous to 'Data.List.tail'. Unlike the version in @singletons@,
--- this family merely gets stuck instead of producing a type error if
--- the list is empty. This is often better, because the type error that
--- would be produced here would be much less informative than one that
--- would likely be available where it's used.
+{- |
+Analogous to 'Data.List.tail'. Unlike the version in @singletons@,
+this family merely gets stuck instead of producing a type error if
+the list is empty. This is often better, because the type error that
+would be produced here would be much less informative than one that
+would likely be available where it's used.
+
+>>> :k! Tail '[Int, Double, String]
+Tail '[Int, Double, String] :: [*]
+= '[Double, String]
+-}
 type family Tail xs where
   Tail (_ ': xs) = xs
 

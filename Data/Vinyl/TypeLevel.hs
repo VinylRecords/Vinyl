@@ -24,11 +24,36 @@ module Data.Vinyl.TypeLevel where
 import Data.Coerce
 import Data.Kind
 
--- | A mere approximation of the natural numbers. And their image as lifted by
--- @-XDataKinds@ corresponds to the actual natural numbers.
+{- |
+A mere approximation of the natural numbers. And their image as lifted by
+@-XDataKinds@ corresponds to the actual natural numbers.
+
+The following is an example for a term level number of type Nat:
+
+>>> number = S (S Z)
+>>> :t number
+number :: Nat
+
+But it is intended to be used at the type level:
+
+>>> import Data.Proxy (Proxy(Proxy))
+>>> Proxy :: Proxy (S (S Z))
+Proxy
+
+Often it is used with type applications:
+
+>>> Proxy @(S (S Z))
+Proxy
+-}
 data Nat = Z | S !Nat
 
--- | Produce a runtime 'Int' value corresponding to a 'Nat' type.
+{- |
+Produce a runtime 'Int' value corresponding to a 'Nat' type.
+This is intended to be used with TypeApplications:
+
+>>> natToInt @('S ('S 'Z))
+2
+-}
 class NatToInt (n :: Nat) where
   natToInt :: Int
 
@@ -40,8 +65,13 @@ instance NatToInt n => NatToInt ('S n) where
   natToInt = 1 + natToInt @n
   {-# INLINE natToInt #-}
 
--- | Reify a list of type-level natural number indices as runtime
--- 'Int's relying on instances of 'NatToInt'.
+{- |
+Reify a list of type-level natural number indices as runtime
+'Int's relying on instances of 'NatToInt'.
+
+>>> indexWitnesses @'[S (S Z), Z, S (S (S Z))]
+[2,0,3]
+-}
 class IndexWitnesses (is :: [Nat]) where
   indexWitnesses :: [Int]
 
@@ -53,61 +83,145 @@ instance (IndexWitnesses is, NatToInt i) => IndexWitnesses (i ': is) where
   indexWitnesses = natToInt @i : indexWitnesses @is
   {-# INLINE indexWitnesses #-}
 
--- | Project the first component of a type-level tuple.
+{- |
+Project the first component of a type-level tuple.
+
+>>> :k! Fst '("age", Int)
+Fst '("age", Int) :: GHC.Types.Symbol
+= "age"
+-}
 type family Fst (a :: (k1,k2)) where Fst '(x,y) = x
 
--- | Project the second component of a type-level tuple.
+{- |
+Project the second component of a type-level tuple.
+
+>>> :k! Snd '("age", Int)
+Snd '("age", Int) :: *
+= Int
+-}
 type family Snd (a :: (k1,k2)) where Snd '(x,y) = y
 
+{- |
+Compute the length of a type level list.
+
+>>> :k! RLength '[ '("age", Int), '("name", String)]
+RLength '[ '("age", Int), '("name", String)] :: Nat
+= 'S ('S 'Z)
+-}
 type family RLength xs where
   RLength '[] = 'Z
   RLength (x ': xs) = 'S (RLength xs)
 
--- | A partial relation that gives the index of a value in a list.
+{- |
+Compute the index of a value in a list.
+
+>>> :k! RIndex '("age", Int) '[ '("age", Int), '("name", String)]
+RIndex '("age", Int) '[ '("age", Int), '("name", String)] :: Nat
+= 'Z
+-}
 type family RIndex (r :: k) (rs :: [k]) :: Nat where
   RIndex r (r ': rs) = 'Z
   RIndex r (s ': rs) = 'S (RIndex r rs)
 
--- | A partial relation that gives the indices of a sublist in a larger list.
+{- |
+Compute the indices of a sublist in a larger list.
+
+>>> :k! RImage '[Int, String] '[Int, Double, String]
+RImage '[Int, String] '[Int, Double, String] :: [Nat]
+= '[ 'Z, 'S ('S 'Z)]
+-}
 type family RImage (rs :: [k]) (ss :: [k]) :: [Nat] where
   RImage '[] ss = '[]
   RImage (r ': rs) ss = RIndex r ss ': RImage rs ss
 
--- | Remove the first occurrence of a type from a type-level list.
+{- |
+Remove the first occurrence of a type from a type-level list.
+
+>>> :k! RDelete Int '[Int, Double, String]
+RDelete Int '[Int, Double, String] :: [*]
+= '[Double, String]
+-}
 type family RDelete r rs where
   RDelete r (r ': rs) = rs
   RDelete r (s ': rs) = s ': RDelete r rs
 
--- | A constraint-former which applies to every field in a record.
+{- |
+Build a constraint tuple with one constraint for every field
+in a record.
+
+>>> import Data.Vinyl.Functor (ElField)
+>>> :k! RecAll ElField '[ '("age", Int), '("name", Double)] Num
+RecAll ElField '[ '("age", Int), '("name", Double)] Num :: Constraint
+= (Num (ElField '("age", Int)),
+   (Num (ElField '("name", Double)), () :: Constraint))
+-}
 type family RecAll (f :: u -> *) (rs :: [u]) (c :: * -> Constraint) :: Constraint where
   RecAll f '[] c = ()
   RecAll f (r ': rs) c = (c (f r), RecAll f rs c)
 
 infixr 5 ++
 
--- | Append for type-level lists.
+{- |
+Append for type-level lists.
+
+>>> :k! '[Int, Double] ++ '[String]
+'[Int, Double] ++ '[String] :: [*]
+= '[Int, Double, String]
+-}
 type family (as :: [k]) ++ (bs :: [k]) :: [k] where
   '[] ++ bs = bs
   (a ': as) ++ bs = a ': (as ++ bs)
 
--- | Constraint that all types in a type-level list satisfy a
--- constraint.
+{- |
+Constraint that all types in a type-level list satisfy a
+constraint.
+
+>>> :k! AllConstrained Num '[Int, Double]
+AllConstrained Num '[Int, Double] :: Constraint
+= (Num Int, (Num Double, () :: Constraint))
+
+>>>
+:{
+f :: AllConstrained Num '[a, b] => Either a b
+f = Right 0
+:}
+>>> f :: Either Double Int
+Right 0
+-}
 type family AllConstrained (c :: u -> Constraint) (ts :: [u]) :: Constraint where
   AllConstrained c '[] = ()
   AllConstrained c (t ': ts) = (c t, AllConstrained c ts)
 
--- | Constraint that each Constraint in a type-level list is satisfied
--- by a particular type.
-class AllSatisfied cs t where
-instance AllSatisfied '[] t where
-instance (c t, AllSatisfied cs t) => AllSatisfied (c ': cs) t where
+{- |
+Alternative to get a constraint that each Constraint in a type-level list is
+satisfied by a particular type.
 
--- | Constraint that all types in a type-level list satisfy each
--- constraint from a list of constraints.
---
--- @AllAllSat cs ts@ should be equivalent to @AllConstrained
--- (AllSatisfied cs) ts@ if partial application of type families were
--- legal.
+>>>
+:{
+f :: AllSatisfied '[Num, Eq, Show] a => a -> String
+f a = if a == 0 then show a else "not equal to 0"
+:}
+-}
+type family AllSatisfied (cs :: [u -> Constraint]) (t :: u) :: Constraint where
+    AllSatisfied '[] t = ()
+    AllSatisfied (c ': cs) t = (c t, AllSatisfied cs t)
+
+{- |
+Constraint that all types in a type-level list satisfy each
+constraint from a list of constraints.
+
+@AllAllSat cs ts@ should be equivalent to @AllConstrained
+(AllSatisfied cs) ts@ if partial application of type families were
+legal.
+
+>>>
+:{
+f :: AllAllSat '[Num, Eq, Show] '[a, b] => a -> b -> (String, Bool)
+f a b = (if a == 0 then show a else "not equal to 0", b == 0)
+:}
+>>> f (0 :: Int) (1.0 :: Double)
+("0",False)
+-}
 type family AllAllSat cs ts :: Constraint where
   AllAllSat cs '[] = ()
   AllAllSat cs (t ': ts) = (AllSatisfied cs t, AllAllSat cs ts)

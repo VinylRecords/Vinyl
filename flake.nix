@@ -3,12 +3,16 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+    nur.url = "github:nix-community/nur";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
+  outputs = { self, nixpkgs, nur, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system: let
-
+      nurpkgs = import nur {
+          nurpkgs = nixpkgs.legacyPackages.x86_64-linux;
+          pkgs = nixpkgs.legacyPackages.x86_64-linux;
+        };
       compiler = "8107";
       # compiler = "921";
       pkgs = import nixpkgs {
@@ -52,6 +56,9 @@
       buildInputs = [
         ghc
         hspkgs.cabal-install
+        hspkgs.haskell-language-server
+        hspkgs.cabal-plan
+        nurpkgs.repos.amesgen.cabal-docspec
       ];
     };
   });

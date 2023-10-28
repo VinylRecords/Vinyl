@@ -123,9 +123,9 @@ runcurryX f = xruncurry f . toXRec
 {-|
 Lift an N-ary function to work over a record of 'Applicative' computations.
 
+>>> import Data.Vinyl.Core ( Rec((:&), RNil) )
 >>> runcurryA' (+) (Just 2 :& Just 3 :& RNil)
 Just 5
-
 >>> runcurryA' (+) (Nothing :& Just 3 :& RNil)
 Nothing
 -}
@@ -179,9 +179,17 @@ For the type-level list @ts@, @'CurriedX' f ts a@ is a curried function type
 from arguments of type @HKD f t@ for @t@ in @ts@, to a result of type @a@.
 
 >>> :set -XTypeOperators
+>>> import Data.Vinyl.Functor ((:.), Identity(Identity))
+>>> import Data.Vinyl.Curry (CurriedX)
 >>> :kind! CurriedX (Maybe :. Identity) '[Int, Bool, String] Int
 CurriedX (Maybe :. Identity) '[Int, Bool, String] Int :: *
-= Maybe Int -> Maybe Bool -> Maybe [Char] -> Int
+= Data.Vinyl.XRec.HKD
+    (Data.Vinyl.Functor.Compose Maybe Identity) Int
+  -> Data.Vinyl.XRec.HKD
+       (Data.Vinyl.Functor.Compose Maybe Identity) Bool
+  -> Data.Vinyl.XRec.HKD
+       (Data.Vinyl.Functor.Compose Maybe Identity) [Char]
+  -> Int
 -}
 type family CurriedX (f :: u -> Type) (ts :: [u]) a where
   CurriedX f '[] a = a

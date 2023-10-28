@@ -48,6 +48,10 @@ library
     build-depends: constraints >= 0.6.1
   default-language:    Haskell2010
   ghc-options:         -Wall
+  if impl (ghc < 9.0.1)
+      x-docspec-extra-packages: lens, singletons
+  else
+      x-docspec-extra-packages: lens, singletons-th
   other-extensions:    TypeApplications
 
 benchmark storable
@@ -93,17 +97,17 @@ benchmark asa
   ghc-options:      -O2
   default-language: Haskell2010
 
--- TODO: Use cabal-docspec
--- test-suite doctests
---   type:             exitcode-stdio-1.0
---   hs-source-dirs:   tests
---   other-modules:    Intro
---   main-is:          doctests.hs
---   if impl (ghc < 9.0.1)
---     build-depends:    base, lens, doctest >= 0.8, singletons >= 0.10 && < 3, vinyl
---   else
---     build-depends:    base, lens, doctest >= 0.8, singletons-th >= 3 && < 3.1, vinyl
---   default-language: Haskell2010
+-- Dummy test for cabal-docspec dependencies that are used in
+-- Data.Vinyl.Tutorial.Overview
+test-suite doctests
+  type:             exitcode-stdio-1.0
+  hs-source-dirs:   tests
+  main-is:          doctests.hs
+  if impl (ghc < 9.0.1)
+    build-depends:    base, lens singletons >= 0.10 && < 3, vinyl
+  else
+    build-depends:    base, lens singletons-th >= 3 && < 3.1, vinyl
+  default-language: Haskell2010
 
 test-suite aeson
   type:             exitcode-stdio-1.0

@@ -7,6 +7,7 @@
 
     Let's work through a quick example. We'll need to enable some language
     extensions first:
+>>> :set -package lens
 
 >>> :set -XDataKinds
 >>> :set -XPolyKinds
@@ -15,6 +16,7 @@
 >>> :set -XTypeFamilies
 >>> :set -XFlexibleContexts
 >>> :set -XFlexibleInstances
+>>> :set -XStandaloneKindSignatures
 >>> :set -XNoMonomorphismRestriction
 >>> :set -XGADTs
 >>> :set -XTypeSynonymInstances
@@ -27,7 +29,6 @@
 >>> import Control.Lens hiding (Identity)
 >>> import Control.Lens.TH
 >>> import Data.Char
->>> import Test.DocTest
 >>> import Data.Singletons.TH (genSingletons)
 >>> import Data.Maybe
 
@@ -294,4 +295,3 @@ module Data.Vinyl.Tutorial.Overview where
 
 import Data.Vinyl.Core
 import Data.Vinyl.Functor
-import Data.Vinyl.Lens

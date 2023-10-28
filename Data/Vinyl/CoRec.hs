@@ -202,8 +202,12 @@ asA' f@(CoRec x)
 -- | Pattern match on a CoRec by specifying handlers for each case. Note that
 -- the order of the Handlers has to match the type level list (t:ts).
 --
+-- >>> :set -XDataKinds
+-- >>> import Data.Vinyl.Core ( Rec((:&), RNil))
+-- >>> import Data.Vinyl.Functor (Identity(Identity))
+-- >>> import Data.Vinyl.CoRec (CoRec(CoRec), match, Handler(H))
 -- >>> :{
--- let testCoRec = Col (Identity False) :: CoRec Identity [Int, String, Bool] in
+-- let testCoRec = CoRec (Identity False) :: CoRec Identity [Int, String, Bool] in
 -- match testCoRec $
 --       (H $ \i -> "my Int is the successor of " ++ show (i - 1))
 --    :& (H $ \s -> "my String is: " ++ s)
