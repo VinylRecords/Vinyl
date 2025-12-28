@@ -37,9 +37,6 @@ module Main where
 import Control.Lens (view, deep)
 import Control.Monad.State.Strict
 import qualified Data.HashMap.Strict as H
-#if __GLASGOW_HASKELL__ < 804
-import Data.Semigroup ((<>))
-#endif
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Vector as V

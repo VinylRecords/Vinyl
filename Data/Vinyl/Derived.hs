@@ -163,11 +163,7 @@ data Label (a :: Symbol) = Label
   deriving (Eq, Show)
 
 instance s ~ s' => IsLabel s (Label s') where
-#if __GLASGOW_HASKELL__ < 802
-  fromLabel _ = Label
-#else
   fromLabel = Label
-#endif
 
 -- | Defines a constraint that lets us extract the label from an
 -- 'ElField'. Used in 'rmapf' and 'rpuref'.

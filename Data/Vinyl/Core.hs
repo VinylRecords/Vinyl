@@ -39,9 +39,6 @@ import Data.Kind (Constraint, Type)
 #if __GLASGOW_HASKELL__ < 808
 import Data.Monoid (Monoid)
 #endif
-#if __GLASGOW_HASKELL__ < 804
-import Data.Semigroup (Semigroup(..))
-#endif
 import Foreign.Ptr (castPtr, plusPtr)
 import Foreign.Storable (Storable(..))
 import Data.Functor.Product (Product(Pair))
