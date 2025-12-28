@@ -16,9 +16,6 @@
 module Data.Vinyl.FromTuple where
 import Data.Kind (Type)
 import Data.Monoid (First(..))
-#if __GLASGOW_HASKELL__ < 804
-import Data.Semigroup (Semigroup(..))
-#endif
 import Data.Vinyl.Core (RApply, RMap, RecApplicative, rcombine, rmap, rtraverse, Rec(..))
 import Data.Vinyl.Functor (onCompose, Compose(..), getCompose, ElField)
 import Data.Vinyl.Lens (RecSubset, RecSubsetFCtx, rcast, rdowncast, type (⊆))

@@ -62,9 +62,6 @@ import Data.Vinyl.Core
 import Data.Vinyl.Derived (KnownField, AllFields, FieldRec, traverseField)
 import Data.Vinyl.Functor ((:.), getCompose, ElField(..))
 import Data.Vinyl.TypeLevel
-#if __GLASGOW_HASKELL__ < 804
-import Data.Monoid
-#endif
 
 recEq :: RecAll f rs Eq => Rec f rs -> Rec f rs -> Bool
 recEq RNil RNil = True

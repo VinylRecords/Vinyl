@@ -35,9 +35,6 @@ module Data.Vinyl.Functor
 
 import Data.Kind (Type)
 import Data.Proxy
-#if __GLASGOW_HASKELL__ < 804
-import Data.Semigroup
-#endif
 import Foreign.Ptr (castPtr)
 import Foreign.Storable
 import GHC.Generics
