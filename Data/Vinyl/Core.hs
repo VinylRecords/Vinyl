@@ -35,6 +35,7 @@
 -- have performance linear in the size of the record.
 module Data.Vinyl.Core where
 import Data.Coerce (Coercible)
+import Data.Kind (Constraint, Type)
 #if __GLASGOW_HASKELL__ < 808
 import Data.Monoid (Monoid)
 #endif
@@ -50,7 +51,6 @@ import Data.Vinyl.TypeLevel
 import Data.Type.Equality (TestEquality (..), (:~:) (..))
 import Data.Type.Coercion (TestCoercion (..), Coercion (..))
 import GHC.Generics
-import GHC.Types (Constraint, Type)
 import Unsafe.Coerce (unsafeCoerce)
 import Control.DeepSeq (NFData, rnf)
 #if __GLASGOW_HASKELL__ < 806

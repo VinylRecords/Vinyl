@@ -12,8 +12,7 @@
 
 module Data.Vinyl.ARec.Internal.SmallArray where
 
-import GHC.Prim
-import GHC.Types
+import GHC.Exts
 import Unsafe.Coerce
 import GHC.ST
 
