@@ -33,6 +33,7 @@ module Data.Vinyl.Functor
     -- $ecosystem
   ) where
 
+import Data.Kind (Type)
 import Data.Proxy
 #if __GLASGOW_HASKELL__ < 804
 import Data.Semigroup
@@ -41,7 +42,6 @@ import Foreign.Ptr (castPtr)
 import Foreign.Storable
 import GHC.Generics
 import GHC.TypeLits
-import GHC.Types (Type)
 import Data.Vinyl.TypeLevel (Snd)
 
 {- $introduction

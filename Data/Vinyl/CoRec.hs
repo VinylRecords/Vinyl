@@ -12,6 +12,7 @@
 -- of those three types, it is /any one/ of type @A@, @B@, /or/
 -- @C@. The type @CoRec '[A,B,C]@ corresponds to this sum type.
 module Data.Vinyl.CoRec where
+import Data.Kind (type Type)
 import Data.Maybe(fromJust)
 import Data.Vinyl.Core
 import Data.Vinyl.Lens (RElem, rget, rput, type (∈))
@@ -19,7 +20,6 @@ import Data.Vinyl.Functor (Compose(..), (:.), Identity(..), Const(..))
 import Data.Vinyl.TypeLevel
 import Data.Vinyl.Derived (FieldType, (:::))
 import GHC.TypeLits (Symbol, KnownSymbol)
-import GHC.Types (type Type)
 
 import Unsafe.Coerce (unsafeCoerce)
 

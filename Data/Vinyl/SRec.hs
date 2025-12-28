@@ -77,17 +77,16 @@ import Foreign.Storable (Storable(..))
 import System.IO.Unsafe (unsafePerformIO, unsafeDupablePerformIO)
 #if __GLASGOW_HASKELL__ >= 900
 import Unsafe.Coerce (unsafeCoerce#)
-import GHC.Prim (touch#, RealWorld)
+import GHC.Exts (touch#, RealWorld)
 #else
-import GHC.Prim (touch#, unsafeCoerce#, RealWorld)
+import GHC.Exts (touch#, unsafeCoerce#, RealWorld)
 #endif
 
 import GHC.IO (IO(IO))
 import GHC.Base (realWorld#)
 import GHC.TypeLits (Symbol)
-import GHC.Prim (MutableByteArray#, newAlignedPinnedByteArray#, byteArrayContents#)
+import GHC.Exts (Int(..), MutableByteArray#, newAlignedPinnedByteArray#, byteArrayContents#)
 import GHC.Ptr (Ptr(..))
-import GHC.Types (Int(..))
 
 -- * Byte array code adapted from the `memory` package.
 

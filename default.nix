@@ -1,4 +1,4 @@
-{ mkDerivation, aeson, array, base, criterion, deepseq, ghc-prim
+{ mkDerivation, aeson, array, base, criterion, deepseq
 , hspec, lens, lens-aeson, lib, linear, microlens, mtl, mwc-random
 , primitive, should-not-typecheck, tagged, text
 , unordered-containers, vector
@@ -12,7 +12,7 @@ mkDerivation {
         type != "directory"
         || lib.lists.all (x: baseNameOf path != x) ["dist-newstyle" ".direnv" ".git"])
       ./.;
-  libraryHaskellDepends = [ array base deepseq ghc-prim ];
+  libraryHaskellDepends = [ array base deepseq ];
   testHaskellDepends = [
     aeson base hspec lens lens-aeson microlens mtl should-not-typecheck
     text unordered-containers vector

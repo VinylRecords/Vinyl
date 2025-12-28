@@ -66,7 +66,7 @@ import Unsafe.Coerce
 import Data.Constraint.Forall (Forall)
 #endif
 import Data.Type.Coercion     (Coercion (..))
-import GHC.Types
+import GHC.Exts
 
 -- | An array-backed extensible record with constant-time field
 -- access.
