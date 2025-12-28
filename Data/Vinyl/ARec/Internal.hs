@@ -55,6 +55,7 @@ module Data.Vinyl.ARec.Internal
   , arecRepsMatchCoercion
   , arecConsMatchCoercion
   ) where
+import Data.Kind (Type)
 import Data.Vinyl.Core
 import Data.Vinyl.Lens (RecElem(..), RecSubset(..))
 import Data.Vinyl.TypeLevel
@@ -70,12 +71,12 @@ import GHC.Exts
 
 -- | An array-backed extensible record with constant-time field
 -- access.
-newtype ARec (f :: k -> *) (ts :: [k]) = ARec SmallArray
+newtype ARec (f :: k -> Type) (ts :: [k]) = ARec SmallArray
 type role ARec representational nominal
 
 -- | Get the ith element from the ARec
 unsafeIxARec
-  :: forall a k (f :: k -> *) (ts :: [k]).
+  :: forall a k (f :: k -> Type) (ts :: [k]).
      ARec f ts
   -> Int
   -> a
@@ -98,7 +99,7 @@ arecConsMatchCoercion ::
   (forall (x :: k). Coercible (f x) (g x)) => Coercion (ARec f xs) (ARec g xs)
 arecConsMatchCoercion = unsafeCoerce (Coercion :: Coercion () ())
 #else
-arecConsMatchCoercion :: forall k (f :: k -> *) (g :: k -> *) (xs :: [k]).
+arecConsMatchCoercion :: forall k (f :: k -> Type) (g :: k -> Type) (xs :: [k]).
   Forall (Similar f g) => Coercion (Rec f xs) (Rec g xs)
 -- Why do we need this? No idea, really. I guess some change in
 -- newtype handling for Coercible in 8.6?

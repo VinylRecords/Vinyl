@@ -24,7 +24,7 @@ import GHC.TypeLits (Symbol, KnownSymbol)
 import Unsafe.Coerce (unsafeCoerce)
 
 -- | Generalize algebraic sum types.
-data CoRec :: (k -> *) -> [k] -> * where
+data CoRec :: (k -> Type) -> [k] -> Type where
   CoRec :: RElem a ts (RIndex a ts) => !(f a) -> CoRec f ts
 
 -- | A 'CoRec' constructor with better inference. If you have a label
