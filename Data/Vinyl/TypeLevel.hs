@@ -79,7 +79,7 @@ type family RDelete r rs where
   RDelete r (s ': rs) = s ': RDelete r rs
 
 -- | A constraint-former which applies to every field in a record.
-type family RecAll (f :: u -> *) (rs :: [u]) (c :: * -> Constraint) :: Constraint where
+type family RecAll (f :: u -> Type) (rs :: [u]) (c :: Type -> Constraint) :: Constraint where
   RecAll f '[] c = ()
   RecAll f (r ': rs) c = (c (f r), RecAll f rs c)
 
